@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Delete Room - {{ room.name }}{% endblock %}
+
+{% block content %}
+<div class="page-content">
+    <div class="container-fluid">
+
+        <!-- start page title -->
+        <div class="row">
+            <div class="col-12">
+                <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+                    <h4 class="mb-sm-0 font-size-18">Delete Room</h4>
+
+                    <div class="page-title-right">
+                        <ol class="breadcrumb m-0">
+                            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'resources:index' %}">Resources</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'resources:room-list' %}">Rooms</a></li>
+                            <li class="breadcrumb-item active">Delete</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- end page title -->
+
+        <div class="row justify-content-center">
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header bg-danger">
+                        <h4 class="card-title text-white mb-0">
+                            <i class="bx bx-error-circle me-2"></i>Confirm Deletion
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="text-center mb-4">
+                            <i class="bx bx-trash text-danger" style="font-size: 72px;"></i>
+                        </div>
+
+                        <div class="alert alert-warning" role="alert">
+                            <h5 class="alert-heading">Warning!</h5>
+                            <p class="mb-0">Are you sure you want to delete this room? This action cannot be undone.</p>
+                        </div>
+
+                        <div class="table-responsive mb-4">
+                            <table class="table table-borderless mb-0">
+                                <tbody>
+                                    <tr>
+                                        <th scope="row" class="ps-0">Room Name:</th>
+                                        <td class="text-end fw-bold">{{ room.name }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row" class="ps-0">Room Type:</th>
+                                        <td class="text-end">{{ room.get_room_type_display|default:"-" }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row" class="ps-0">Floor:</th>
+                                        <td class="text-end">{{ room.floor|default:"-" }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row" class="ps-0">Room Number:</th>
+                                        <td class="text-end">{{ room.room_number|default:"-" }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row" class="ps-0">Capacity:</th>
+                                        <td class="text-end">{{ room.capacity|default:"-" }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row" class="ps-0">Status:</th>
+                                        <td class="text-end">
+                                            {% if room.is_available %}
+                                                <span class="badge badge-soft-success">Available</span>
+                                            {% else %}
+                                                <span class="badge badge-soft-warning">Occupied</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <form method="post" action="">
+                            {% csrf_token %}
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-danger btn-lg">
+                                    <i class="bx bx-trash me-2"></i>Yes, Delete Room
+                                </button>
+                                <a href="{% url 'resources:room-detail' room.pk %}" class="btn btn-secondary btn-lg">
+                                    <i class="bx bx-x me-2"></i>Cancel
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}
+    {% if object %}
+        {% trans "Edit Service" %}
+    {% else %}
+        {% trans "New Service" %}
+    {% endif %}
+{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
+<li class="breadcrumb-item">{% trans "Catalog" %}</li>
+<li class="breadcrumb-item"><a href="{% url 'catalog:service-list' %}">{% trans "Services" %}</a></li>
+<li class="breadcrumb-item active">
+    {% if object %}{% trans "Edit" %}{% else %}{% trans "New" %}{% endif %}
+</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title mb-4">
+                    {% if object %}
+                        <i class="bx bx-edit me-2"></i>{% trans "Edit Service" %}
+                    {% else %}
+                        <i class="bx bx-plus me-2"></i>{% trans "Add New Service" %}
+                    {% endif %}
+                </h4>
+
+                <form method="post" class="needs-validation" novalidate>
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger" role="alert">
+                        {{ form.non_field_errors }}
+                    </div>
+                    {% endif %}
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.name.id_for_label }}" class="form-label">
+                                    {% trans "Service Name" %} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.name }}
+                                {% if form.name.errors %}
+                                <div class="invalid-feedback d-block">{{ form.name.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.category.id_for_label }}" class="form-label">
+                                    {% trans "Category" %} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.category }}
+                                {% if form.category.errors %}
+                                <div class="invalid-feedback d-block">{{ form.category.errors }}</div>
+                                {% endif %}
+                                <small class="text-muted">
+                                    <a href="{% url 'catalog:category-list' %}" target="_blank">{% trans "Manage categories" %}</a>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.gender.id_for_label }}" class="form-label">{% trans "Gender" %}</label>
+                                {{ form.gender }}
+                                {% if form.gender.errors %}
+                                <div class="invalid-feedback d-block">{{ form.gender.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.default_price.id_for_label }}" class="form-label">
+                                    {% trans "Price" %} <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">€</span>
+                                    {{ form.default_price }}
+                                </div>
+                                {% if form.default_price.errors %}
+                                <div class="invalid-feedback d-block">{{ form.default_price.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.duration_min.id_for_label }}" class="form-label">
+                                    {% trans "Duration" %} <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    {{ form.duration_min }}
+                                    <span class="input-group-text">{% trans "min" %}</span>
+                                </div>
+                                {% if form.duration_min.errors %}
+                                <div class="invalid-feedback d-block">{{ form.duration_min.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="mb-3">
+                                <label for="{{ form.notes.id_for_label }}" class="form-label">{% trans "Notes" %}</label>
+                                {{ form.notes }}
+                                {% if form.notes.errors %}
+                                <div class="invalid-feedback d-block">{{ form.notes.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="d-flex gap-2 justify-content-end">
+                                <a href="{% url 'catalog:service-list' %}" class="btn btn-light">
+                                    <i class="bx bx-x me-1"></i>{% trans "Cancel" %}
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bx bx-save me-1"></i>
+                                    {% if object %}{% trans "Update Service" %}{% else %}{% trans "Create Service" %}{% endif %}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const formControls = document.querySelectorAll('select, input[type="text"], input[type="number"], textarea');
+        formControls.forEach(control => control.classList.add('form-control'));
+    });
+</script>
+{% endblock %}

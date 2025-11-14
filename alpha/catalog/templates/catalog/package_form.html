@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}
+    {% if object %}{% trans "Edit Package" %}{% else %}{% trans "New Package" %}{% endif %}
+{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
+<li class="breadcrumb-item"><a href="{% url 'catalog:package-list' %}">{% trans "Packages" %}</a></li>
+<li class="breadcrumb-item active">{% if object %}{% trans "Edit" %}{% else %}{% trans "New" %}{% endif %}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title mb-4">
+                    {% if object %}
+                        <i class="bx bx-edit me-2"></i>{% trans "Edit Package" %}
+                    {% else %}
+                        <i class="bx bx-plus me-2"></i>{% trans "New Package" %}
+                    {% endif %}
+                </h4>
+
+                <form method="post">
+                    {% csrf_token %}
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                    {% endif %}
+
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label for="{{ form.name.id_for_label }}" class="form-label">
+                                    {% trans "Package Name" %} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.name }}
+                                {% if form.name.errors %}
+                                <div class="invalid-feedback d-block">{{ form.name.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.price.id_for_label }}" class="form-label">
+                                    {% trans "Price" %} <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">€</span>
+                                    {{ form.price }}
+                                </div>
+                                {% if form.price.errors %}
+                                <div class="invalid-feedback d-block">{{ form.price.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.notes.id_for_label }}" class="form-label">{% trans "Notes" %}</label>
+                        {{ form.notes }}
+                        {% if form.notes.errors %}
+                        <div class="invalid-feedback d-block">{{ form.notes.errors }}</div>
+                        {% endif %}
+                        <small class="text-muted">{% trans "Package description or special conditions" %}</small>
+                    </div>
+
+                    {% if object %}
+                    <div class="alert alert-info border-0">
+                        <i class="bx bx-info-circle me-2"></i>
+                        {% trans "After saving, you can add services to this package" %}
+                    </div>
+                    {% endif %}
+
+                    <div class="d-flex gap-2 justify-content-end">
+                        <a href="{% url 'catalog:package-list' %}" class="btn btn-light">
+                            <i class="bx bx-x me-1"></i>{% trans "Cancel" %}
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bx bx-save me-1"></i>
+                            {% if object %}{% trans "Update" %}{% else %}{% trans "Create" %}{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('input, textarea').forEach(el => el.classList.add('form-control'));
+    });
+</script>
+{% endblock %}

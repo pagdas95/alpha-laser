@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{% trans "Delete Client" %}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
+<li class="breadcrumb-item"><a href="{% url 'clients:list' %}">{% trans "Clients" %}</a></li>
+<li class="breadcrumb-item active">{% trans "Delete" %}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <div class="avatar-lg mx-auto mb-4">
+                        <div class="avatar-title bg-danger-subtle text-danger rounded-circle font-size-48">
+                            <i class="bx bx-error-circle"></i>
+                        </div>
+                    </div>
+                    <h4 class="mb-3">{% trans "Delete Client?" %}</h4>
+                    <p class="text-muted">{% trans "Are you sure you want to delete this client? This action cannot be undone." %}</p>
+                </div>
+
+                <!-- Client Details to Delete -->
+                <div class="alert alert-danger border-0" role="alert">
+                    <div class="d-flex align-items-start">
+                        <div class="flex-shrink-0 me-3">
+                            <i class="bx bx-user-x font-size-24"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h5 class="alert-heading font-size-16">{% trans "Client Details" %}</h5>
+                            <hr class="my-2">
+                            <p class="mb-1"><strong>{% trans "Name" %}:</strong> {{ object.full_name }}</p>
+                            <p class="mb-1"><strong>{% trans "Phone" %}:</strong> {{ object.phone }}</p>
+                            {% if object.email %}
+                            <p class="mb-1"><strong>{% trans "Email" %}:</strong> {{ object.email }}</p>
+                            {% endif %}
+                            {% if object.birth_date %}
+                            <p class="mb-0"><strong>{% trans "Birth Date" %}:</strong> {{ object.birth_date|date:"d/m/Y" }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                {% if object.appointments.count > 0 %}
+                <div class="alert alert-warning" role="alert">
+                    <i class="bx bx-error-circle me-2"></i>
+                    <strong>{% trans "Warning" %}:</strong> 
+                    {% blocktrans count counter=object.appointments.count %}
+                        This client has {{ counter }} appointment. The appointment will remain but will no longer be linked to a client.
+                    {% plural %}
+                        This client has {{ counter }} appointments. The appointments will remain but will no longer be linked to a client.
+                    {% endblocktrans %}
+                </div>
+                {% endif %}
+
+                <!-- Confirmation Form -->
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bx bx-trash me-1"></i>{% trans "Yes, Delete Client" %}
+                        </button>
+                        <a href="{% url 'clients:detail' object.pk %}" class="btn btn-light">
+                            <i class="bx bx-x me-1"></i>{% trans "Cancel" %}
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

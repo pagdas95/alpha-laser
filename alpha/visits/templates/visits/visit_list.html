@@ -1,0 +1,311 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{% trans "Visits" %}{% endblock %}
+
+{% block extra_css %}
+<!-- DataTables -->
+<link href="{% static 'libs/datatables.net-bs4/css/dataTables.bootstrap4.min.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'libs/datatables.net-responsive-bs4/css/responsive.bootstrap4.min.css' %}" rel="stylesheet" type="text/css" />
+{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
+<li class="breadcrumb-item active">{% trans "Visits" %}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row align-items-center">
+    <div class="col-md-6">
+        <div class="mb-3">
+            <h5 class="card-title">
+                {% trans "Visit Records" %} 
+                <span class="text-muted fw-normal ms-2">({{ total_count }})</span>
+            </h5>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="d-flex flex-wrap align-items-center justify-content-end gap-2 mb-3">
+            <!-- Payment Status Filter -->
+            <div class="dropdown">
+                <button class="btn btn-light dropdown-toggle" type="button" id="paymentFilter" data-bs-toggle="dropdown">
+                    <i class="bx bx-filter-alt me-1"></i>
+                    {% if current_payment_status == 'paid' %}
+                        {% trans "Paid" %}
+                    {% elif current_payment_status == 'partial' %}
+                        {% trans "Partial" %}
+                    {% elif current_payment_status == 'unpaid' %}
+                        {% trans "Unpaid" %}
+                    {% else %}
+                        {% trans "All Payments" %}
+                    {% endif %}
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="?">{% trans "All" %}</a></li>
+                    <li><a class="dropdown-item" href="?payment_status=paid">{% trans "Paid" %}</a></li>
+                    <li><a class="dropdown-item" href="?payment_status=partial">{% trans "Partial Payment" %}</a></li>
+                    <li><a class="dropdown-item" href="?payment_status=unpaid">{% trans "Unpaid" %}</a></li>
+                </ul>
+            </div>
+            
+            <!-- More Actions -->
+            <div class="dropdown">
+                <a class="btn btn-link text-muted py-1 font-size-16 shadow-none dropdown-toggle" 
+                   href="#" role="button" data-bs-toggle="dropdown">
+                    <i class="bx bx-dots-horizontal-rounded"></i>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="#">
+                        <i class="bx bx-export me-2"></i>{% trans "Export to Excel" %}
+                    </a></li>
+                    <li><a class="dropdown-item" href="#">
+                        <i class="bx bx-printer me-2"></i>{% trans "Print Report" %}
+                    </a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- end row -->
+
+<div class="table-responsive mb-4">
+    <table class="table align-middle datatable dt-responsive table-check nowrap" 
+           style="border-collapse: collapse; border-spacing: 0 8px; width: 100%;" 
+           id="visitsTable">
+        <thead>
+            <tr>
+                <th scope="col" style="width: 50px;">
+                    <div class="form-check font-size-16">
+                        <input type="checkbox" class="form-check-input" id="checkAll">
+                        <label class="form-check-label" for="checkAll"></label>
+                    </div>
+                </th>
+                <th scope="col">{% trans "Client" %}</th>
+                <th scope="col">{% trans "Service" %}</th>
+                <th scope="col">{% trans "Date" %}</th>
+                <th scope="col">{% trans "Staff" %}</th>
+                <th scope="col">{% trans "Amount" %}</th>
+                <th scope="col">{% trans "Payment" %}</th>
+                <th style="width: 80px; min-width: 80px;">{% trans "Action" %}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for visit in visits %}
+            <tr>
+                <th scope="row">
+                    <div class="form-check font-size-16">
+                        <input type="checkbox" class="form-check-input" id="visit{{ visit.id }}">
+                        <label class="form-check-label" for="visit{{ visit.id }}"></label>
+                    </div>
+                </th>
+                <td>
+                    <div class="avatar-sm d-inline-block align-middle me-2">
+                        <div class="avatar-title bg-light-subtle text-primary font-size-20 m-0 rounded-circle">
+                            <i class="bx bxs-user"></i>
+                        </div>
+                    </div>
+                    <a href="{% url 'clients:detail' visit.appointment.client.pk %}" class="text-body fw-medium">
+                        {{ visit.appointment.client.full_name }}
+                    </a>
+                </td>
+                <td>
+                    {{ visit.appointment.service.name }}
+                    {% if visit.area %}
+                    <br><small class="text-muted">{{ visit.area }}</small>
+                    {% endif %}
+                </td>
+                <td>
+                    <strong>{{ visit.appointment.start|date:"d/m/Y" }}</strong>
+                    <br>
+                    <small class="text-muted">{{ visit.appointment.start|date:"H:i" }}</small>
+                </td>
+                <td>{{ visit.staff.get_full_name|default:visit.staff.username }}</td>
+                <td>
+                    <strong>€{{ visit.charge_amount }}</strong>
+                    {% if visit.client_package_item %}
+                    <br><span class="badge badge-soft-info font-size-11">
+                        <i class="bx bx-package"></i> {% trans "Package" %}
+                    </span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% with balance=visit.charge_amount|add:visit.paid_amount|add:"-"|add:visit.charge_amount %}
+                    {% if visit.paid_amount >= visit.charge_amount %}
+                        <span class="badge badge-soft-success">
+                            <i class="bx bx-check-circle"></i> {% trans "Paid" %}
+                        </span>
+                    {% elif visit.paid_amount > 0 %}
+                        <span class="badge badge-soft-warning">
+                            <i class="bx bx-time"></i> {% trans "Partial" %}
+                        </span>
+                        <br><small class="text-muted">€{{ visit.paid_amount }}</small>
+                    {% else %}
+                        <span class="badge badge-soft-danger">
+                            <i class="bx bx-x-circle"></i> {% trans "Unpaid" %}
+                        </span>
+                    {% endif %}
+                    {% endwith %}
+                </td>
+                <td>
+                    <div class="dropdown">
+                        <button class="btn btn-link font-size-16 shadow-none py-0 text-muted dropdown-toggle" 
+                                type="button" data-bs-toggle="dropdown">
+                            <i class="bx bx-dots-horizontal-rounded"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <a class="dropdown-item" href="{% url 'visits:detail' visit.pk %}">
+                                    <i class="bx bx-show-alt me-2"></i>{% trans "View Details" %}
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'visits:edit' visit.pk %}">
+                                    <i class="bx bx-edit-alt me-2"></i>{% trans "Edit" %}
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'appointments:detail' visit.appointment.pk %}">
+                                    <i class="bx bx-calendar me-2"></i>{% trans "View Appointment" %}
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item text-danger" href="{% url 'visits:delete' visit.pk %}">
+                                    <i class="bx bx-trash me-2"></i>{% trans "Delete" %}
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" class="text-center py-5">
+                    <div class="text-muted">
+                        <i class="bx bx-calendar-x font-size-48 d-block mb-3"></i>
+                        <h5>{% trans "No visits found" %}</h5>
+                        <p>{% trans "Visits are created automatically when appointments are completed" %}</p>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <!-- end table -->
+</div>
+<!-- end table responsive -->
+
+<!-- Stats Cards -->
+<div class="row">
+    <div class="col-md-3">
+        <div class="card mini-stats-wid">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-grow-1">
+                        <p class="text-muted fw-medium">{% trans "Total Visits" %}</p>
+                        <h4 class="mb-0">{{ total_count }}</h4>
+                    </div>
+                    <div class="avatar-sm rounded-circle bg-primary align-self-center mini-stat-icon">
+                        <span class="avatar-title rounded-circle bg-primary">
+                            <i class="bx bx-check-double font-size-24"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card mini-stats-wid">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-grow-1">
+                        <p class="text-muted fw-medium">{% trans "Total Revenue" %}</p>
+                        <h4 class="mb-0">€{{ total_revenue|floatformat:2 }}</h4>
+                    </div>
+                    <div class="avatar-sm rounded-circle bg-success align-self-center mini-stat-icon">
+                        <span class="avatar-title rounded-circle bg-success">
+                            <i class="bx bx-euro font-size-24"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card mini-stats-wid">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-grow-1">
+                        <p class="text-muted fw-medium">{% trans "Pending" %}</p>
+                        <h4 class="mb-0">€{{ pending_revenue|floatformat:2 }}</h4>
+                    </div>
+                    <div class="avatar-sm rounded-circle bg-warning align-self-center mini-stat-icon">
+                        <span class="avatar-title rounded-circle bg-warning">
+                            <i class="bx bx-time font-size-24"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card mini-stats-wid">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-grow-1">
+                        <p class="text-muted fw-medium">{% trans "Unpaid" %}</p>
+                        <h4 class="mb-0">{{ unpaid_count }}</h4>
+                    </div>
+                    <div class="avatar-sm rounded-circle bg-danger align-self-center mini-stat-icon">
+                        <span class="avatar-title rounded-circle bg-danger">
+                            <i class="bx bx-x-circle font-size-24"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock content %}
+
+{% block extra_js %}
+<!-- Required datatable js -->
+<script src="{% static 'libs/datatables.net/js/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'libs/datatables.net-bs4/js/dataTables.bootstrap4.min.js' %}"></script>
+
+<!-- Responsive examples -->
+<script src="{% static 'libs/datatables.net-responsive/js/dataTables.responsive.min.js' %}"></script>
+<script src="{% static 'libs/datatables.net-responsive-bs4/js/responsive.bootstrap4.min.js' %}"></script>
+
+<script>
+    // Initialize DataTable
+    $(document).ready(function() {
+        $('#visitsTable').DataTable({
+            "order": [[ 3, "desc" ]], // Sort by date column descending
+            "pageLength": 25,
+            "responsive": true,
+            "language": {
+                "search": "{% trans 'Search' %}:",
+                "lengthMenu": "{% trans 'Show' %} _MENU_ {% trans 'entries' %}",
+                "info": "{% trans 'Showing' %} _START_ {% trans 'to' %} _END_ {% trans 'of' %} _TOTAL_ {% trans 'visits' %}",
+                "infoEmpty": "{% trans 'No visits to show' %}",
+                "zeroRecords": "{% trans 'No matching visits found' %}",
+                "paginate": {
+                    "first": "{% trans 'First' %}",
+                    "last": "{% trans 'Last' %}",
+                    "next": "{% trans 'Next' %}",
+                    "previous": "{% trans 'Previous' %}"
+                }
+            }
+        });
+    });
+
+    // Check all functionality
+    document.getElementById('checkAll').addEventListener('change', function() {
+        const checkboxes = document.querySelectorAll('tbody input[type="checkbox"]');
+        checkboxes.forEach(checkbox => checkbox.checked = this.checked);
+    });
+</script>
+{% endblock %}

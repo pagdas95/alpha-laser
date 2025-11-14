@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Resources Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-content">
+    <div class="container-fluid">
+
+        <!-- start page title -->
+        <div class="row">
+            <div class="col-12">
+                <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+                    <h4 class="mb-sm-0 font-size-18">Resources</h4>
+
+                    <div class="page-title-right">
+                        <ol class="breadcrumb m-0">
+                            <li class="breadcrumb-item"><a href="{% url 'home' %}">Dashboard</a></li>
+                            <li class="breadcrumb-item active">Resources</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- end page title -->
+
+        <!-- Stats Cards -->
+        <div class="row">
+            <div class="col-xl-3 col-md-6">
+                <div class="card card-h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-grow-1">
+                                <span class="text-muted mb-3 lh-1 d-block text-truncate">Total Machines</span>
+                                <h4 class="mb-3">
+                                    <span class="counter-value" data-target="{{ total_machines }}">{{ total_machines }}</span>
+                                </h4>
+                            </div>
+                            <div class="flex-shrink-0 text-end">
+                                <i class="bx bx-laptop font-size-24 text-primary"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6">
+                <div class="card card-h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-grow-1">
+                                <span class="text-muted mb-3 lh-1 d-block text-truncate">Active Machines</span>
+                                <h4 class="mb-3">
+                                    <span class="counter-value" data-target="{{ active_machines }}">{{ active_machines }}</span>
+                                </h4>
+                            </div>
+                            <div class="flex-shrink-0 text-end">
+                                <i class="bx bx-check-circle font-size-24 text-success"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6">
+                <div class="card card-h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-grow-1">
+                                <span class="text-muted mb-3 lh-1 d-block text-truncate">Total Rooms</span>
+                                <h4 class="mb-3">
+                                    <span class="counter-value" data-target="{{ total_rooms }}">{{ total_rooms }}</span>
+                                </h4>
+                            </div>
+                            <div class="flex-shrink-0 text-end">
+                                <i class="bx bx-door-open font-size-24 text-primary"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6">
+                <div class="card card-h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-grow-1">
+                                <span class="text-muted mb-3 lh-1 d-block text-truncate">Active Rooms</span>
+                                <h4 class="mb-3">
+                                    <span class="counter-value" data-target="{{ active_rooms }}">{{ active_rooms }}</span>
+                                </h4>
+                            </div>
+                            <div class="flex-shrink-0 text-end">
+                                <i class="bx bx-check-circle font-size-24 text-success"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="card-title">Quick Actions</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <a href="{% url 'resources:machine-create' %}" class="btn btn-primary w-100">
+                                    <i class="bx bx-plus-circle me-1"></i> Add New Machine
+                                </a>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <a href="{% url 'resources:machine-list' %}" class="btn btn-info w-100">
+                                    <i class="bx bx-list-ul me-1"></i> View All Machines
+                                </a>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <a href="{% url 'resources:room-create' %}" class="btn btn-success w-100">
+                                    <i class="bx bx-plus-circle me-1"></i> Add New Room
+                                </a>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <a href="{% url 'resources:room-list' %}" class="btn btn-warning w-100">
+                                    <i class="bx bx-list-ul me-1"></i> View All Rooms
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Items -->
+        <div class="row">
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="card-title">Recent Machines</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table align-middle table-nowrap mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Machine Name</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for machine in recent_machines %}
+                                    <tr>
+                                        <td>
+                                            <h5 class="font-size-14 mb-0">
+                                                <a href="{% url 'resources:machine-detail' machine.pk %}" class="text-dark">
+                                                    {{ machine.name }}
+                                                </a>
+                                            </h5>
+                                        </td>
+                                        <td>
+                                            {% if machine.is_active %}
+                                                <span class="badge badge-soft-success font-size-11">Active</span>
+                                            {% else %}
+                                                <span class="badge badge-soft-danger font-size-11">Inactive</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <a href="{% url 'resources:machine-detail' machine.pk %}" class="btn btn-sm btn-primary">
+                                                <i class="bx bx-show"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="3" class="text-center">No machines found</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="card-title">Recent Rooms</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table align-middle table-nowrap mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Room Name</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for room in recent_rooms %}
+                                    <tr>
+                                        <td>
+                                            <h5 class="font-size-14 mb-0">
+                                                <a href="{% url 'resources:room-detail' room.pk %}" class="text-dark">
+                                                    {{ room.name }}
+                                                </a>
+                                            </h5>
+                                        </td>
+                                        <td>
+                                            {% if room.is_active %}
+                                                <span class="badge badge-soft-success font-size-11">Active</span>
+                                            {% else %}
+                                                <span class="badge badge-soft-danger font-size-11">Inactive</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <a href="{% url 'resources:room-detail' room.pk %}" class="btn btn-sm btn-primary">
+                                                <i class="bx bx-show"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="3" class="text-center">No rooms found</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

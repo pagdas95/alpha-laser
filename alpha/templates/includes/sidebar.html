@@ -1,0 +1,139 @@
+{% load static i18n %}
+<!-- ========== Left Sidebar Start ========== -->
+<div class="vertical-menu">
+    <div data-simplebar class="h-100">
+        <!--- Sidemenu -->
+        <div id="sidebar-menu">
+            <!-- Left Menu Start -->
+            <ul class="metismenu list-unstyled" id="side-menu">
+                <li class="menu-title" data-key="t-menu">{% trans "Menu" %}</li>
+
+                <li>
+                    <a href="{% url 'appointments:calendar' %}">
+                        <i data-feather="home"></i>
+                        <span data-key="t-dashboard">{% trans "Dashboard" %}</span>
+                    </a>
+                </li>
+
+                <!-- ====== SCHEDULING Section ====== -->
+                <li class="menu-title mt-2" data-key="t-scheduling">{% trans "SCHEDULING" %}</li>
+
+                <!-- Appointments -->
+                <li>
+                    <a href="javascript: void(0);" class="has-arrow">
+                        <i data-feather="calendar"></i>
+                        <span data-key="t-appointments">{% trans "Appointments" %}</span>
+                    </a>
+                    <ul class="sub-menu" aria-expanded="false">
+                        <li>
+                            <a href="{% url 'appointments:list' %}" data-key="t-view-appointments">
+                                {% trans "View Appointments" %}
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'appointments:create' %}" data-key="t-book-appointment">
+                                {% trans "Book Appointment" %}
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+                <!-- Clients -->
+                <li>
+                    <a href="javascript: void(0);" class="has-arrow">
+                        <i data-feather="users"></i>
+                        <span data-key="t-clients">{% trans "Clients" %}</span>
+                    </a>
+                    <ul class="sub-menu" aria-expanded="false">
+                        <li>
+                            <a href="{% url 'clients:list' %}" data-key="t-view-all-clients">
+                                {% trans "View All Clients" %}
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'clients:create' %}" data-key="t-create-client">
+                                {% trans "Create Client" %}
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+                <!-- Visits -->
+                <li>
+                    <a href="{% url 'visits:list' %}">
+                        <i data-feather="clipboard"></i>
+                        <span data-key="t-visits">{% trans "Visits" %}</span>
+                    </a>
+                </li>
+
+                <!-- ====== CATALOG Section ====== -->
+                <li class="menu-title mt-2" data-key="t-catalog">{% trans "CATALOG" %}</li>
+
+                <li>
+                    <a href="javascript: void(0);" class="has-arrow">
+                        <i data-feather="book-open"></i>
+                        <span data-key="t-catalog">{% trans "Catalog" %}</span>
+                    </a>
+                    <ul class="sub-menu" aria-expanded="false">
+                        <!-- Services -->
+                        <li>
+                            <a href="{% url 'catalog:service-list' %}" data-key="t-services">
+                                {% trans "Services" %}
+                            </a>
+                        </li>
+                        <!-- Categories -->
+                        <li>
+                            <a href="{% url 'catalog:category-list' %}" data-key="t-service-categories">
+                                {% trans "Categories" %}
+                            </a>
+                        </li>
+                        <!-- <li><hr class="dropdown-divider my-2"></li> -->
+                        <!-- Packages -->
+                        <li>
+                            <a href="{% url 'catalog:package-list' %}" data-key="t-packages">
+                                {% trans "Packages" %}
+                            </a>
+                        </li>
+                        <!-- Client Packages (Coming Soon) -->
+                        <li>
+                            <a href="#" class="text-muted" onclick="return false;" data-key="t-client-packages">
+                                {% trans "Client Packages" %} <small>({% trans "Coming Soon" %})</small>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                <!-- ====== RESOURCES Section ====== -->
+                <li class="menu-title mt-2" data-key="t-resources">{% trans "RESOURCES" %}</li>
+
+                <li>
+                    <a href="javascript: void(0);" class="has-arrow">
+                        <i data-feather="tool"></i>
+                        <span data-key="t-resources">{% trans "Resources" %}</span>
+                    </a>
+                    <ul class="sub-menu" aria-expanded="false">
+                        <!-- Resources Dashboard -->
+                        <li>
+                            <a href="{% url 'resources:index' %}" data-key="t-resources-dashboard">
+                                {% trans "Resources Dashboard" %}
+                            </a>
+                        </li>
+                        <!-- Machines -->
+                        <li>
+                            <a href="{% url 'resources:machine-list' %}" data-key="t-machines">
+                                {% trans "Machines" %}
+                            </a>
+                        </li>
+                        <!-- Rooms -->
+                        <li>
+                            <a href="{% url 'resources:room-list' %}" data-key="t-rooms">
+                                {% trans "Rooms" %}
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+        <!-- Sidebar -->
+    </div>
+</div>
+<!-- Left Sidebar End -->

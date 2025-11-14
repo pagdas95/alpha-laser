@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}
+    {% if object %}
+        {% trans "Edit Client" %}
+    {% else %}
+        {% trans "New Client" %}
+    {% endif %}
+{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
+<li class="breadcrumb-item"><a href="{% url 'clients:list' %}">{% trans "Clients" %}</a></li>
+<li class="breadcrumb-item active">
+    {% if object %}{% trans "Edit" %}{% else %}{% trans "New" %}{% endif %}
+</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title mb-4">
+                    {% if object %}
+                        <i class="bx bx-edit me-2"></i>{% trans "Edit Client" %}
+                    {% else %}
+                        <i class="bx bx-user-plus me-2"></i>{% trans "Add New Client" %}
+                    {% endif %}
+                </h4>
+
+                <form method="post" class="needs-validation" novalidate>
+                    {% csrf_token %}
+                    
+                    <!-- Show form errors if any -->
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger" role="alert">
+                        {{ form.non_field_errors }}
+                    </div>
+                    {% endif %}
+
+                    <div class="row">
+                        <!-- Full Name -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.full_name.id_for_label }}" class="form-label">
+                                    {% trans "Full Name" %} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.full_name }}
+                                {% if form.full_name.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.full_name.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Phone -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.phone.id_for_label }}" class="form-label">
+                                    {% trans "Phone" %} <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bx bx-phone"></i></span>
+                                    {{ form.phone }}
+                                </div>
+                                {% if form.phone.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.phone.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Email -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.email.id_for_label }}" class="form-label">
+                                    {% trans "Email" %} <span class="text-muted">({% trans "Optional" %})</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bx bx-envelope"></i></span>
+                                    {{ form.email }}
+                                </div>
+                                {% if form.email.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.email.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Birth Date -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.birth_date.id_for_label }}" class="form-label">
+                                    {% trans "Birth Date" %} <span class="text-muted">({% trans "Optional" %})</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bx bx-calendar"></i></span>
+                                    {{ form.birth_date }}
+                                </div>
+                                {% if form.birth_date.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.birth_date.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Profile Section -->
+                    <div class="row">
+                        <div class="col-12">
+                            <h5 class="font-size-14 mb-3 mt-2">
+                                <i class="bx bx-user-circle me-2"></i>{% trans "Profile Information" %}
+                            </h5>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Skin Type -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.skin_type.id_for_label }}" class="form-label">
+                                    {% trans "Skin Type (Fitzpatrick)" %} <span class="text-muted">({% trans "Optional" %})</span>
+                                </label>
+                                {{ form.skin_type }}
+                                {% if form.skin_type.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.skin_type.errors }}
+                                </div>
+                                {% endif %}
+                                <small class="text-muted">
+                                    {% trans "Select Fitzpatrick skin type classification" %}
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Hair Color -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.hair_color.id_for_label }}" class="form-label">
+                                    {% trans "Hair Color" %} <span class="text-muted">({% trans "Optional" %})</span>
+                                </label>
+                                {{ form.hair_color }}
+                                {% if form.hair_color.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.hair_color.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notes -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="mb-3">
+                                <label for="{{ form.notes.id_for_label }}" class="form-label">
+                                    {% trans "Notes" %} <span class="text-muted">({% trans "Optional" %})</span>
+                                </label>
+                                {{ form.notes }}
+                                {% if form.notes.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.notes.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="d-flex gap-2 justify-content-end">
+                                <a href="{% url 'clients:list' %}" class="btn btn-light">
+                                    <i class="bx bx-x me-1"></i>{% trans "Cancel" %}
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bx bx-save me-1"></i>
+                                    {% if object %}
+                                        {% trans "Update Client" %}
+                                    {% else %}
+                                        {% trans "Create Client" %}
+                                    {% endif %}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add Bootstrap classes to form fields
+        const formControls = document.querySelectorAll('select, input[type="text"], input[type="email"], input[type="date"], textarea');
+        formControls.forEach(control => {
+            control.classList.add('form-control');
+        });
+
+        // Form validation
+        const form = document.querySelector('.needs-validation');
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        });
+    });
+</script>
+{% endblock %}

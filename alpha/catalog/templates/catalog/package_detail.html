@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{{ package.name }} - {% trans "Package" %}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
+<li class="breadcrumb-item">{% trans "Catalog" %}</li>
+<li class="breadcrumb-item"><a href="{% url 'catalog:package-list' %}">{% trans "Packages" %}</a></li>
+<li class="breadcrumb-item active">{{ package.name }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Package Info Card -->
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4 class="card-title mb-0">
+                        <i class="bx bx-package text-primary me-2"></i>{{ package.name }}
+                    </h4>
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'catalog:package-edit' package.pk %}" class="btn btn-primary btn-sm">
+                            <i class="bx bx-edit me-1"></i>{% trans "Edit" %}
+                        </a>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <p class="text-muted mb-1">{% trans "Package Price" %}</p>
+                        <h3 class="text-success mb-0">€{{ package.price }}</h3>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="text-muted mb-1">{% trans "Total Sessions" %}</p>
+                        <h3 class="text-primary mb-0">{{ total_sessions }}</h3>
+                    </div>
+                </div>
+
+                {% if package.notes %}
+                <div class="alert alert-info border-0">
+                    <p class="mb-0">{{ package.notes }}</p>
+                </div>
+                {% endif %}
+
+                <!-- Package Items -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="card-title mb-0">{% trans "Included Services" %}</h5>
+                    <a href="{% url 'catalog:packageitem-create' package.pk %}" class="btn btn-success btn-sm">
+                        <i class="bx bx-plus me-1"></i>{% trans "Add Service" %}
+                    </a>
+                </div>
+
+                {% if items %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>{% trans "Service" %}</th>
+                                <th>{% trans "Category" %}</th>
+                                <th>{% trans "Sessions" %}</th>
+                                <th>{% trans "Value" %}</th>
+                                <th style="width: 80px;">{% trans "Action" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in items %}
+                            <tr>
+                                <td>
+                                    <strong>{{ item.service.name }}</strong>
+                                    {% if item.service.gender != 'any' %}
+                                    <br><small class="text-muted">{{ item.service.get_gender_display }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-info-subtle text-info">
+                                        {{ item.service.category.name }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge badge-soft-primary">{{ item.sessions }}x</span>
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        €{{ item.service.default_price }} × {{ item.sessions }} = 
+                                    </small>
+                                    <strong>€{% widthratio item.service.default_price 1 item.sessions %}</strong>
+                                </td>
+                                <td>
+                                    <a href="{% url 'catalog:packageitem-delete' item.pk %}" 
+                                       class="btn btn-sm btn-light" 
+                                       onclick="return confirm('{% trans "Remove this service from the package?" %}')">
+                                        <i class="bx bx-trash text-danger"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr class="table-light">
+                                <td colspan="2"><strong>{% trans "Total" %}</strong></td>
+                                <td><strong>{{ total_sessions }} {% trans "sessions" %}</strong></td>
+                                <td colspan="2">
+                                    {% comment %}
+                                    Total value calculation would go here if needed
+                                    {% endcomment %}
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5 text-muted">
+                    <i class="bx bx-list-ul font-size-48 d-block mb-3"></i>
+                    <h5>{% trans "No services in this package" %}</h5>
+                    <p>{% trans "Add services to make this package valuable" %}</p>
+                    <a href="{% url 'catalog:packageitem-create' package.pk %}" class="btn btn-success mt-2">
+                        <i class="bx bx-plus me-1"></i>{% trans "Add First Service" %}
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <!-- Quick Actions Card -->
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title mb-3">{% trans "Quick Actions" %}</h5>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'catalog:package-list' %}" class="btn btn-light btn-sm">
+                        <i class="bx bx-list-ul me-1"></i>{% trans "Back to Packages" %}
+                    </a>
+                    <a href="{% url 'catalog:packageitem-create' package.pk %}" class="btn btn-success btn-sm">
+                        <i class="bx bx-plus me-1"></i>{% trans "Add Service" %}
+                    </a>
+                    <a href="{% url 'catalog:package-edit' package.pk %}" class="btn btn-primary btn-sm">
+                        <i class="bx bx-edit me-1"></i>{% trans "Edit Package" %}
+                    </a>
+                    <button type="button" class="btn btn-danger btn-sm" onclick="confirmDelete()">
+                        <i class="bx bx-trash me-1"></i>{% trans "Delete Package" %}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Clients Who Purchased -->
+        {% if client_packages %}
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title mb-3">{% trans "Recent Purchases" %}</h5>
+                <div class="list-group list-group-flush">
+                    {% for cp in client_packages %}
+                    <div class="list-group-item px-0">
+                        <div class="d-flex align-items-center">
+                            <div class="avatar-sm me-3">
+                                <div class="avatar-title bg-light-subtle text-primary rounded-circle">
+                                    <i class="bx bx-user"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-0">{{ cp.client.full_name }}</h6>
+                                <small class="text-muted">{{ cp.purchased_at|date:"d/m/Y" }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<script>
+    function confirmDelete() {
+        if (confirm('{% trans "Are you sure you want to delete this package?" %}')) {
+            window.location.href = '{% url "catalog:package-delete" package.pk %}';
+        }
+    }
+</script>
+{% endblock %}

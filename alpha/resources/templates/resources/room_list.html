@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Rooms List{% endblock %}
+
+{% block content %}
+<div class="page-content">
+    <div class="container-fluid">
+
+        <!-- start page title -->
+        <div class="row">
+            <div class="col-12">
+                <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+                    <h4 class="mb-sm-0 font-size-18">Rooms</h4>
+
+                    <div class="page-title-right">
+                        <ol class="breadcrumb m-0">
+                            <li class="breadcrumb-item"><a href="{% url 'home' %}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'resources:index' %}">Resources</a></li>
+                            <li class="breadcrumb-item active">Rooms</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- end page title -->
+
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <h4 class="card-title mb-0">All Rooms</h4>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="text-end">
+                                    <a href="{% url 'resources:room-create' %}" class="btn btn-success">
+                                        <i class="bx bx-plus-circle me-1"></i> Add New Room
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <!-- Search and Filter -->
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <form method="get" action="">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" placeholder="Search rooms..." name="search" value="{{ request.GET.search }}">
+                                        <button class="btn btn-success" type="submit">
+                                            <i class="bx bx-search"></i>
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="col-md-3">
+                                <select class="form-select" name="status" onchange="window.location.href='?status=' + this.value">
+                                    <option value="">All Status</option>
+                                    <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Active</option>
+                                    <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>Inactive</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Table -->
+                        <div class="table-responsive">
+                            <table class="table align-middle table-nowrap table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th scope="col">ID</th>
+                                        <th scope="col">Room Name</th>
+                                        <th scope="col">Status</th>
+                                        <th scope="col">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for room in rooms %}
+                                    <tr>
+                                        <td>
+                                            <a href="{% url 'resources:room-detail' room.pk %}" class="text-body fw-bold">
+                                                #{{ room.id }}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <h5 class="font-size-14 mb-0">
+                                                <a href="{% url 'resources:room-detail' room.pk %}" class="text-dark">
+                                                    {{ room.name }}
+                                                </a>
+                                            </h5>
+                                        </td>
+                                        <td>
+                                            {% if room.is_active %}
+                                                <span class="badge badge-soft-success font-size-12">Active</span>
+                                            {% else %}
+                                                <span class="badge badge-soft-danger font-size-12">Inactive</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="d-flex gap-2">
+                                                <a href="{% url 'resources:room-detail' room.pk %}" class="btn btn-sm btn-success" data-bs-toggle="tooltip" title="View">
+                                                    <i class="bx bx-show"></i>
+                                                </a>
+                                                <a href="{% url 'resources:room-update' room.pk %}" class="btn btn-sm btn-info" data-bs-toggle="tooltip" title="Edit">
+                                                    <i class="bx bx-pencil"></i>
+                                                </a>
+                                                <a href="{% url 'resources:room-delete' room.pk %}" class="btn btn-sm btn-danger" data-bs-toggle="tooltip" title="Delete">
+                                                    <i class="bx bx-trash"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="4" class="text-center py-4">
+                                            <div class="text-muted">
+                                                <i class="bx bx-door-open font-size-24 d-block mb-2"></i>
+                                                <p class="mb-0">No rooms found</p>
+                                                <a href="{% url 'resources:room-create' %}" class="btn btn-sm btn-success mt-2">
+                                                    Add Your First Room
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        {% if is_paginated %}
+                        <div class="row mt-4">
+                            <div class="col-sm-12 col-md-5">
+                                <div class="dataTables_info">
+                                    Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} entries
+                                </div>
+                            </div>
+                            <div class="col-sm-12 col-md-7">
+                                <div class="dataTables_paginate float-end">
+                                    <ul class="pagination">
+                                        {% if page_obj.has_previous %}
+                                        <li class="paginate_button page-item previous">
+                                            <a href="?page=1" class="page-link">First</a>
+                                        </li>
+                                        <li class="paginate_button page-item">
+                                            <a href="?page={{ page_obj.previous_page_number }}" class="page-link">Previous</a>
+                                        </li>
+                                        {% endif %}
+
+                                        {% for num in page_obj.paginator.page_range %}
+                                        {% if page_obj.number == num %}
+                                        <li class="paginate_button page-item active">
+                                            <a href="#" class="page-link">{{ num }}</a>
+                                        </li>
+                                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                        <li class="paginate_button page-item">
+                                            <a href="?page={{ num }}" class="page-link">{{ num }}</a>
+                                        </li>
+                                        {% endif %}
+                                        {% endfor %}
+
+                                        {% if page_obj.has_next %}
+                                        <li class="paginate_button page-item">
+                                            <a href="?page={{ page_obj.next_page_number }}" class="page-link">Next</a>
+                                        </li>
+                                        <li class="paginate_button page-item next">
+                                            <a href="?page={{ page_obj.paginator.num_pages }}" class="page-link">Last</a>
+                                        </li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

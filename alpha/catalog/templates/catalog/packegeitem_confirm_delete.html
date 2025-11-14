@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{% trans "Remove Service" %}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
+<li class="breadcrumb-item"><a href="{% url 'catalog:package-list' %}">{% trans "Packages" %}</a></li>
+<li class="breadcrumb-item"><a href="{% url 'catalog:package-detail' object.package.pk %}">{{ object.package.name }}</a></li>
+<li class="breadcrumb-item active">{% trans "Remove Service" %}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <div class="avatar-lg mx-auto mb-4">
+                        <div class="avatar-title bg-warning-subtle text-warning rounded-circle font-size-48">
+                            <i class="bx bx-error-circle"></i>
+                        </div>
+                    </div>
+                    <h4 class="mb-3">{% trans "Remove Service from Package?" %}</h4>
+                </div>
+
+                <div class="alert alert-warning border-0">
+                    <h6 class="mb-2">{{ object.package.name }}</h6>
+                    <hr class="my-2">
+                    <p class="mb-1"><strong>{% trans "Service" %}:</strong> {{ object.service.name }}</p>
+                    <p class="mb-0"><strong>{% trans "Sessions" %}:</strong> {{ object.sessions }}x</p>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-warning">
+                            <i class="bx bx-x me-1"></i>{% trans "Yes, Remove" %}
+                        </button>
+                        <a href="{% url 'catalog:package-detail' object.package.pk %}" class="btn btn-light">
+                            {% trans "Cancel" %}
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

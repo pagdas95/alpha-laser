@@ -1,0 +1,305 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{{ client.full_name }} - {% trans "Client Details" %}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
+<li class="breadcrumb-item"><a href="{% url 'clients:list' %}">{% trans "Clients" %}</a></li>
+<li class="breadcrumb-item active">{{ client.full_name }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Left Column: Client Info -->
+    <div class="col-lg-4">
+        <!-- Main Profile Card -->
+        <div class="card">
+            <div class="card-body">
+                <div class="text-center">
+                    <div class="avatar-lg mx-auto mb-3">
+                        <div class="avatar-title bg-primary-subtle text-primary font-size-48 rounded-circle">
+                            <i class="bx bxs-user"></i>
+                        </div>
+                    </div>
+                    <h5 class="font-size-18 mb-1">{{ client.full_name }}</h5>
+                    <p class="text-muted mb-3">
+                        {% if client.birth_date %}
+                            {% trans "Age" %}: {{ client.birth_date|timesince|truncatewords:2 }}
+                        {% else %}
+                            {% trans "Client" %}
+                        {% endif %}
+                    </p>
+
+                    <!-- Quick Actions -->
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'appointments:create' %}?client={{ client.pk }}" class="btn btn-primary">
+                            <i class="bx bx-calendar-plus me-1"></i>{% trans "Book Appointment" %}
+                        </a>
+                        <a href="{% url 'clients:edit' client.pk %}" class="btn btn-light">
+                            <i class="bx bx-edit me-1"></i>{% trans "Edit Profile" %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contact Information Card -->
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title mb-3">
+                    <i class="bx bx-phone text-primary me-2"></i>{% trans "Contact Information" %}
+                </h5>
+                <div class="table-responsive">
+                    <table class="table table-borderless mb-0">
+                        <tbody>
+                            <tr>
+                                <th style="width: 40%;">{% trans "Phone" %}:</th>
+                                <td>
+                                    <a href="tel:{{ client.phone }}" class="text-body">
+                                        {{ client.phone }}
+                                    </a>
+                                </td>
+                            </tr>
+                            {% if client.email %}
+                            <tr>
+                                <th>{% trans "Email" %}:</th>
+                                <td>
+                                    <a href="mailto:{{ client.email }}" class="text-body">
+                                        {{ client.email }}
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% if client.birth_date %}
+                            <tr>
+                                <th>{% trans "Birth Date" %}:</th>
+                                <td>{{ client.birth_date|date:"d/m/Y" }}</td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profile Information Card -->
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title mb-3">
+                    <i class="bx bx-user-circle text-primary me-2"></i>{% trans "Profile" %}
+                </h5>
+                <div class="table-responsive">
+                    <table class="table table-borderless mb-0">
+                        <tbody>
+                            {% if client.skin_type %}
+                            <tr>
+                                <th style="width: 50%;">{% trans "Skin Type" %}:</th>
+                                <td>
+                                    <span class="badge bg-info-subtle text-info">
+                                        {{ client.get_skin_type_display }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% if client.hair_color %}
+                            <tr>
+                                <th>{% trans "Hair Color" %}:</th>
+                                <td>
+                                    <span class="badge bg-primary-subtle text-primary">
+                                        {{ client.get_hair_color_display }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% if not client.skin_type and not client.hair_color %}
+                            <tr>
+                                <td colspan="2" class="text-muted text-center py-3">
+                                    {% trans "No profile information" %}
+                                </td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notes Card -->
+        {% if client.notes %}
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title mb-3">
+                    <i class="bx bx-note text-primary me-2"></i>{% trans "Notes" %}
+                </h5>
+                <p class="text-muted mb-0">{{ client.notes|linebreaks }}</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Quick Stats Card -->
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title mb-3">{% trans "Statistics" %}</h5>
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="py-2">
+                            <p class="text-muted mb-1">{% trans "Appointments" %}</p>
+                            <h5 class="mb-0">{{ total_appointments }}</h5>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="py-2">
+                            <p class="text-muted mb-1">{% trans "Visits" %}</p>
+                            <h5 class="mb-0">{{ completed_visits }}</h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: History -->
+    <div class="col-lg-8">
+        <!-- Appointment History Card -->
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4 class="card-title mb-0">
+                        <i class="bx bx-calendar-event text-primary me-2"></i>{% trans "Appointment History" %}
+                    </h4>
+                    <a href="{% url 'appointments:create' %}?client={{ client.pk }}" class="btn btn-primary btn-sm">
+                        <i class="bx bx-plus me-1"></i>{% trans "New Appointment" %}
+                    </a>
+                </div>
+
+                {% if recent_appointments %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>{% trans "Date" %}</th>
+                                <th>{% trans "Service" %}</th>
+                                <th>{% trans "Staff" %}</th>
+                                <th>{% trans "Status" %}</th>
+                                <th>{% trans "Action" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for appointment in recent_appointments %}
+                            <tr>
+                                <td>
+                                    <strong>{{ appointment.start|date:"d/m/Y" }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ appointment.start|date:"H:i" }}</small>
+                                </td>
+                                <td>
+                                    {{ appointment.service.name }}
+                                    {% if appointment.machine %}
+                                    <br><small class="text-muted">{{ appointment.machine.name }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>{{ appointment.staff.get_full_name|default:appointment.staff.username }}</td>
+                                <td>
+                                    {% if appointment.status == 'booked' %}
+                                        <span class="badge badge-soft-primary">{{ appointment.get_status_display }}</span>
+                                    {% elif appointment.status == 'completed' %}
+                                        <span class="badge badge-soft-success">{{ appointment.get_status_display }}</span>
+                                    {% elif appointment.status == 'cancelled' %}
+                                        <span class="badge badge-soft-danger">{{ appointment.get_status_display }}</span>
+                                    {% elif appointment.status == 'no_show' %}
+                                        <span class="badge badge-soft-warning">{{ appointment.get_status_display }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'appointments:detail' appointment.pk %}" 
+                                       class="btn btn-sm btn-light" 
+                                       data-bs-toggle="tooltip" 
+                                       title="{% trans 'View Details' %}">
+                                        <i class="bx bx-show"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {% if total_appointments > 10 %}
+                <div class="text-center mt-3">
+                    <a href="{% url 'appointments:list' %}?client={{ client.pk }}" class="btn btn-link">
+                        {% trans "View All Appointments" %} ({{ total_appointments }}) <i class="bx bx-right-arrow-alt ms-1"></i>
+                    </a>
+                </div>
+                {% endif %}
+                {% else %}
+                <div class="text-center py-5 text-muted">
+                    <i class="bx bx-calendar-x font-size-48 d-block mb-3"></i>
+                    <h5>{% trans "No appointments yet" %}</h5>
+                    <p>{% trans "Book the first appointment for this client" %}</p>
+                    <a href="{% url 'appointments:create' %}?client={{ client.pk }}" class="btn btn-primary mt-2">
+                        <i class="bx bx-calendar-plus me-1"></i>{% trans "Book Now" %}
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Consents Card -->
+        {% if consents %}
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title mb-3">
+                    <i class="bx bx-file-blank text-primary me-2"></i>{% trans "Consent Records" %}
+                </h5>
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead>
+                            <tr>
+                                <th>{% trans "Version" %}</th>
+                                <th>{% trans "Accepted Date" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for consent in consents %}
+                            <tr>
+                                <td>{{ consent.text_version }}</td>
+                                <td>{{ consent.accepted_at|date:"d/m/Y H:i" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Danger Zone -->
+        <div class="card border-danger">
+            <div class="card-body">
+                <h5 class="card-title text-danger mb-3">
+                    <i class="bx bx-error-circle me-2"></i>{% trans "Danger Zone" %}
+                </h5>
+                <p class="text-muted">
+                    {% trans "Deleting a client is permanent and cannot be undone. All related appointments and visits will remain but will no longer be linked to this client." %}
+                </p>
+                <a href="{% url 'clients:delete' client.pk %}" class="btn btn-danger">
+                    <i class="bx bx-trash me-1"></i>{% trans "Delete Client" %}
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<script>
+    // Initialize tooltips
+    document.addEventListener('DOMContentLoaded', function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+</script>
+{% endblock %}

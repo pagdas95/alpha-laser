@@ -1,0 +1,333 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{% trans "Appointments" %}{% endblock %}
+
+{% block extra_css %}
+<!-- DataTables -->
+<link href="{% static 'libs/datatables.net-bs4/css/dataTables.bootstrap4.min.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'libs/datatables.net-responsive-bs4/css/responsive.bootstrap4.min.css' %}" rel="stylesheet" type="text/css" />
+{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
+<li class="breadcrumb-item active">{% trans "Appointments" %}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row align-items-center">
+    <div class="col-md-6">
+        <div class="mb-3">
+            <h5 class="card-title">
+                {% trans "Appointments List" %} 
+                <span class="text-muted fw-normal ms-2">({{ total_count }})</span>
+            </h5>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="d-flex flex-wrap align-items-center justify-content-end gap-2 mb-3">
+            <!-- Status Filter -->
+            <div class="dropdown">
+                <button class="btn btn-light dropdown-toggle" type="button" id="statusFilter" data-bs-toggle="dropdown">
+                    <i class="bx bx-filter-alt me-1"></i>
+                    {% if current_status %}
+                        {{ current_status|title }}
+                    {% else %}
+                        {% trans "All Status" %}
+                    {% endif %}
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="?">{% trans "All" %}</a></li>
+                    {% for value, label in status_choices %}
+                    <li><a class="dropdown-item" href="?status={{ value }}">{{ label }}</a></li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <!-- Add New Button -->
+            <div>
+                <a href="{% url 'appointments:create' %}" class="btn btn-primary">
+                    <i class="bx bx-plus me-1"></i> {% trans "New Appointment" %}
+                </a>
+            </div>
+            
+            <!-- More Actions -->
+            <div class="dropdown">
+                <a class="btn btn-link text-muted py-1 font-size-16 shadow-none dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                    <i class="bx bx-dots-horizontal-rounded"></i>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="{% url 'appointments:calendar' %}">
+                        <i class="bx bx-calendar me-2"></i>{% trans "Calendar View" %}
+                    </a></li>
+                    <li><a class="dropdown-item" href="#">
+                        <i class="bx bx-export me-2"></i>{% trans "Export" %}
+                    </a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- end row -->
+
+<div class="table-responsive mb-4">
+    <table class="table align-middle datatable dt-responsive table-check nowrap" 
+           style="border-collapse: collapse; border-spacing: 0 8px; width: 100%;" 
+           id="appointmentsTable">
+        <thead>
+            <tr>
+                <th scope="col" style="width: 50px;">
+                    <div class="form-check font-size-16">
+                        <input type="checkbox" class="form-check-input" id="checkAll">
+                        <label class="form-check-label" for="checkAll"></label>
+                    </div>
+                </th>
+                <th scope="col">{% trans "Client" %}</th>
+                <th scope="col">{% trans "Service" %}</th>
+                <th scope="col">{% trans "Date & Time" %}</th>
+                <th scope="col">{% trans "Staff" %}</th>
+                <th scope="col">{% trans "Room" %}</th>
+                <th scope="col">{% trans "Status" %}</th>
+                <th style="width: 120px; min-width: 120px;">{% trans "Action" %}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for appointment in appointments %}
+            <tr>
+                <th scope="row">
+                    <div class="form-check font-size-16">
+                        <input type="checkbox" class="form-check-input" id="appointment{{ appointment.id }}">
+                        <label class="form-check-label" for="appointment{{ appointment.id }}"></label>
+                    </div>
+                </th>
+                <td>
+                    <div class="avatar-sm d-inline-block align-middle me-2">
+                        <div class="avatar-title bg-light-subtle text-primary font-size-20 m-0 rounded-circle">
+                            <i class="bx bxs-user"></i>
+                        </div>
+                    </div>
+                    <a href="{% url 'appointments:detail' appointment.pk %}" class="text-body fw-medium">
+                        {{ appointment.client.get_full_name|default:appointment.client }}
+                    </a>
+                </td>
+                <td>
+                    <span class="text-body">{{ appointment.service.name }}</span>
+                    {% if appointment.machine %}
+                    <br><small class="text-muted">{{ appointment.machine.name }}</small>
+                    {% endif %}
+                </td>
+                <td>
+                    <strong>{{ appointment.start|date:"d/m/Y" }}</strong>
+                    <br>
+                    <small class="text-muted">
+                        {{ appointment.start|date:"H:i" }} - {{ appointment.end|date:"H:i" }}
+                    </small>
+                </td>
+                <td>{{ appointment.staff.get_full_name|default:appointment.staff.username }}</td>
+                <td>
+                    <span class="badge bg-info-subtle text-info">
+                        {{ appointment.room.name }}
+                    </span>
+                </td>
+                <td>
+                    {% if appointment.status == 'booked' %}
+                        <span class="badge badge-soft-primary font-size-11">{{ appointment.get_status_display }}</span>
+                    {% elif appointment.status == 'completed' %}
+                        <span class="badge badge-soft-success font-size-11">{{ appointment.get_status_display }}</span>
+                    {% elif appointment.status == 'cancelled' %}
+                        <span class="badge badge-soft-danger font-size-11">{{ appointment.get_status_display }}</span>
+                    {% elif appointment.status == 'no_show' %}
+                        <span class="badge badge-soft-warning font-size-11">{{ appointment.get_status_display }}</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="dropdown">
+                        <button class="btn btn-link font-size-16 shadow-none py-0 text-muted dropdown-toggle" 
+                                type="button" data-bs-toggle="dropdown">
+                            <i class="bx bx-dots-horizontal-rounded"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <a class="dropdown-item" href="{% url 'appointments:detail' appointment.pk %}">
+                                    <i class="bx bx-show-alt me-2"></i>{% trans "View Details" %}
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'appointments:edit' appointment.pk %}">
+                                    <i class="bx bx-edit-alt me-2"></i>{% trans "Edit" %}
+                                </a>
+                            </li>
+                            
+                            {% if appointment.status == 'booked' %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li class="dropdown-header">{% trans "Change Status" %}</li>
+                            <li>
+                                <a class="dropdown-item text-success" href="#" onclick="changeStatus({{ appointment.pk }}, 'completed', event)">
+                                    <i class="bx bx-check-circle me-2"></i>{% trans "Mark Completed" %}
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item text-warning" href="#" onclick="changeStatus({{ appointment.pk }}, 'no_show', event)">
+                                    <i class="bx bx-user-x me-2"></i>{% trans "Mark No Show" %}
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item text-danger" href="#" onclick="changeStatus({{ appointment.pk }}, 'cancelled', event)">
+                                    <i class="bx bx-x-circle me-2"></i>{% trans "Mark Cancelled" %}
+                                </a>
+                            </li>
+                            {% elif appointment.status in 'completed,cancelled,no_show' %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item text-info" href="#" onclick="changeStatus({{ appointment.pk }}, 'booked', event)">
+                                    <i class="bx bx-reset me-2"></i>{% trans "Reopen Appointment" %}
+                                </a>
+                            </li>
+                            {% endif %}
+                            
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item text-danger" href="{% url 'appointments:delete' appointment.pk %}">
+                                    <i class="bx bx-trash me-2"></i>{% trans "Delete" %}
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" class="text-center py-5">
+                    <div class="text-muted">
+                        <i class="bx bx-calendar-x font-size-48 d-block mb-3"></i>
+                        <h5>{% trans "No appointments found" %}</h5>
+                        <p>{% trans "Create your first appointment to get started" %}</p>
+                        <a href="{% url 'appointments:create' %}" class="btn btn-primary mt-2">
+                            <i class="bx bx-plus me-1"></i>{% trans "Create Appointment" %}
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <!-- end table -->
+</div>
+<!-- end table responsive -->
+
+<!-- Quick Stats Cards (Optional) -->
+<div class="row">
+    <div class="col-md-3">
+        <div class="card mini-stats-wid">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-grow-1">
+                        <p class="text-muted fw-medium">{% trans "Booked" %}</p>
+                        <h4 class="mb-0">{{ booked_count }}</h4>
+                    </div>
+                    <div class="avatar-sm rounded-circle bg-primary align-self-center mini-stat-icon">
+                        <span class="avatar-title rounded-circle bg-primary">
+                            <i class="bx bx-calendar font-size-24"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card mini-stats-wid">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-grow-1">
+                        <p class="text-muted fw-medium">{% trans "Completed" %}</p>
+                        <h4 class="mb-0">{{ completed_count }}</h4>
+                    </div>
+                    <div class="avatar-sm rounded-circle bg-success align-self-center mini-stat-icon">
+                        <span class="avatar-title rounded-circle bg-success">
+                            <i class="bx bx-check-circle font-size-24"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock content %}
+
+{% block extra_js %}
+<!-- Required datatable js -->
+<script src="{% static 'libs/datatables.net/js/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'libs/datatables.net-bs4/js/dataTables.bootstrap4.min.js' %}"></script>
+
+<!-- Responsive examples -->
+<script src="{% static 'libs/datatables.net-responsive/js/dataTables.responsive.min.js' %}"></script>
+<script src="{% static 'libs/datatables.net-responsive-bs4/js/responsive.bootstrap4.min.js' %}"></script>
+
+<script>
+    // Initialize DataTable
+    $(document).ready(function() {
+        $('#appointmentsTable').DataTable({
+            "order": [[ 3, "desc" ]], // Sort by date column descending
+            "pageLength": 25,
+            "responsive": true,
+            "language": {
+                "search": "{% trans 'Search' %}:",
+                "lengthMenu": "{% trans 'Show' %} _MENU_ {% trans 'entries' %}",
+                "info": "{% trans 'Showing' %} _START_ {% trans 'to' %} _END_ {% trans 'of' %} _TOTAL_ {% trans 'appointments' %}",
+                "infoEmpty": "{% trans 'No appointments to show' %}",
+                "zeroRecords": "{% trans 'No matching appointments found' %}",
+                "paginate": {
+                    "first": "{% trans 'First' %}",
+                    "last": "{% trans 'Last' %}",
+                    "next": "{% trans 'Next' %}",
+                    "previous": "{% trans 'Previous' %}"
+                }
+            }
+        });
+    });
+
+    // Function to change appointment status
+    function changeStatus(appointmentId, newStatus, event) {
+        event.preventDefault();
+        
+        let messages = {
+            'completed': '{% trans "Mark this appointment as completed? This will create a Visit record." %}',
+            'no_show': '{% trans "Mark this appointment as No Show?" %}',
+            'cancelled': '{% trans "Cancel this appointment?" %}',
+            'booked': '{% trans "Reopen this appointment?" %}'
+        };
+        
+        if (confirm(messages[newStatus])) {
+            // Create a form and submit it
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/appointments/${appointmentId}/change-status/`;
+            
+            // Add CSRF token
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrfmiddlewaretoken';
+            csrfInput.value = '{{ csrf_token }}';
+            form.appendChild(csrfInput);
+            
+            // Add status
+            const statusInput = document.createElement('input');
+            statusInput.type = 'hidden';
+            statusInput.name = 'status';
+            statusInput.value = newStatus;
+            form.appendChild(statusInput);
+            
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+
+    // Check all functionality
+    document.getElementById('checkAll').addEventListener('change', function() {
+        const checkboxes = document.querySelectorAll('tbody input[type="checkbox"]');
+        checkboxes.forEach(checkbox => checkbox.checked = this.checked);
+    });
+</script>
+{% endblock %}

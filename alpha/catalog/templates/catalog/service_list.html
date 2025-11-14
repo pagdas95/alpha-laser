@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{% trans "Services" %}{% endblock %}
+
+{% block extra_css %}
+<!-- DataTables -->
+<link href="{% static 'libs/datatables.net-bs4/css/dataTables.bootstrap4.min.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'libs/datatables.net-responsive-bs4/css/responsive.bootstrap4.min.css' %}" rel="stylesheet" type="text/css" />
+{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
+<li class="breadcrumb-item">{% trans "Catalog" %}</li>
+<li class="breadcrumb-item active">{% trans "Services" %}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row align-items-center">
+    <div class="col-md-6">
+        <div class="mb-3">
+            <h5 class="card-title">
+                {% trans "Services" %} 
+                <span class="text-muted fw-normal ms-2">({{ total_count }})</span>
+            </h5>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="d-flex flex-wrap align-items-center justify-content-end gap-2 mb-3">
+            <!-- Category Filter -->
+            <div class="dropdown">
+                <button class="btn btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="bx bx-category me-1"></i>
+                    {% if current_category %}
+                        {% for cat in categories %}
+                            {% if cat.id|stringformat:"s" == current_category %}
+                                {{ cat.name }}
+                            {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        {% trans "All Categories" %}
+                    {% endif %}
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="?">{% trans "All Categories" %}</a></li>
+                    {% for category in categories %}
+                    <li><a class="dropdown-item" href="?category={{ category.id }}">{{ category.name }}</a></li>
+                    {% endfor %}
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="{% url 'catalog:category-list' %}">
+                        <i class="bx bx-cog me-2"></i>{% trans "Manage Categories" %}
+                    </a></li>
+                </ul>
+            </div>
+
+            <!-- Add New Button -->
+            <div>
+                <a href="{% url 'catalog:service-create' %}" class="btn btn-primary">
+                    <i class="bx bx-plus me-1"></i> {% trans "New Service" %}
+                </a>
+            </div>
+            
+            <!-- More Actions -->
+            <div class="dropdown">
+                <a class="btn btn-link text-muted py-1 font-size-16 shadow-none dropdown-toggle" 
+                   href="#" role="button" data-bs-toggle="dropdown">
+                    <i class="bx bx-dots-horizontal-rounded"></i>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="{% url 'catalog:package-list' %}">
+                        <i class="bx bx-package me-2"></i>{% trans "View Packages" %}
+                    </a></li>
+                    <li><a class="dropdown-item" href="#">
+                        <i class="bx bx-export me-2"></i>{% trans "Export Price List" %}
+                    </a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- end row -->
+
+<div class="table-responsive mb-4">
+    <table class="table align-middle datatable dt-responsive table-check nowrap" 
+           style="border-collapse: collapse; border-spacing: 0 8px; width: 100%;" 
+           id="servicesTable">
+        <thead>
+            <tr>
+                <th scope="col" style="width: 50px;">
+                    <div class="form-check font-size-16">
+                        <input type="checkbox" class="form-check-input" id="checkAll">
+                        <label class="form-check-label" for="checkAll"></label>
+                    </div>
+                </th>
+                <th scope="col">{% trans "Service" %}</th>
+                <th scope="col">{% trans "Category" %}</th>
+                <th scope="col">{% trans "Gender" %}</th>
+                <th scope="col">{% trans "Price" %}</th>
+                <th scope="col">{% trans "Duration" %}</th>
+                <th style="width: 80px; min-width: 80px;">{% trans "Action" %}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for service in services %}
+            <tr>
+                <th scope="row">
+                    <div class="form-check font-size-16">
+                        <input type="checkbox" class="form-check-input" id="service{{ service.id }}">
+                        <label class="form-check-label" for="service{{ service.id }}"></label>
+                    </div>
+                </th>
+                <td>
+                    <a href="{% url 'catalog:service-detail' service.pk %}" class="text-body fw-medium">
+                        {{ service.name }}
+                    </a>
+                </td>
+                <td>
+                    <span class="badge bg-info-subtle text-info">
+                        {{ service.category.name }}
+                    </span>
+                </td>
+                <td>
+                    {% if service.gender == 'female' %}
+                        <i class="bx bx-female-sign text-danger font-size-18"></i> {% trans "Female" %}
+                    {% elif service.gender == 'male' %}
+                        <i class="bx bx-male-sign text-primary font-size-18"></i> {% trans "Male" %}
+                    {% else %}
+                        <i class="bx bx-user font-size-18"></i> {% trans "Any" %}
+                    {% endif %}
+                </td>
+                <td>
+                    <strong class="text-success">€{{ service.default_price }}</strong>
+                </td>
+                <td>
+                    <i class="bx bx-time text-muted me-1"></i>{{ service.duration_min }} {% trans "min" %}
+                </td>
+                <td>
+                    <div class="dropdown">
+                        <button class="btn btn-link font-size-16 shadow-none py-0 text-muted dropdown-toggle" 
+                                type="button" data-bs-toggle="dropdown">
+                            <i class="bx bx-dots-horizontal-rounded"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <a class="dropdown-item" href="{% url 'catalog:service-detail' service.pk %}">
+                                    <i class="bx bx-show-alt me-2"></i>{% trans "View Details" %}
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'catalog:service-edit' service.pk %}">
+                                    <i class="bx bx-edit-alt me-2"></i>{% trans "Edit" %}
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item text-danger" href="{% url 'catalog:service-delete' service.pk %}">
+                                    <i class="bx bx-trash me-2"></i>{% trans "Delete" %}
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="text-center py-5">
+                    <div class="text-muted">
+                        <i class="bx bx-briefcase font-size-48 d-block mb-3"></i>
+                        <h5>{% trans "No services found" %}</h5>
+                        <p>{% trans "Add your first service to get started" %}</p>
+                        <a href="{% url 'catalog:service-create' %}" class="btn btn-primary mt-2">
+                            <i class="bx bx-plus me-1"></i>{% trans "Add Service" %}
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <!-- end table -->
+</div>
+<!-- end table responsive -->
+
+{% endblock content %}
+
+{% block extra_js %}
+<!-- Required datatable js -->
+<script src="{% static 'libs/datatables.net/js/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'libs/datatables.net-bs4/js/dataTables.bootstrap4.min.js' %}"></script>
+
+<!-- Responsive examples -->
+<script src="{% static 'libs/datatables.net-responsive/js/dataTables.responsive.min.js' %}"></script>
+<script src="{% static 'libs/datatables.net-responsive-bs4/js/responsive.bootstrap4.min.js' %}"></script>
+
+<script>
+    // Initialize DataTable
+    $(document).ready(function() {
+        $('#servicesTable').DataTable({
+            "order": [[ 2, "asc" ], [ 1, "asc" ]], // Sort by category, then name
+            "pageLength": 25,
+            "responsive": true,
+            "language": {
+                "search": "{% trans 'Search' %}:",
+                "lengthMenu": "{% trans 'Show' %} _MENU_ {% trans 'entries' %}",
+                "info": "{% trans 'Showing' %} _START_ {% trans 'to' %} _END_ {% trans 'of' %} _TOTAL_ {% trans 'services' %}",
+                "infoEmpty": "{% trans 'No services to show' %}",
+                "zeroRecords": "{% trans 'No matching services found' %}",
+                "paginate": {
+                    "first": "{% trans 'First' %}",
+                    "last": "{% trans 'Last' %}",
+                    "next": "{% trans 'Next' %}",
+                    "previous": "{% trans 'Previous' %}"
+                }
+            }
+        });
+    });
+
+    // Check all functionality
+    document.getElementById('checkAll').addEventListener('change', function() {
+        const checkboxes = document.querySelectorAll('tbody input[type="checkbox"]');
+        checkboxes.forEach(checkbox => checkbox.checked = this.checked);
+    });
+</script>
+{% endblock %}

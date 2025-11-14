@@ -1,0 +1,293 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{% trans "Appointment Details" %}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
+<li class="breadcrumb-item"><a href="{% url 'appointments:list' %}">{% trans "Appointments" %}</a></li>
+<li class="breadcrumb-item active">{% trans "Details" %}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4 class="card-title mb-0">
+                        <i class="bx bx-calendar-event me-2"></i>{% trans "Appointment Details" %}
+                    </h4>
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'appointments:edit' appointment.pk %}" class="btn btn-primary btn-sm">
+                            <i class="bx bx-edit-alt me-1"></i>{% trans "Edit" %}
+                        </a>
+                        
+                        {% if appointment.status == 'booked' %}
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-success btn-sm" onclick="changeStatus({{ appointment.pk }}, 'completed', event)">
+                                <i class="bx bx-check-circle me-1"></i>{% trans "Complete" %}
+                            </button>
+                            <button type="button" class="btn btn-warning btn-sm" onclick="changeStatus({{ appointment.pk }}, 'no_show', event)">
+                                <i class="bx bx-user-x me-1"></i>{% trans "No Show" %}
+                            </button>
+                            <button type="button" class="btn btn-danger btn-sm" onclick="changeStatus({{ appointment.pk }}, 'cancelled', event)">
+                                <i class="bx bx-x-circle me-1"></i>{% trans "Cancel" %}
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Status Badge -->
+                <div class="mb-4">
+                    {% if appointment.status == 'booked' %}
+                        <span class="badge badge-soft-primary font-size-14 px-3 py-2">
+                            <i class="bx bx-calendar me-1"></i>{{ appointment.get_status_display }}
+                        </span>
+                    {% elif appointment.status == 'completed' %}
+                        <span class="badge badge-soft-success font-size-14 px-3 py-2">
+                            <i class="bx bx-check-circle me-1"></i>{{ appointment.get_status_display }}
+                        </span>
+                    {% elif appointment.status == 'cancelled' %}
+                        <span class="badge badge-soft-danger font-size-14 px-3 py-2">
+                            <i class="bx bx-x-circle me-1"></i>{{ appointment.get_status_display }}
+                        </span>
+                    {% elif appointment.status == 'no_show' %}
+                        <span class="badge badge-soft-warning font-size-14 px-3 py-2">
+                            <i class="bx bx-user-x me-1"></i>{{ appointment.get_status_display }}
+                        </span>
+                    {% endif %}
+                </div>
+
+                <div class="row">
+                    <!-- Left Column: Main Details -->
+                    <div class="col-md-8">
+                        <!-- Client Information Card -->
+                        <div class="card border shadow-none mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title mb-3">
+                                    <i class="bx bx-user text-primary me-2"></i>{% trans "Client Information" %}
+                                </h5>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-lg me-3">
+                                        <div class="avatar-title bg-light-subtle text-primary font-size-28 rounded-circle">
+                                            <i class="bx bxs-user"></i>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h5 class="mb-1">{{ appointment.client.get_full_name|default:appointment.client }}</h5>
+                                        {% if appointment.client.email %}
+                                        <p class="text-muted mb-1">
+                                            <i class="bx bx-envelope me-1"></i>{{ appointment.client.email }}
+                                        </p>
+                                        {% endif %}
+                                        {% if appointment.client.phone %}
+                                        <p class="text-muted mb-0">
+                                            <i class="bx bx-phone me-1"></i>{{ appointment.client.phone }}
+                                        </p>
+                                        {% endif %}
+                                        {% comment %}
+                                        <a href="{% url 'clients:detail' appointment.client.pk %}" class="btn btn-sm btn-light mt-2">
+                                            {% trans "View Profile" %} <i class="bx bx-right-arrow-alt ms-1"></i>
+                                        </a>
+                                        {% endcomment %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Service & Treatment Details -->
+                        <div class="card border shadow-none mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title mb-3">
+                                    <i class="bx bx-clipboard text-primary me-2"></i>{% trans "Service Details" %}
+                                </h5>
+                                <div class="table-responsive">
+                                    <table class="table table-borderless mb-0">
+                                        <tbody>
+                                            <tr>
+                                                <th style="width: 40%;">{% trans "Service" %}:</th>
+                                                <td>
+                                                    <strong>{{ appointment.service.name }}</strong>
+                                                    {% if appointment.service.category %}
+                                                    <br><small class="text-muted">{{ appointment.service.category }}</small>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            {% if appointment.machine %}
+                                            <tr>
+                                                <th>{% trans "Machine" %}:</th>
+                                                <td>
+                                                    <span class="badge bg-info-subtle text-info">
+                                                        {{ appointment.machine.name }}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                            {% endif %}
+                                            <tr>
+                                                <th>{% trans "Duration" %}:</th>
+                                                <td>
+                                                    {{ appointment.start|date:"H:i" }} - {{ appointment.end|date:"H:i" }}
+                                                    <span class="text-muted">({% trans "Duration calculation here" %})</span>
+                                                </td>
+                                            </tr>
+                                            {% if appointment.price_override %}
+                                            <tr>
+                                                <th>{% trans "Price" %}:</th>
+                                                <td>
+                                                    <strong class="text-success">€{{ appointment.price_override }}</strong>
+                                                    <span class="badge badge-soft-warning ms-2">{% trans "Override" %}</span>
+                                                </td>
+                                            </tr>
+                                            {% endif %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Notes -->
+                        {% if appointment.notes %}
+                        <div class="card border shadow-none mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title mb-3">
+                                    <i class="bx bx-note text-primary me-2"></i>{% trans "Notes" %}
+                                </h5>
+                                <p class="text-muted mb-0">{{ appointment.notes|linebreaks }}</p>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Visit Information (if exists) -->
+                        {% if has_visit %}
+                        <div class="card border border-success shadow-none mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title mb-3 text-success">
+                                    <i class="bx bx-check-double me-2"></i>{% trans "Visit Completed" %}
+                                </h5>
+                                <p class="mb-2">{% trans "This appointment has been completed and a visit record has been created." %}</p>
+                                <a href="{% url 'visits:detail' visit.pk %}" class="btn btn-success btn-sm">
+                                    {% trans "View Visit Details" %} <i class="bx bx-right-arrow-alt ms-1"></i>
+                                </a>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Right Column: Schedule & Staff -->
+                    <div class="col-md-4">
+                        <!-- Date & Time Card -->
+                        <div class="card border shadow-none mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title mb-3">
+                                    <i class="bx bx-time text-primary me-2"></i>{% trans "Schedule" %}
+                                </h5>
+                                <div class="mb-3">
+                                    <h6 class="text-muted mb-1">{% trans "Date" %}</h6>
+                                    <h5 class="mb-0">{{ appointment.start|date:"l, F j, Y" }}</h5>
+                                </div>
+                                <div class="mb-3">
+                                    <h6 class="text-muted mb-1">{% trans "Time" %}</h6>
+                                    <h5 class="mb-0">{{ appointment.start|date:"H:i" }} - {{ appointment.end|date:"H:i" }}</h5>
+                                </div>
+                                <div>
+                                    <h6 class="text-muted mb-1">{% trans "Room" %}</h6>
+                                    <span class="badge bg-info-subtle text-info font-size-13 px-3 py-2">
+                                        <i class="bx bx-door-open me-1"></i>{{ appointment.room.name }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Staff Card -->
+                        <div class="card border shadow-none mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title mb-3">
+                                    <i class="bx bx-user-pin text-primary me-2"></i>{% trans "Staff" %}
+                                </h5>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-md me-3">
+                                        <div class="avatar-title bg-primary-subtle text-primary font-size-20 rounded-circle">
+                                            <i class="bx bx-user"></i>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-1">{{ appointment.staff.get_full_name|default:appointment.staff.username }}</h6>
+                                        {% if appointment.staff.email %}
+                                        <p class="text-muted mb-0 font-size-12">{{ appointment.staff.email }}</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quick Actions Card -->
+                        <div class="card border shadow-none">
+                            <div class="card-body">
+                                <h5 class="card-title mb-3">
+                                    <i class="bx bx-cog text-primary me-2"></i>{% trans "Quick Actions" %}
+                                </h5>
+                                <div class="d-grid gap-2">
+                                    <a href="{% url 'appointments:list' %}" class="btn btn-light btn-sm">
+                                        <i class="bx bx-list-ul me-1"></i>{% trans "Back to List" %}
+                                    </a>
+                                    <a href="{% url 'appointments:edit' appointment.pk %}" class="btn btn-primary btn-sm">
+                                        <i class="bx bx-edit me-1"></i>{% trans "Edit Appointment" %}
+                                    </a>
+                                    <button type="button" class="btn btn-danger btn-sm" onclick="confirmDelete()">
+                                        <i class="bx bx-trash me-1"></i>{% trans "Delete" %}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<script>
+    // Status change function
+    function changeStatus(appointmentId, newStatus, event) {
+        event.preventDefault();
+        
+        let messages = {
+            'completed': '{% trans "Mark this appointment as completed? This will create a Visit record." %}',
+            'no_show': '{% trans "Mark this appointment as No Show?" %}',
+            'cancelled': '{% trans "Cancel this appointment?" %}'
+        };
+        
+        if (confirm(messages[newStatus])) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/appointments/${appointmentId}/change-status/`;
+            
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrfmiddlewaretoken';
+            csrfInput.value = '{{ csrf_token }}';
+            form.appendChild(csrfInput);
+            
+            const statusInput = document.createElement('input');
+            statusInput.type = 'hidden';
+            statusInput.name = 'status';
+            statusInput.value = newStatus;
+            form.appendChild(statusInput);
+            
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+
+    // Delete confirmation
+    function confirmDelete() {
+        if (confirm('{% trans "Are you sure you want to delete this appointment? This action cannot be undone." %}')) {
+            window.location.href = '{% url "appointments:delete" appointment.pk %}';
+        }
+    }
+</script>
+{% endblock %}

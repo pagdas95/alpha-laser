@@ -1,0 +1,88 @@
+{% load static i18n %}<!doctype html>
+<html lang="en">
+<head>
+    {% include "includes/head.html" %}
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body data-layout="vertical" data-topbar="light" data-sidebar="dark">
+    <!-- Begin page -->
+    <div id="layout-wrapper">
+        
+        {% include "includes/topbar.html" %}
+        
+        {% include "includes/sidebar.html" %}
+        
+        <!-- ============================================================== -->
+        <!-- Start right Content here -->
+        <!-- ============================================================== -->
+        <div class="main-content">
+            <div class="page-content">
+                <div class="container-fluid">
+                    
+                    {% block page_title %}
+                    <!-- start page title -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+                                <h4 class="mb-sm-0 font-size-18">{% block title %}Dashboard{% endblock title %}</h4>
+                                
+                                <div class="page-title-right">
+                                    <ol class="breadcrumb m-0">
+                                        {% block breadcrumb %}
+                                        <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+                                        <li class="breadcrumb-item active">{% block breadcrumb_active %}Dashboard{% endblock %}</li>
+                                        {% endblock breadcrumb %}
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- end page title -->
+                    {% endblock page_title %}
+                    
+                    {% block content %}
+                    <!-- Page content goes here -->
+                    {% endblock content %}
+                    
+                </div> <!-- container-fluid -->
+            </div>
+            <!-- End Page-content -->
+            
+            {% include "includes/footer.html" %}
+        </div>
+        <!-- end main content-->
+        
+    </div>
+    <!-- END layout-wrapper -->
+    
+    <!-- Right Sidebar -->
+    <div class="right-bar">
+        <div data-simplebar class="h-100">
+            <div class="rightbar-title d-flex align-items-center p-3">
+                <h5 class="m-0 me-2">Theme Customizer</h5>
+                <a href="javascript:void(0);" class="right-bar-toggle ms-auto">
+                    <i class="mdi mdi-close noti-icon"></i>
+                </a>
+            </div>
+            <!-- Settings -->
+            <hr class="m-0" />
+            <div class="p-4">
+                {% include "includes/theme_settings.html" %}
+            </div>
+        </div>
+    </div>
+    <!-- Right bar overlay-->
+    <div class="rightbar-overlay"></div>
+    
+    {% include "includes/scripts.html" %}
+    {% block extra_js %}{% endblock %}
+    <script>
+      window.addEventListener('load', function() {
+          if (typeof feather !== 'undefined') {
+              feather.replace();
+          }
+      });
+  </script>
+</body>
+</html>

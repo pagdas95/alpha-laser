@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{% trans "Edit Visit" %}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
+<li class="breadcrumb-item"><a href="{% url 'visits:list' %}">{% trans "Visits" %}</a></li>
+<li class="breadcrumb-item active">{% trans "Edit" %}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title mb-4">
+                    <i class="bx bx-edit me-2"></i>{% trans "Edit Visit Record" %}
+                </h4>
+
+                <!-- Visit Info Header -->
+                <div class="alert alert-info border-0 mb-4" role="alert">
+                    <div class="d-flex align-items-start">
+                        <div class="flex-shrink-0 me-3">
+                            <i class="bx bx-info-circle font-size-24"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h5 class="alert-heading font-size-16 mb-2">{% trans "Visit Information" %}</h5>
+                            <p class="mb-1"><strong>{% trans "Client" %}:</strong> {{ object.appointment.client.full_name }}</p>
+                            <p class="mb-1"><strong>{% trans "Service" %}:</strong> {{ object.appointment.service.name }}</p>
+                            <p class="mb-0"><strong>{% trans "Date" %}:</strong> {{ object.appointment.start|date:"d/m/Y H:i" }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <form method="post" class="needs-validation" novalidate>
+                    {% csrf_token %}
+                    
+                    <!-- Show form errors if any -->
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger" role="alert">
+                        {{ form.non_field_errors }}
+                    </div>
+                    {% endif %}
+
+                    <!-- Treatment Parameters Section -->
+                    <div class="row">
+                        <div class="col-12">
+                            <h5 class="font-size-14 mb-3 mt-2">
+                                <i class="bx bx-clipboard me-2 text-primary"></i>{% trans "Treatment Parameters" %}
+                            </h5>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Area -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.area.id_for_label }}" class="form-label">
+                                    {% trans "Treatment Area" %}
+                                </label>
+                                {{ form.area }}
+                                {% if form.area.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.area.errors }}
+                                </div>
+                                {% endif %}
+                                <small class="text-muted">{% trans "e.g., Face, Legs, Bikini area" %}</small>
+                            </div>
+                        </div>
+
+                        <!-- Spot Size -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.spot_size_mm.id_for_label }}" class="form-label">
+                                    {% trans "Spot Size (mm)" %}
+                                </label>
+                                <div class="input-group">
+                                    {{ form.spot_size_mm }}
+                                    <span class="input-group-text">mm</span>
+                                </div>
+                                {% if form.spot_size_mm.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.spot_size_mm.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Fluence -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.fluence_j_cm2.id_for_label }}" class="form-label">
+                                    {% trans "Fluence (Energy)" %}
+                                </label>
+                                <div class="input-group">
+                                    {{ form.fluence_j_cm2 }}
+                                    <span class="input-group-text">J/cm²</span>
+                                </div>
+                                {% if form.fluence_j_cm2.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.fluence_j_cm2.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Pulse Count -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.pulse_count.id_for_label }}" class="form-label">
+                                    {% trans "Pulses" %}
+                                </label>
+                                {{ form.pulse_count }}
+                                {% if form.pulse_count.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.pulse_count.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Payment Section -->
+                    <div class="row">
+                        <div class="col-12">
+                            <h5 class="font-size-14 mb-3 mt-3">
+                                <i class="bx bx-euro me-2 text-success"></i>{% trans "Payment Information" %}
+                            </h5>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Charge Amount -->
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.charge_amount.id_for_label }}" class="form-label">
+                                    {% trans "Charge Amount" %} <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">€</span>
+                                    {{ form.charge_amount }}
+                                </div>
+                                {% if form.charge_amount.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.charge_amount.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Paid Amount -->
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.paid_amount.id_for_label }}" class="form-label">
+                                    {% trans "Paid Amount" %}
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">€</span>
+                                    {{ form.paid_amount }}
+                                </div>
+                                {% if form.paid_amount.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.paid_amount.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Payment Method -->
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.payment_method.id_for_label }}" class="form-label">
+                                    {% trans "Payment Method" %}
+                                </label>
+                                {{ form.payment_method }}
+                                {% if form.payment_method.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.payment_method.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Balance Display -->
+                    {% if balance %}
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="alert {% if balance > 0 %}alert-warning{% else %}alert-success{% endif %} mb-3" role="alert">
+                                <strong>{% trans "Balance" %}:</strong> 
+                                {% if balance > 0 %}
+                                    €{{ balance|floatformat:2 }} {% trans "remaining" %}
+                                {% else %}
+                                    {% trans "Fully paid" %} ✓
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Remarks Section -->
+                    <div class="row">
+                        <div class="col-12">
+                            <h5 class="font-size-14 mb-3 mt-2">
+                                <i class="bx bx-note me-2 text-info"></i>{% trans "Additional Notes" %}
+                            </h5>
+                        </div>
+                    </div>
+
+                    <!-- Remarks -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="mb-3">
+                                <label for="{{ form.remarks.id_for_label }}" class="form-label">
+                                    {% trans "Remarks" %}
+                                </label>
+                                {{ form.remarks }}
+                                {% if form.remarks.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.remarks.errors }}
+                                </div>
+                                {% endif %}
+                                <small class="text-muted">
+                                    {% trans "Any observations, complications, or client feedback" %}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="d-flex gap-2 justify-content-end">
+                                <a href="{% url 'visits:detail' object.pk %}" class="btn btn-light">
+                                    <i class="bx bx-x me-1"></i>{% trans "Cancel" %}
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bx bx-save me-1"></i>{% trans "Update Visit" %}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add Bootstrap classes to form fields
+        const formControls = document.querySelectorAll('select, input[type="text"], input[type="number"], textarea');
+        formControls.forEach(control => {
+            control.classList.add('form-control');
+        });
+
+        // Form validation
+        const form = document.querySelector('.needs-validation');
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        });
+
+        // Calculate and update balance dynamically
+        const chargeInput = document.getElementById('{{ form.charge_amount.id_for_label }}');
+        const paidInput = document.getElementById('{{ form.paid_amount.id_for_label }}');
+        
+        function updateBalance() {
+            const charge = parseFloat(chargeInput.value) || 0;
+            const paid = parseFloat(paidInput.value) || 0;
+            const balance = charge - paid;
+            
+            // You could add a live balance display here
+            console.log('Balance:', balance);
+        }
+        
+        if (chargeInput && paidInput) {
+            chargeInput.addEventListener('input', updateBalance);
+            paidInput.addEventListener('input', updateBalance);
+        }
+    });
+</script>
+{% endblock %}

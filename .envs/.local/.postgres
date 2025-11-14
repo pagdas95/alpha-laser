@@ -1,0 +1,8 @@
+# PostgreSQL
+# ------------------------------------------------------------------------------
+POSTGRES_HOST=postgres
+POSTGRES_PORT=5432
+POSTGRES_DB=alpha
+POSTGRES_USER=VBoZdHAXfnEEsqxwjBwcXwSTfXRIuPMe
+POSTGRES_PASSWORD=ERXcrTexNImHvy8vFuXkwlA84cx7ITEwOHgkXPxrEnJQr3T3U1qO1fDwieIAnna4
+DATABASE_URL=postgres://VBoZdHAXfnEEsqxwjBwcXwSTfXRIuPMe:ERXcrTexNImHvy8vFuXkwlA84cx7ITEwOHgkXPxrEnJQr3T3U1qO1fDwieIAnna4@postgres:5432/alpha

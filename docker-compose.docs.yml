@@ -1,0 +1,17 @@
+services:
+  docs:
+    image: alpha_local_docs
+    container_name: alpha_local_docs
+    build:
+      context: .
+      dockerfile: ./compose/local/docs/Dockerfile
+    env_file:
+      - ./.envs/.local/.django
+    volumes:
+      - /app/.venv
+      - ./docs:/docs:z
+      - ./config:/app/config:z
+      - ./alpha:/app/alpha:z
+    ports:
+      - '9000:9000'
+    command: /start-docs

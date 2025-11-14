@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{% trans "Add Service to Package" %}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
+<li class="breadcrumb-item"><a href="{% url 'catalog:package-list' %}">{% trans "Packages" %}</a></li>
+<li class="breadcrumb-item"><a href="{% url 'catalog:package-detail' package.pk %}">{{ package.name }}</a></li>
+<li class="breadcrumb-item active">{% trans "Add Service" %}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title mb-4">
+                    <i class="bx bx-plus me-2"></i>{% trans "Add Service to Package" %}
+                </h4>
+
+                <div class="alert alert-info border-0 mb-4">
+                    <strong>{% trans "Package" %}:</strong> {{ package.name }}
+                    <br>
+                    <strong>{% trans "Price" %}:</strong> €{{ package.price }}
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label for="{{ form.service.id_for_label }}" class="form-label">
+                            {% trans "Service" %} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.service }}
+                        {% if form.service.errors %}
+                        <div class="invalid-feedback d-block">{{ form.service.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.sessions.id_for_label }}" class="form-label">
+                            {% trans "Number of Sessions" %} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.sessions }}
+                        {% if form.sessions.errors %}
+                        <div class="invalid-feedback d-block">{{ form.sessions.errors }}</div>
+                        {% endif %}
+                        <small class="text-muted">{% trans "How many times this service is included" %}</small>
+                    </div>
+
+                    <div class="d-flex gap-2 justify-content-end">
+                        <a href="{% url 'catalog:package-detail' package.pk %}" class="btn btn-light">
+                            <i class="bx bx-x me-1"></i>{% trans "Cancel" %}
+                        </a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="bx bx-plus me-1"></i>{% trans "Add Service" %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('select, input').forEach(el => el.classList.add('form-control'));
+    });
+</script>
+{% endblock %}

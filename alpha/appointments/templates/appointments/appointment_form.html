@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}
+    {% if object %}
+        {% trans "Edit Appointment" %}
+    {% else %}
+        {% trans "New Appointment" %}
+    {% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<!-- Date/Time Picker CSS -->
+<link href="{% static 'libs/flatpickr/flatpickr.min.css' %}" rel="stylesheet" type="text/css" />
+{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
+<li class="breadcrumb-item"><a href="{% url 'appointments:list' %}">{% trans "Appointments" %}</a></li>
+<li class="breadcrumb-item active">
+    {% if object %}{% trans "Edit" %}{% else %}{% trans "New" %}{% endif %}
+</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title mb-4">
+                    {% if object %}
+                        {% trans "Edit Appointment" %}
+                    {% else %}
+                        <i class="bx bx-calendar-plus me-2"></i>{% trans "Book New Appointment" %}
+                    {% endif %}
+                </h4>
+
+                <form method="post" class="needs-validation" novalidate>
+                    {% csrf_token %}
+                    
+                    <!-- Show form errors if any -->
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger" role="alert">
+                        {{ form.non_field_errors }}
+                    </div>
+                    {% endif %}
+
+                    <div class="row">
+                        <!-- Client Selection -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.client.id_for_label }}" class="form-label">
+                                    {% trans "Client" %} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.client }}
+                                {% if form.client.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.client.errors }}
+                                </div>
+                                {% endif %}
+                                <small class="text-muted">
+                                    <a href="{% url 'clients:create' %}" target="_blank">
+                                        <i class="bx bx-plus-circle"></i> {% trans "Add New Client" %}
+                                    </a>
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Service Selection -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.service.id_for_label }}" class="form-label">
+                                    {% trans "Service" %} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.service }}
+                                {% if form.service.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.service.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Staff Selection -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.staff.id_for_label }}" class="form-label">
+                                    {% trans "Staff" %} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.staff }}
+                                {% if form.staff.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.staff.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Room Selection -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.room.id_for_label }}" class="form-label">
+                                    {% trans "Room" %} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.room }}
+                                {% if form.room.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.room.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Machine Selection (Optional) -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.machine.id_for_label }}" class="form-label">
+                                    {% trans "Machine" %} <span class="text-muted">({% trans "Optional" %})</span>
+                                </label>
+                                {{ form.machine }}
+                                {% if form.machine.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.machine.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Price Override (Optional) -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.price_override.id_for_label }}" class="form-label">
+                                    {% trans "Price Override" %} <span class="text-muted">({% trans "Optional" %})</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">€</span>
+                                    {{ form.price_override }}
+                                </div>
+                                {% if form.price_override.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.price_override.errors }}
+                                </div>
+                                {% endif %}
+                                <small class="text-muted">{% trans "Leave empty to use service default price" %}</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Start Date/Time -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.start.id_for_label }}" class="form-label">
+                                    {% trans "Start Date & Time" %} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.start }}
+                                {% if form.start.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.start.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- End Date/Time -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.end.id_for_label }}" class="form-label">
+                                    {% trans "End Date & Time" %} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.end }}
+                                {% if form.end.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.end.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if object %}
+                    <!-- Status (Only on Edit) -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.status.id_for_label }}" class="form-label">
+                                    {% trans "Status" %}
+                                </label>
+                                {{ form.status }}
+                                {% if form.status.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.status.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Notes -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="mb-3">
+                                <label for="{{ form.notes.id_for_label }}" class="form-label">
+                                    {% trans "Notes" %} <span class="text-muted">({% trans "Optional" %})</span>
+                                </label>
+                                {{ form.notes }}
+                                {% if form.notes.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.notes.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="d-flex gap-2 justify-content-end">
+                                <a href="{% url 'appointments:list' %}" class="btn btn-light">
+                                    <i class="bx bx-x me-1"></i>{% trans "Cancel" %}
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bx bx-save me-1"></i>
+                                    {% if object %}
+                                        {% trans "Update Appointment" %}
+                                    {% else %}
+                                        {% trans "Create Appointment" %}
+                                    {% endif %}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<!-- Date/Time Picker JS -->
+<script src="{% static 'libs/flatpickr/flatpickr.min.js' %}"></script>
+
+<script>
+    // Initialize datetime pickers
+    document.addEventListener('DOMContentLoaded', function() {
+        // Start datetime picker
+        flatpickr("#{{ form.start.id_for_label }}", {
+            enableTime: true,
+            dateFormat: "Y-m-d H:i",
+            time_24hr: true,
+            minDate: "today"
+        });
+
+        // End datetime picker
+        flatpickr("#{{ form.end.id_for_label }}", {
+            enableTime: true,
+            dateFormat: "Y-m-d H:i",
+            time_24hr: true,
+            minDate: "today"
+        });
+
+        // Add Bootstrap classes to form fields
+        const formControls = document.querySelectorAll('select, input[type="text"], input[type="number"], input[type="datetime-local"], textarea');
+        formControls.forEach(control => {
+            control.classList.add('form-control');
+        });
+
+        // Form validation
+        const form = document.querySelector('.needs-validation');
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        });
+    });
+</script>
+{% endblock %}

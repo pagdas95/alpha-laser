@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Ημερολόγιο Δωματίων{% endblock %}
+
+{% block extra_css %}
+<!-- FullCalendar CSS -->
+<link href="{% static 'assets/libs/fullcalendar/index.global.min.css' %}" rel="stylesheet" type="text/css" />
+{% endblock %}
+
+{% block content %}
+<div class="page-content">
+    <div class="container-fluid">
+
+        <!-- start page title -->
+        <div class="row">
+            <div class="col-12">
+                <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+                    <h4 class="mb-sm-0 font-size-18">Ημερολόγιο Δωματίων</h4>
+
+                    <div class="page-title-right">
+                        <ol class="breadcrumb m-0">
+                            <li class="breadcrumb-item"><a href="{% url 'home' %}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'appointments:list' %}">Ραντεβού</a></li>
+                            <li class="breadcrumb-item active">Ημερολόγιο</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- end page title -->
+
+        <div class="row">
+            <div class="col-12">
+               
+                <div class="row">
+                    <!-- Sidebar with Controls -->
+                    <div class="col-xl-3 col-lg-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="d-grid mb-3">
+                                    <a href="{% url 'appointments:create' %}" class="btn font-16 btn-primary">
+                                        <i class="mdi mdi-plus-circle-outline"></i> Νέο Ραντεβού
+                                    </a>
+                                </div>
+
+                                <!-- Date Navigation -->
+                                <div class="mb-3">
+                                    <h5 class="card-title mb-3">Πλοήγηση Ημερομηνίας</h5>
+                                    <div class="d-flex gap-2 mb-2">
+                                        <button class="btn btn-sm btn-outline-primary flex-fill" id="prev-day">
+                                            <i class="bx bx-chevron-left"></i> Προηγ.
+                                        </button>
+                                        <button class="btn btn-sm btn-primary flex-fill" id="today-btn">
+                                            Σήμερα
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-primary flex-fill" id="next-day">
+                                            Επόμ. <i class="bx bx-chevron-right"></i>
+                                        </button>
+                                    </div>
+                                    <div class="text-center">
+                                        <h6 id="current-date-display" class="mb-0 text-primary"></h6>
+                                    </div>
+                                </div>
+
+                                <hr>
+                                
+                                <!-- Legend -->
+                                <div class="mb-3">
+                                    <h5 class="card-title mb-3">Κατάσταση</h5>
+                                    <div class="mb-2">
+                                        <span class="badge bg-primary">Κλεισμένο</span> - Νέο ραντεβού
+                                    </div>
+                                    <div class="mb-2">
+                                        <span class="badge bg-success">Ολοκληρώθηκε</span> - Έγινε
+                                    </div>
+                                    <div class="mb-2">
+                                        <span class="badge bg-warning">Δεν Προσήλθε</span> - No show
+                                    </div>
+                                    <div class="mb-2">
+                                        <span class="badge bg-danger">Ακυρώθηκε</span> - Cancelled
+                                    </div>
+                                </div>
+
+                                <hr>
+
+                                <!-- Quick Stats -->
+                                <div class="mt-4">
+                                    <h5 class="card-title mb-3">Στατιστικά Σήμερα</h5>
+                                    <p class="text-muted mb-1">Σύνολο Ραντεβού: <strong>{{ todays_total }}</strong></p>
+                                    <button class="btn btn-sm btn-success w-100 mt-2" id="refresh-all">
+                                        <i class="bx bx-refresh"></i> Ανανέωση Όλων
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div> <!-- end col-->
+
+                    <!-- Room Calendars -->
+                    <div class="col-xl-9 col-lg-8">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="row">
+                                    {% for room in rooms %}
+                                    <div class="col-md-6 col-lg-3 mb-3">
+                                        <h5 class="mb-3">{{ room.name }}</h5>
+                                        <div id="calendar-room-{{ room.id }}" 
+                                             data-room-id="{{ room.id }}" 
+                                             data-room-name="{{ room.name }}"></div>
+                                    </div>
+                                    {% empty %}
+                                    <div class="col-12">
+                                        <div class="alert alert-warning">
+                                            <i class="mdi mdi-alert-outline me-2"></i>
+                                            Δεν βρέθηκαν ενεργά δωμάτια. Προσθέστε δωμάτια στο τμήμα Resources.
+                                        </div>
+                                        <a href="{% url 'resources:room-create' %}" class="btn btn-primary">
+                                            <i class="bx bx-plus"></i> Προσθήκη Δωματίου
+                                        </a>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div> <!-- end col -->
+
+                </div>
+                <!-- end row -->
+
+                <div style='clear:both'></div>
+
+                <!-- Appointment Details Modal -->
+                <div class="modal fade" id="event-modal" tabindex="-1">
+                    <div class="modal-dialog modal-dialog-centered modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header py-3 px-4 border-bottom-0">
+                                <h5 class="modal-title" id="modal-title">Λεπτομέρειες Ραντεβού</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-hidden="true"></button>
+                            </div>
+                            <div class="modal-body p-4">
+                                <form class="needs-validation" name="event-form" id="form-event" novalidate>
+                                    <input type="hidden" name="eventid" id="eventid">
+                                    
+                                    <div class="row">
+                                        <div class="col-12">
+                                            <div class="mb-3">
+                                                <label class="form-label">Ραντεβού</label>
+                                                <input class="form-control" type="text" name="title" id="event-title" readonly />
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-12">
+                                            <div id="appointment-details" class="mb-3">
+                                                <!-- Details will be inserted here by JavaScript -->
+                                            </div>
+                                        </div>
+
+                                        <div class="col-12">
+                                            <div class="alert alert-info">
+                                                <i class="mdi mdi-information"></i>
+                                                <strong>Συμβουλή:</strong> Σύρετε ραντεβού μεταξύ δωματίων για να τα μετακινήσετε. Κλικ για λεπτομέρειες.
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row mt-2">
+                                        <div class="col-6">
+                                            <button type="button" class="btn btn-danger" id="btn-delete-event">
+                                                <i class="bx bx-trash"></i> Διαγραφή
+                                            </button>
+                                        </div>
+                                        <div class="col-6 text-end">
+                                            <button type="button" class="btn btn-light me-1" data-bs-dismiss="modal">Κλείσιμο</button>
+                                            <a href="#" class="btn btn-primary" id="edit-appointment-link">
+                                                <i class="bx bx-edit"></i> Επεξεργασία
+                                            </a>
+                                            <button type="button" class="btn btn-success d-none" id="btn-save-event">Αποθήκευση</button>
+                                            <button type="button" class="btn btn-success d-none" id="edit-event-btn">Ενημέρωση</button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- end modal-->
+
+            </div>
+        </div>
+        
+    </div> <!-- container-fluid -->
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- FullCalendar JS -->
+<script src="{% static 'assets/libs/fullcalendar/index.global.min.js' %}"></script>
+<!-- Room Calendar initialization -->
+<script src="{% static 'assets/js/pages/calendar_rooms.init.js' %}"></script>
+
+<script>
+// Update edit link when appointment is clicked
+document.addEventListener('DOMContentLoaded', function() {
+    var eventModal = document.getElementById('event-modal');
+    eventModal.addEventListener('show.bs.modal', function() {
+        var appointmentId = document.getElementById('eventid').value;
+        var editLink = document.getElementById('edit-appointment-link');
+        if (editLink && appointmentId) {
+            editLink.href = '/appointments/' + appointmentId + '/update/';
+        }
+    });
+});
+</script>
+{% endblock %}
