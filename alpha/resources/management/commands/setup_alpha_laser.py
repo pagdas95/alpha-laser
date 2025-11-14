@@ -54,9 +54,9 @@ class Command(BaseCommand):
 
     def _seed_users(self):
         User = get_user_model()
-        admin_email = os.getenv("SEED_ADMIN_EMAIL", "admin@example.com")
+        admin_email = os.getenv("SEED_ADMIN_EMAIL", "admin@alphalaserc.com")
         admin_pass = os.getenv("SEED_ADMIN_PASSWORD", "Admin123!")
-        staff_email = os.getenv("SEED_STAFF_EMAIL", "staff@example.com")
+        staff_email = os.getenv("SEED_STAFF_EMAIL", "staff@alphalaserc.com")
         staff_pass = os.getenv("SEED_STAFF_PASSWORD", "Staff123!")
 
         # Groups
@@ -135,7 +135,7 @@ class Command(BaseCommand):
             phone="700000001",
             defaults={
                 "full_name": "Maria Papadopoulou",
-                "email": "maria@example.com",
+                "email": "maria@alphalaserc.com",
                 "skin_type": "III",
                 "hair_color": "dark_brown",
                 "notes": "Πρώτη φορά στο laser.",
@@ -147,7 +147,7 @@ class Command(BaseCommand):
             phone="700000002",
             defaults={
                 "full_name": "Andreas Christou",
-                "email": "andreas@example.com",
+                "email": "andreas@alphalaserc.com",
                 "skin_type": "IV",
                 "hair_color": "black",
             },
@@ -158,7 +158,7 @@ class Command(BaseCommand):
             phone="700000003",
             defaults={
                 "full_name": "Eleni Georgiou",
-                "email": "eleni@example.com",
+                "email": "eleni@alphalaserc.com",
             },
         )
         clients.append(c3)
