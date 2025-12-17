@@ -4,8 +4,88 @@
 {% block title %}Ημερολόγιο Δωματίων{% endblock %}
 
 {% block extra_css %}
-<!-- FullCalendar CSS -->
-<link href="{% static 'assets/libs/fullcalendar/index.global.min.css' %}" rel="stylesheet" type="text/css" />
+<!-- FullCalendar CSS from CDN -->
+<link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/index.global.min.css' rel='stylesheet' />
+<style>
+    /* Status button styling */
+    .btn-status {
+        font-size: 0.85rem;
+        padding: 0.5rem 0.75rem;
+    }
+    
+    .btn-status.active {
+        font-weight: bold;
+        box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+    }
+    
+    .btn-status.active.btn-outline-primary {
+        background-color: #0d6efd;
+        color: white;
+    }
+    
+    .btn-status.active.btn-outline-success {
+        background-color: #198754;
+        color: white;
+    }
+    
+    .btn-status.active.btn-outline-warning {
+        background-color: #ffc107;
+        color: #000;
+    }
+    
+    .btn-status.active.btn-outline-danger {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    .btn-status:hover {
+        transform: translateY(-1px);
+        transition: transform 0.2s;
+    }
+
+    .fc .fc-timegrid-slot {
+        border-bottom: 0px;
+        height: 3.5em !important;
+    }
+    
+    /* Enhanced calendar event styling */
+    .fc-timegrid-event {
+        border-radius: 4px;
+        border: none !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .fc-timegrid-event:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        cursor: pointer;
+    }
+    
+    .fc-event-main {
+        padding: 0 !important;
+    }
+    
+    /* Make event text readable */
+    .fc-event-title,
+    .fc-event-time {
+        color: white !important;
+    }
+    
+    /* Better calendar scrolling */
+    .fc-scroller {
+        overflow-y: auto !important;
+    }
+    
+    /* Current time indicator - make it more visible */
+    .fc-timegrid-now-indicator-line {
+        border-color: #ff0000 !important;
+        border-width: 2px !important;
+    }
+    
+    .fc-timegrid-now-indicator-arrow {
+        border-color: #ff0000 !important;
+        border-width: 5px !important;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -87,7 +167,8 @@
                                 <!-- Quick Stats -->
                                 <div class="mt-4">
                                     <h5 class="card-title mb-3">Στατιστικά Σήμερα</h5>
-                                    <p class="text-muted mb-1">Σύνολο Ραντεβού: <strong>{{ todays_total }}</strong></p>
+                                    <p class="text-muted mb-1">Σύνολο Ραντεβού: <strong>{{ todays_total|default:0 }}</strong></p>
+                                    <p class="text-muted mb-1">Ενεργά Δωμάτια: <strong>{{ rooms.count }}</strong></p>
                                     <button class="btn btn-sm btn-success w-100 mt-2" id="refresh-all">
                                         <i class="bx bx-refresh"></i> Ανανέωση Όλων
                                     </button>
@@ -96,38 +177,38 @@
                         </div>
                     </div> <!-- end col-->
 
-                    <!-- Room Calendars -->
+                    <!-- Room Calendars - DYNAMIC FROM DATABASE -->
                     <div class="col-xl-9 col-lg-8">
                         <div class="card">
                             <div class="card-body">
+                                {% if rooms %}
                                 <div class="row">
                                     {% for room in rooms %}
                                     <div class="col-md-6 col-lg-3 mb-3">
                                         <h5 class="mb-3">{{ room.name }}</h5>
                                         <div id="calendar-room-{{ room.id }}" 
+                                             class="room-calendar"
                                              data-room-id="{{ room.id }}" 
                                              data-room-name="{{ room.name }}"></div>
                                     </div>
-                                    {% empty %}
-                                    <div class="col-12">
-                                        <div class="alert alert-warning">
-                                            <i class="mdi mdi-alert-outline me-2"></i>
-                                            Δεν βρέθηκαν ενεργά δωμάτια. Προσθέστε δωμάτια στο τμήμα Resources.
-                                        </div>
-                                        <a href="{% url 'resources:room-create' %}" class="btn btn-primary">
-                                            <i class="bx bx-plus"></i> Προσθήκη Δωματίου
-                                        </a>
-                                    </div>
                                     {% endfor %}
                                 </div>
+                                {% else %}
+                                <div class="alert alert-warning">
+                                    <i class="mdi mdi-alert-outline me-2"></i>
+                                    <strong>Δεν βρέθηκαν ενεργά δωμάτια!</strong>
+                                    <p class="mb-2 mt-2">Προσθέστε δωμάτια για να δείτε το ημερολόγιο.</p>
+                                    <a href="{% url 'resources:room-create' %}" class="btn btn-sm btn-primary">
+                                        <i class="bx bx-plus"></i> Προσθήκη Δωματίου
+                                    </a>
+                                </div>
+                                {% endif %}
                             </div>
                         </div>
                     </div> <!-- end col -->
 
                 </div>
                 <!-- end row -->
-
-                <div style='clear:both'></div>
 
                 <!-- Appointment Details Modal -->
                 <div class="modal fade" id="event-modal" tabindex="-1">
@@ -138,52 +219,56 @@
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-hidden="true"></button>
                             </div>
                             <div class="modal-body p-4">
-                                <form class="needs-validation" name="event-form" id="form-event" novalidate>
-                                    <input type="hidden" name="eventid" id="eventid">
+                                <input type="hidden" name="eventid" id="eventid">
+                                <div class="row">
+                                    <div class="col-12">
+                                        <div class="mb-3">
+                                            <label class="form-label">Ραντεβού</label>
+                                            <input class="form-control" type="text" id="event-title" readonly />
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div id="appointment-details" class="mb-3"></div>
+                                    </div>
                                     
-                                    <div class="row">
-                                        <div class="col-12">
-                                            <div class="mb-3">
-                                                <label class="form-label">Ραντεβού</label>
-                                                <input class="form-control" type="text" name="title" id="event-title" readonly />
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="col-12">
-                                            <div id="appointment-details" class="mb-3">
-                                                <!-- Details will be inserted here by JavaScript -->
-                                            </div>
-                                        </div>
-
-                                        <div class="col-12">
-                                            <div class="alert alert-info">
-                                                <i class="mdi mdi-information"></i>
-                                                <strong>Συμβουλή:</strong> Σύρετε ραντεβού μεταξύ δωματίων για να τα μετακινήσετε. Κλικ για λεπτομέρειες.
+                                    <!-- Status Change Buttons -->
+                                    <div class="col-12">
+                                        <div class="mb-3">
+                                            <label class="form-label d-block">Αλλαγή Κατάστασης</label>
+                                            <div class="btn-group w-100" role="group">
+                                                <button type="button" class="btn btn-outline-primary btn-status" data-status="booked">
+                                                    <i class="bx bx-calendar"></i> Κλεισμένο
+                                                </button>
+                                                <button type="button" class="btn btn-outline-success btn-status" data-status="completed">
+                                                    <i class="bx bx-check-circle"></i> Ολοκληρώθηκε
+                                                </button>
+                                                <button type="button" class="btn btn-outline-warning btn-status" data-status="no_show">
+                                                    <i class="bx bx-user-x"></i> Δεν Προσήλθε
+                                                </button>
+                                                <button type="button" class="btn btn-outline-danger btn-status" data-status="cancelled">
+                                                    <i class="bx bx-x-circle"></i> Ακυρώθηκε
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
-                                    
-                                    <div class="row mt-2">
-                                        <div class="col-6">
-                                            <button type="button" class="btn btn-danger" id="btn-delete-event">
-                                                <i class="bx bx-trash"></i> Διαγραφή
-                                            </button>
-                                        </div>
-                                        <div class="col-6 text-end">
-                                            <button type="button" class="btn btn-light me-1" data-bs-dismiss="modal">Κλείσιμο</button>
-                                            <a href="#" class="btn btn-primary" id="edit-appointment-link">
-                                                <i class="bx bx-edit"></i> Επεξεργασία
-                                            </a>
-                                            <button type="button" class="btn btn-success d-none" id="btn-save-event">Αποθήκευση</button>
-                                            <button type="button" class="btn btn-success d-none" id="edit-event-btn">Ενημέρωση</button>
-                                        </div>
+                                </div>
+                                <div class="row mt-2">
+                                    <div class="col-6">
+                                        <button type="button" class="btn btn-danger" id="btn-delete-event">
+                                            <i class="bx bx-trash"></i> Διαγραφή
+                                        </button>
                                     </div>
-                                </form>
+                                    <div class="col-6 text-end">
+                                        <button type="button" class="btn btn-light me-1" data-bs-dismiss="modal">Κλείσιμο</button>
+                                        <a href="#" class="btn btn-primary" id="edit-appointment-link">
+                                            <i class="bx bx-edit"></i> Επεξεργασία
+                                        </a>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <!-- end modal-->
 
             </div>
         </div>
@@ -193,22 +278,433 @@
 {% endblock %}
 
 {% block extra_js %}
-<!-- FullCalendar JS -->
-<script src="{% static 'assets/libs/fullcalendar/index.global.min.js' %}"></script>
-<!-- Room Calendar initialization -->
-<script src="{% static 'assets/js/pages/calendar_rooms.init.js' %}"></script>
+<!-- FullCalendar JS from CDN -->
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/index.global.min.js'></script>
+
+<!-- ============================================ -->
+<!-- ✅ ADDITION 1: Notification Bell Update Function -->
+<!-- ============================================ -->
+<script>
+// Notification Bell Update Function
+function updateNotificationBell() {
+    console.log('🔔 Updating notification bell...');
+    
+    fetch('/visits/api/incomplete-count/')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log('✅ Got ' + data.count + ' incomplete visits');
+                
+                const badge = document.querySelector('#page-header-notifications-dropdown .badge');
+                
+                if (data.count > 0) {
+                    if (badge) {
+                        badge.textContent = data.count;
+                        badge.style.display = '';
+                    } else {
+                        const bellButton = document.querySelector('#page-header-notifications-dropdown');
+                        if (bellButton) {
+                            const newBadge = document.createElement('span');
+                            newBadge.className = 'badge bg-danger rounded-pill';
+                            newBadge.textContent = data.count;
+                            bellButton.appendChild(newBadge);
+                        }
+                    }
+                } else {
+                    if (badge) badge.style.display = 'none';
+                }
+            }
+        })
+        .catch(error => console.error('❌ Error:', error));
+}
+</script>
 
 <script>
-// Update edit link when appointment is clicked
-document.addEventListener('DOMContentLoaded', function() {
-    var eventModal = document.getElementById('event-modal');
-    eventModal.addEventListener('show.bs.modal', function() {
-        var appointmentId = document.getElementById('eventid').value;
-        var editLink = document.getElementById('edit-appointment-link');
-        if (editLink && appointmentId) {
-            editLink.href = '/appointments/' + appointmentId + '/update/';
+console.log('🚀 Calendar script loading...');
+
+document.addEventListener("DOMContentLoaded", function() {
+    console.log('✅ DOM loaded, initializing calendars...');
+    
+    // ============================================
+    // ✅ ADDITION 2: Update bell on page load
+    // ============================================
+    updateNotificationBell();
+    
+    // Get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    const csrftoken = getCookie('csrftoken');
+    
+    // Check if FullCalendar loaded
+    if (typeof FullCalendar === 'undefined') {
+        console.error('❌ FullCalendar library not loaded!');
+        alert('Error: FullCalendar library not loaded. Check browser console.');
+        return;
+    }
+    console.log('✅ FullCalendar library loaded');
+    
+    // Modal setup
+    var eventModal = document.getElementById("event-modal") ? new bootstrap.Modal(document.getElementById("event-modal")) : null;
+    var currentEvent = null;
+    var calendars = {};
+    var currentDate = new Date();
+    
+    // Get rooms dynamically from the page (generated by Django)
+    var roomElements = document.querySelectorAll('.room-calendar');
+    var roomsData = [];
+    
+    roomElements.forEach(function(el) {
+        roomsData.push({
+            id: el.dataset.roomId,
+            name: el.dataset.roomName,
+            elementId: el.id
+        });
+    });
+    
+    console.log('📊 Found ' + roomsData.length + ' rooms from database:', roomsData);
+    
+    if (roomsData.length === 0) {
+        console.warn('⚠️ No rooms found! Make sure you have active rooms in the database.');
+        return;
+    }
+    
+    // Create calendar for each room
+    function createRoomCalendar(roomConfig) {
+        var calendarEl = document.getElementById(roomConfig.elementId);
+        if (!calendarEl) {
+            console.error('❌ Calendar element not found:', roomConfig.elementId);
+            return;
+        }
+        
+        console.log('📅 Creating calendar for:', roomConfig.name, '(ID:', roomConfig.id + ')');
+        
+        // Calculate scroll time - show current time or 1 hour before
+        var now = new Date();
+        var scrollHour = now.getHours();
+        var scrollMinute = now.getMinutes();
+        
+        // Scroll to 1 hour before current time (so current time is visible)
+        if (scrollHour > 0) {
+            scrollHour = scrollHour - 1;
+        }
+        
+        var scrollTime = String(scrollHour).padStart(2, '0') + ':' + String(scrollMinute).padStart(2, '0') + ':00';
+        console.log('⏰ Auto-scrolling to:', scrollTime);
+        
+        try {
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'timeGridDay',
+                headerToolbar: {
+                    left: '',
+                    center: '',
+                    right: ''
+                },
+                initialDate: currentDate,
+                editable: true,
+                droppable: true,
+                selectable: true,
+                height: 800,
+                slotMinTime: '07:00:00',
+                slotMaxTime: '22:00:00',
+                slotDuration: '00:30:00',
+                scrollTime: scrollTime,  // Auto-scroll to current time
+                scrollTimeReset: false,  // Don't reset scroll position
+                nowIndicator: true,  // Show red line at current time
+                now: new Date(),  // Current time
+                
+                // Custom event content - shows details inside the colored boxes
+                eventContent: function(arg) {
+                    let props = arg.event.extendedProps;
+                    
+                    let html = `
+                        <div class="fc-event-main-frame" style="padding: 2px 4px;">
+                            <div class="fc-event-time" style="font-weight: bold; font-size: 0.75rem;">
+                                ${arg.timeText}
+                            </div>
+                            <div class="fc-event-title-container">
+                                <div class="fc-event-title" style="font-size: 0.8rem; font-weight: 600;">
+                                    ${props.clientName || 'N/A'}
+                                </div>
+                                <div style="font-size: 0.7rem; color: rgba(255,255,255,0.9); margin-top: 2px;">
+                                    ${props.serviceName || 'N/A'}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    return { html: html };
+                },
+                
+                // Fetch events from backend
+                events: function(info, successCallback, failureCallback) {
+                    console.log('📡 Fetching appointments for room ' + roomConfig.name + ' (ID: ' + roomConfig.id + ')');
+                    fetch('/appointments/api/room-appointments/?start=' + info.startStr + 
+                          '&end=' + info.endStr + 
+                          '&room_id=' + roomConfig.id)
+                        .then(response => {
+                            console.log('📥 Response status:', response.status, 'for room:', roomConfig.name);
+                            if (!response.ok) {
+                                throw new Error('HTTP error! status: ' + response.status);
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            console.log('✅ Loaded ' + data.length + ' appointments for ' + roomConfig.name);
+                            if (data.length > 0) {
+                                console.log('📋 Sample appointment:', data[0]);
+                            }
+                            successCallback(data);
+                        })
+                        .catch(error => {
+                            console.error('❌ Error fetching appointments for ' + roomConfig.name + ':', error);
+                            failureCallback(error);
+                        });
+                },
+                
+                // Event click
+                eventClick: function(info) {
+                    console.log('👆 Clicked appointment:', info.event.title);
+                    currentEvent = info.event;
+                    
+                    if (eventModal) {
+                        document.getElementById("event-title").value = currentEvent.title;
+                        document.getElementById("eventid").value = currentEvent.id;
+                        
+                        var props = currentEvent.extendedProps;
+                        var detailsHtml = `
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p class="mb-2"><strong>Πελάτης:</strong> ${props.clientName || 'N/A'}</p>
+                                    <p class="mb-2"><strong>Υπηρεσία:</strong> ${props.serviceName || 'N/A'}</p>
+                                    <p class="mb-2"><strong>Δωμάτιο:</strong> ${props.roomName || 'N/A'}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p class="mb-2"><strong>Προσωπικό:</strong> ${props.staffName || 'N/A'}</p>
+                                    ${props.machineName ? '<p class="mb-2"><strong>Μηχάνημα:</strong> ' + props.machineName + '</p>' : ''}
+                                    <p class="mb-2"><strong>Τρέχουσα Κατάσταση:</strong> <span class="badge ${currentEvent.classNames[0]}">${props.statusDisplay || 'N/A'}</span></p>
+                                </div>
+                            </div>
+                        `;
+                        
+                        var detailsContainer = document.getElementById("appointment-details");
+                        if (detailsContainer) {
+                            detailsContainer.innerHTML = detailsHtml;
+                        }
+                        
+                        // Highlight active status button
+                        var currentStatus = props.status;
+                        document.querySelectorAll('.btn-status').forEach(function(btn) {
+                            btn.classList.remove('active');
+                            if (btn.dataset.status === currentStatus) {
+                                btn.classList.add('active');
+                            }
+                        });
+                        
+                        var editLink = document.getElementById('edit-appointment-link');
+                        if (editLink) {
+                            editLink.href = '/appointments/' + currentEvent.id + '/update/';
+                        }
+                        
+                        eventModal.show();
+                    }
+                },
+                
+                // Drag & drop
+                eventDrop: function(info) {
+                    console.log('🔄 Appointment moved to ' + roomConfig.name);
+                    var appointmentId = info.event.id;
+                    var newStart = info.event.start.toISOString();
+                    
+                    fetch(`/appointments/api/appointments/${appointmentId}/update/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrftoken
+                        },
+                        body: JSON.stringify({
+                            start: newStart,
+                            room_id: roomConfig.id
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            console.log('✅ Appointment moved successfully');
+                            Object.values(calendars).forEach(cal => cal.refetchEvents());
+                        } else {
+                            alert('Σφάλμα: ' + data.message);
+                            info.revert();
+                        }
+                    })
+                    .catch(error => {
+                        console.error('❌ Error:', error);
+                        alert('Σφάλμα κατά την ενημέρωση');
+                        info.revert();
+                    });
+                }
+            });
+            
+            calendars[roomConfig.id] = calendar;
+            calendar.render();
+            console.log('✅ Calendar rendered for:', roomConfig.name);
+            
+        } catch (error) {
+            console.error('❌ Error creating calendar for ' + roomConfig.name + ':', error);
+        }
+    }
+    
+    // Initialize all calendars
+    roomsData.forEach(function(roomConfig) {
+        createRoomCalendar(roomConfig);
+    });
+    
+    // Navigation
+    document.getElementById('prev-day')?.addEventListener('click', function() {
+        currentDate.setDate(currentDate.getDate() - 1);
+        Object.values(calendars).forEach(cal => cal.gotoDate(currentDate));
+        updateDateDisplay();
+    });
+    
+    document.getElementById('next-day')?.addEventListener('click', function() {
+        currentDate.setDate(currentDate.getDate() + 1);
+        Object.values(calendars).forEach(cal => cal.gotoDate(currentDate));
+        updateDateDisplay();
+    });
+    
+    document.getElementById('today-btn')?.addEventListener('click', function() {
+        currentDate = new Date();
+        Object.values(calendars).forEach(cal => cal.gotoDate(currentDate));
+        updateDateDisplay();
+    });
+    
+    function updateDateDisplay() {
+        var dateDisplay = document.getElementById('current-date-display');
+        if (dateDisplay) {
+            var options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            dateDisplay.textContent = currentDate.toLocaleDateString('el-GR', options);
+        }
+    }
+    updateDateDisplay();
+    
+    // Refresh
+    document.getElementById('refresh-all')?.addEventListener('click', function() {
+        console.log('🔄 Refreshing all calendars...');
+        Object.values(calendars).forEach(cal => cal.refetchEvents());
+        updateNotificationBell(); // ✅ Also update bell on manual refresh
+    });
+    
+    // Update current time indicator every minute
+    setInterval(function() {
+        Object.values(calendars).forEach(cal => {
+            if (cal && typeof cal.render === 'function') {
+                // Just force a re-render to update the now indicator
+                cal.render();
+            }
+        });
+    }, 60000); // Update every 60 seconds
+    
+    // Delete
+    document.getElementById("btn-delete-event")?.addEventListener("click", function() {
+        if (currentEvent && confirm('Είστε σίγουροι ότι θέλετε να διαγράψετε αυτό το ραντεβού;')) {
+            fetch(`/appointments/api/appointments/${currentEvent.id}/delete/`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('✅ Appointment deleted');
+                    Object.values(calendars).forEach(cal => cal.refetchEvents());
+                    eventModal.hide();
+                    alert('Το ραντεβού διαγράφηκε επιτυχώς!');
+                } else {
+                    alert('Σφάλμα: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('❌ Error:', error);
+                alert('Σφάλμα κατά τη διαγραφή');
+            });
         }
     });
+    
+    // Status change buttons
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.btn-status')) {
+            const btn = e.target.closest('.btn-status');
+            const newStatus = btn.dataset.status;
+            const appointmentId = document.getElementById('eventid').value;
+            
+            if (!appointmentId || !currentEvent) {
+                console.error('No appointment selected');
+                return;
+            }
+            
+            console.log('🔄 Changing status to:', newStatus);
+            
+            // Update via API
+            fetch(`/appointments/api/appointments/${appointmentId}/update/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({
+                    status: newStatus
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('✅ Status updated successfully');
+                    
+                    // Show success message
+                    const statusNames = {
+                        'booked': 'Κλεισμένο',
+                        'completed': 'Ολοκληρώθηκε',
+                        'no_show': 'Δεν Προσήλθε',
+                        'cancelled': 'Ακυρώθηκε'
+                    };
+                    
+                    alert(`Η κατάσταση άλλαξε σε: ${statusNames[newStatus]}`);
+                    
+                    // Refresh all calendars to show new color
+                    Object.values(calendars).forEach(cal => cal.refetchEvents());
+                    
+                    // ============================================
+                    // ✅ ADDITION 3: Update bell after status change
+                    // ============================================
+                    updateNotificationBell();
+                    
+                    // Close modal
+                    eventModal.hide();
+                } else {
+                    alert('Σφάλμα: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('❌ Error:', error);
+                alert('Σφάλμα κατά την ενημέρωση κατάστασης');
+            });
+        }
+    });
+    
+    console.log('🎉 Calendar initialization complete! ' + Object.keys(calendars).length + ' calendars active.');
 });
 </script>
 {% endblock %}

@@ -252,6 +252,43 @@
             </div>
         </div>
     </div>
+        <!-- No Show Card -->
+        <div class="col-md-3">
+            <div class="card mini-stats-wid">
+                <div class="card-body">
+                    <div class="d-flex">
+                        <div class="flex-grow-1">
+                            <p class="text-muted fw-medium">{% trans "No Show" %}</p>
+                            <h4 class="mb-0">{{ no_show_count }}</h4>
+                        </div>
+                        <div class="avatar-sm rounded-circle bg-warning align-self-center mini-stat-icon">
+                            <span class="avatar-title rounded-circle bg-warning">
+                                <i class="bx bx-user-x font-size-24"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Cancelled Card -->
+        <div class="col-md-3">
+            <div class="card mini-stats-wid">
+                <div class="card-body">
+                    <div class="d-flex">
+                        <div class="flex-grow-1">
+                            <p class="text-muted fw-medium">{% trans "Cancelled" %}</p>
+                            <h4 class="mb-0">{{ cancelled_count }}</h4>
+                        </div>
+                        <div class="avatar-sm rounded-circle bg-danger align-self-center mini-stat-icon">
+                            <span class="avatar-title rounded-circle bg-danger">
+                                <i class="bx bx-x-circle font-size-24"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 </div>
 
 {% endblock content %}

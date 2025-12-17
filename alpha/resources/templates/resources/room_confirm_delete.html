@@ -15,7 +15,7 @@
 
                     <div class="page-title-right">
                         <ol class="breadcrumb m-0">
-                            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'home' %}">Dashboard</a></li>
                             <li class="breadcrumb-item"><a href="{% url 'resources:index' %}">Resources</a></li>
                             <li class="breadcrumb-item"><a href="{% url 'resources:room-list' %}">Rooms</a></li>
                             <li class="breadcrumb-item active">Delete</li>
@@ -52,28 +52,12 @@
                                         <td class="text-end fw-bold">{{ room.name }}</td>
                                     </tr>
                                     <tr>
-                                        <th scope="row" class="ps-0">Room Type:</th>
-                                        <td class="text-end">{{ room.get_room_type_display|default:"-" }}</td>
-                                    </tr>
-                                    <tr>
-                                        <th scope="row" class="ps-0">Floor:</th>
-                                        <td class="text-end">{{ room.floor|default:"-" }}</td>
-                                    </tr>
-                                    <tr>
-                                        <th scope="row" class="ps-0">Room Number:</th>
-                                        <td class="text-end">{{ room.room_number|default:"-" }}</td>
-                                    </tr>
-                                    <tr>
-                                        <th scope="row" class="ps-0">Capacity:</th>
-                                        <td class="text-end">{{ room.capacity|default:"-" }}</td>
-                                    </tr>
-                                    <tr>
                                         <th scope="row" class="ps-0">Status:</th>
                                         <td class="text-end">
-                                            {% if room.is_available %}
-                                                <span class="badge badge-soft-success">Available</span>
+                                            {% if room.is_active %}
+                                                <span class="badge badge-soft-success">Active</span>
                                             {% else %}
-                                                <span class="badge badge-soft-warning">Occupied</span>
+                                                <span class="badge badge-soft-danger">Inactive</span>
                                             {% endif %}
                                         </td>
                                     </tr>
@@ -87,7 +71,7 @@
                                 <button type="submit" class="btn btn-danger btn-lg">
                                     <i class="bx bx-trash me-2"></i>Yes, Delete Room
                                 </button>
-                                <a href="{% url 'resources:room-detail' room.pk %}" class="btn btn-secondary btn-lg">
+                                <a href="{% url 'resources:room-list' %}" class="btn btn-secondary btn-lg">
                                     <i class="bx bx-x me-2"></i>Cancel
                                 </a>
                             </div>

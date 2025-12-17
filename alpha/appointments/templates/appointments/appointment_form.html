@@ -12,6 +12,8 @@
 {% block extra_css %}
 <!-- Date/Time Picker CSS -->
 <link href="{% static 'libs/flatpickr/flatpickr.min.css' %}" rel="stylesheet" type="text/css" />
+<!-- Choices.js CSS -->
+<link href="{% static 'libs/choices.js/public/assets/styles/choices.min.css' %}" rel="stylesheet" type="text/css" />
 {% endblock %}
 
 {% block breadcrumb %}
@@ -78,6 +80,10 @@
                                     {{ form.service.errors }}
                                 </div>
                                 {% endif %}
+                                <!-- ✅ NEW: Service info display -->
+                                <small class="text-muted">
+                                    <span id="service-info"></span>
+                                </small>
                             </div>
                         </div>
                     </div>
@@ -134,7 +140,7 @@
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label for="{{ form.price_override.id_for_label }}" class="form-label">
-                                    {% trans "Price Override" %} <span class="text-muted">({% trans "Optional" %})</span>
+                                    {% trans "Price" %} <span class="text-muted">({% trans "Auto-filled" %})</span>
                                 </label>
                                 <div class="input-group">
                                     <span class="input-group-text">€</span>
@@ -145,7 +151,7 @@
                                     {{ form.price_override.errors }}
                                 </div>
                                 {% endif %}
-                                <small class="text-muted">{% trans "Leave empty to use service default price" %}</small>
+                                <small class="text-muted">{% trans "Auto-filled from service, can be modified" %}</small>
                             </div>
                         </div>
                     </div>
@@ -170,7 +176,7 @@
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label for="{{ form.end.id_for_label }}" class="form-label">
-                                    {% trans "End Date & Time" %} <span class="text-danger">*</span>
+                                    {% trans "End Date & Time" %} <span class="text-muted">({% trans "Auto-calculated" %})</span>
                                 </label>
                                 {{ form.end }}
                                 {% if form.end.errors %}
@@ -178,6 +184,7 @@
                                     {{ form.end.errors }}
                                 </div>
                                 {% endif %}
+                                <small class="text-muted">{% trans "Auto-calculated from start + duration, can be adjusted" %}</small>
                             </div>
                         </div>
                     </div>
@@ -246,33 +253,161 @@
 {% block extra_js %}
 <!-- Date/Time Picker JS -->
 <script src="{% static 'libs/flatpickr/flatpickr.min.js' %}"></script>
+<!-- Choices JS -->
+<script src="{% static 'libs/choices.js/public/assets/scripts/choices.min.js' %}"></script>
 
 <script>
-    // Initialize datetime pickers
     document.addEventListener('DOMContentLoaded', function() {
+        
+        // ========================================
+        // Global Variables
+        // ========================================
+        let currentServiceDuration = 0; // in minutes
+        let startPicker = null;
+        let endPicker = null;
+        
+        // ========================================
+        // Choices.js initialization
+        // ========================================
+        
+        // Client select - searchable
+        const clientSelect = document.getElementById('id_client');
+        if (clientSelect) {
+            new Choices(clientSelect, {
+                searchEnabled: true,
+                searchPlaceholderValue: 'Search for a client...',
+                itemSelectText: '',
+                shouldSort: false,
+            });
+        }
+        
+        // Service select - grouped by category
+        const serviceSelect = document.getElementById('id_service');
+        let serviceChoices = null;
+        if (serviceSelect) {
+            serviceChoices = new Choices(serviceSelect, {
+                searchEnabled: true,
+                searchPlaceholderValue: 'Search for a service...',
+                itemSelectText: '',
+                shouldSort: false,
+            });
+        }
+        
+        // ========================================
+        // Flatpickr DateTime Pickers
+        // ========================================
+        
         // Start datetime picker
-        flatpickr("#{{ form.start.id_for_label }}", {
+        startPicker = flatpickr("#{{ form.start.id_for_label }}", {
             enableTime: true,
             dateFormat: "Y-m-d H:i",
             time_24hr: true,
-            minDate: "today"
+            minDate: "today",
+            onChange: function(selectedDates, dateStr, instance) {
+                // When start time changes, auto-calculate end time
+                if (selectedDates.length > 0 && currentServiceDuration > 0) {
+                    calculateEndTime(selectedDates[0]);
+                }
+            }
         });
 
         // End datetime picker
-        flatpickr("#{{ form.end.id_for_label }}", {
+        endPicker = flatpickr("#{{ form.end.id_for_label }}", {
             enableTime: true,
             dateFormat: "Y-m-d H:i",
             time_24hr: true,
             minDate: "today"
         });
 
+        // ========================================
+        // Service Selection Handler
+        // ========================================
+        
+        if (serviceSelect) {
+            serviceSelect.addEventListener('change', function() {
+                const serviceId = this.value;
+                
+                if (!serviceId) {
+                    // Clear info if no service selected
+                    document.getElementById('service-info').textContent = '';
+                    currentServiceDuration = 0;
+                    return;
+                }
+                
+                // Fetch service details via AJAX
+                fetch(`/appointments/api/service/${serviceId}/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            const service = data.service;
+                            
+                            // Store duration
+                            currentServiceDuration = service.duration_min;
+                            
+                            // Update price field
+                            const priceField = document.getElementById('{{ form.price_override.id_for_label }}');
+                            if (priceField && !priceField.value) {
+                                // Only auto-fill if price field is empty
+                                priceField.value = service.default_price.toFixed(2);
+                            }
+                            
+                            // Show service info
+                            const infoText = `Duration: ${service.duration_min} min | Price: €${service.default_price.toFixed(2)}`;
+                            document.getElementById('service-info').textContent = infoText;
+                            document.getElementById('service-info').classList.add('text-primary');
+                            
+                            // If start time is already set, recalculate end time
+                            const startInput = document.getElementById('{{ form.start.id_for_label }}');
+                            if (startInput && startInput.value) {
+                                const startDate = startPicker.selectedDates[0];
+                                if (startDate) {
+                                    calculateEndTime(startDate);
+                                }
+                            }
+                        } else {
+                            console.error('Error fetching service:', data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+            });
+        }
+        
+        // ========================================
+        // Calculate End Time Function
+        // ========================================
+        
+        function calculateEndTime(startDate) {
+            if (!currentServiceDuration || currentServiceDuration <= 0) {
+                return;
+            }
+            
+            // Calculate end time by adding duration to start time
+            const endDate = new Date(startDate.getTime() + (currentServiceDuration * 60 * 1000));
+            
+            // Set end time in flatpickr
+            if (endPicker) {
+                endPicker.setDate(endDate);
+            }
+        }
+        
+        // ========================================
+        // Form Styling
+        // ========================================
+        
         // Add Bootstrap classes to form fields
-        const formControls = document.querySelectorAll('select, input[type="text"], input[type="number"], input[type="datetime-local"], textarea');
+        const formControls = document.querySelectorAll('select:not(.choices__input), input[type="text"], input[type="number"], input[type="datetime-local"], textarea');
         formControls.forEach(control => {
-            control.classList.add('form-control');
+            if (!control.classList.contains('choices__input')) {
+                control.classList.add('form-control');
+            }
         });
 
-        // Form validation
+        // ========================================
+        // Form Validation
+        // ========================================
+        
         const form = document.querySelector('.needs-validation');
         form.addEventListener('submit', function(event) {
             if (!form.checkValidity()) {
@@ -281,6 +416,17 @@
             }
             form.classList.add('was-validated');
         });
+        
+        // ========================================
+        // On Page Load: Trigger service change if editing
+        // ========================================
+        
+        {% if object and object.service %}
+        // If editing an appointment, trigger service change to show info
+        if (serviceSelect && serviceSelect.value) {
+            serviceSelect.dispatchEvent(new Event('change'));
+        }
+        {% endif %}
     });
 </script>
 {% endblock %}

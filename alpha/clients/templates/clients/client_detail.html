@@ -161,87 +161,233 @@
 
     <!-- Right Column: History -->
     <div class="col-lg-8">
-        <!-- Appointment History Card -->
+        <!-- ✅ CHANGED: Appointment & Visit History Card with Tabs -->
         <div class="card">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h4 class="card-title mb-0">
-                        <i class="bx bx-calendar-event text-primary me-2"></i>{% trans "Appointment History" %}
+                        <i class="bx bx-history text-primary me-2"></i>{% trans "History" %}
                     </h4>
                     <a href="{% url 'appointments:create' %}?client={{ client.pk }}" class="btn btn-primary btn-sm">
                         <i class="bx bx-plus me-1"></i>{% trans "New Appointment" %}
                     </a>
                 </div>
 
-                {% if recent_appointments %}
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead>
-                            <tr>
-                                <th>{% trans "Date" %}</th>
-                                <th>{% trans "Service" %}</th>
-                                <th>{% trans "Staff" %}</th>
-                                <th>{% trans "Status" %}</th>
-                                <th>{% trans "Action" %}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for appointment in recent_appointments %}
-                            <tr>
-                                <td>
-                                    <strong>{{ appointment.start|date:"d/m/Y" }}</strong>
-                                    <br>
-                                    <small class="text-muted">{{ appointment.start|date:"H:i" }}</small>
-                                </td>
-                                <td>
-                                    {{ appointment.service.name }}
-                                    {% if appointment.machine %}
-                                    <br><small class="text-muted">{{ appointment.machine.name }}</small>
-                                    {% endif %}
-                                </td>
-                                <td>{{ appointment.staff.get_full_name|default:appointment.staff.username }}</td>
-                                <td>
-                                    {% if appointment.status == 'booked' %}
-                                        <span class="badge badge-soft-primary">{{ appointment.get_status_display }}</span>
-                                    {% elif appointment.status == 'completed' %}
-                                        <span class="badge badge-soft-success">{{ appointment.get_status_display }}</span>
-                                    {% elif appointment.status == 'cancelled' %}
-                                        <span class="badge badge-soft-danger">{{ appointment.get_status_display }}</span>
-                                    {% elif appointment.status == 'no_show' %}
-                                        <span class="badge badge-soft-warning">{{ appointment.get_status_display }}</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <a href="{% url 'appointments:detail' appointment.pk %}" 
-                                       class="btn btn-sm btn-light" 
-                                       data-bs-toggle="tooltip" 
-                                       title="{% trans 'View Details' %}">
-                                        <i class="bx bx-show"></i>
-                                    </a>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+                <!-- Nav tabs -->
+                <ul class="nav nav-tabs nav-tabs-custom nav-justified" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active" data-bs-toggle="tab" href="#appointments-tab" role="tab">
+                            <span class="d-block d-sm-none"><i class="bx bx-calendar"></i></span>
+                            <span class="d-none d-sm-block">
+                                <i class="bx bx-calendar-event me-1"></i>{% trans "Appointments" %}
+                                <span class="badge bg-primary ms-1">{{ total_appointments }}</span>
+                            </span>    
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#visits-tab" role="tab">
+                            <span class="d-block d-sm-none"><i class="bx bx-check-circle"></i></span>
+                            <span class="d-none d-sm-block">
+                                <i class="bx bx-check-circle me-1"></i>{% trans "Visits" %}
+                                <span class="badge bg-success ms-1">{{ total_visits }}</span>
+                            </span>    
+                        </a>
+                    </li>
+                </ul>
 
-                {% if total_appointments > 10 %}
-                <div class="text-center mt-3">
-                    <a href="{% url 'appointments:list' %}?client={{ client.pk }}" class="btn btn-link">
-                        {% trans "View All Appointments" %} ({{ total_appointments }}) <i class="bx bx-right-arrow-alt ms-1"></i>
-                    </a>
+                <!-- Tab panes -->
+                <div class="tab-content p-3">
+                    <!-- Appointments Tab -->
+                    <div class="tab-pane active" id="appointments-tab" role="tabpanel">
+                        {% if recent_appointments %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>{% trans "Date" %}</th>
+                                        <th>{% trans "Service" %}</th>
+                                        <th>{% trans "Staff" %}</th>
+                                        <th>{% trans "Status" %}</th>
+                                        <th>{% trans "Action" %}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for appointment in recent_appointments %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ appointment.start|date:"d/m/Y" }}</strong>
+                                            <br>
+                                            <small class="text-muted">{{ appointment.start|date:"H:i" }}</small>
+                                        </td>
+                                        <td>
+                                            {{ appointment.service.name }}
+                                            {% if appointment.machine %}
+                                            <br><small class="text-muted">{{ appointment.machine.name }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ appointment.staff.get_full_name|default:appointment.staff.username }}</td>
+                                        <td>
+                                            {% if appointment.status == 'booked' %}
+                                                <span class="badge badge-soft-primary">{{ appointment.get_status_display }}</span>
+                                            {% elif appointment.status == 'completed' %}
+                                                <span class="badge badge-soft-success">{{ appointment.get_status_display }}</span>
+                                            {% elif appointment.status == 'cancelled' %}
+                                                <span class="badge badge-soft-danger">{{ appointment.get_status_display }}</span>
+                                            {% elif appointment.status == 'no_show' %}
+                                                <span class="badge badge-soft-warning">{{ appointment.get_status_display }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <a href="{% url 'appointments:detail' appointment.pk %}" 
+                                               class="btn btn-sm btn-light" 
+                                               data-bs-toggle="tooltip" 
+                                               title="{% trans 'View Details' %}">
+                                                <i class="bx bx-show"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {% if total_appointments > 10 %}
+                        <div class="text-center mt-3">
+                            <a href="{% url 'appointments:list' %}?client={{ client.pk }}" class="btn btn-link">
+                                {% trans "View All Appointments" %} ({{ total_appointments }}) <i class="bx bx-right-arrow-alt ms-1"></i>
+                            </a>
+                        </div>
+                        {% endif %}
+                        {% else %}
+                        <div class="text-center py-5 text-muted">
+                            <i class="bx bx-calendar-x font-size-48 d-block mb-3"></i>
+                            <h5>{% trans "No appointments yet" %}</h5>
+                            <p>{% trans "Book the first appointment for this client" %}</p>
+                            <a href="{% url 'appointments:create' %}?client={{ client.pk }}" class="btn btn-primary mt-2">
+                                <i class="bx bx-calendar-plus me-1"></i>{% trans "Book Now" %}
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- ✅ NEW: Visits Tab -->
+                    <div class="tab-pane" id="visits-tab" role="tabpanel">
+                        {% if recent_visits %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>{% trans "Date" %}</th>
+                                        <th>{% trans "Service" %}</th>
+                                        <th>{% trans "Staff" %}</th>
+                                        <th>{% trans "Area" %}</th>
+                                        <th>{% trans "Charge" %}</th>
+                                        <th>{% trans "Paid" %}</th>
+                                        <th>{% trans "Action" %}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for visit in recent_visits %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ visit.appointment.start|date:"d/m/Y" }}</strong>
+                                            <br>
+                                            <small class="text-muted">{{ visit.appointment.start|date:"H:i" }}</small>
+                                        </td>
+                                        <td>
+                                            {{ visit.appointment.service.name }}
+                                            {% if visit.machine %}
+                                            <br><small class="text-muted">{{ visit.machine.name }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ visit.staff.get_full_name|default:visit.staff.username }}</td>
+                                        <td>
+                                            {% if visit.area %}
+                                                {{ visit.area }}
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <strong>€{{ visit.charge_amount }}</strong>
+                                        </td>
+                                        <td>
+                                            {% if visit.paid_amount >= visit.charge_amount %}
+                                                <span class="badge badge-soft-success">€{{ visit.paid_amount }}</span>
+                                            {% elif visit.paid_amount > 0 %}
+                                                <span class="badge badge-soft-warning">€{{ visit.paid_amount }}</span>
+                                            {% else %}
+                                                <span class="badge badge-soft-danger">€0</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <a href="{% url 'visits:detail' visit.pk %}" 
+                                               class="btn btn-sm btn-light" 
+                                               data-bs-toggle="tooltip" 
+                                               title="{% trans 'View Details' %}">
+                                                <i class="bx bx-show"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Revenue Summary -->
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <div class="card border mb-0">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm me-3">
+                                                <span class="avatar-title rounded-circle bg-primary-subtle text-primary font-size-18">
+                                                    <i class="bx bx-money"></i>
+                                                </span>
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <p class="text-muted mb-1">{% trans "Total Charged" %}</p>
+                                                <h5 class="mb-0">€{{ total_charged|floatformat:2 }}</h5>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card border mb-0">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm me-3">
+                                                <span class="avatar-title rounded-circle bg-success-subtle text-success font-size-18">
+                                                    <i class="bx bx-check-circle"></i>
+                                                </span>
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <p class="text-muted mb-1">{% trans "Total Paid" %}</p>
+                                                <h5 class="mb-0">€{{ total_revenue|floatformat:2 }}</h5>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {% if total_visits > 10 %}
+                        <div class="text-center mt-3">
+                            <a href="{% url 'visits:list' %}?client={{ client.pk }}" class="btn btn-link">
+                                {% trans "View All Visits" %} ({{ total_visits }}) <i class="bx bx-right-arrow-alt ms-1"></i>
+                            </a>
+                        </div>
+                        {% endif %}
+                        {% else %}
+                        <div class="text-center py-5 text-muted">
+                            <i class="bx bx-check-circle font-size-48 d-block mb-3"></i>
+                            <h5>{% trans "No visits yet" %}</h5>
+                            <p>{% trans "Visits are created when appointments are completed" %}</p>
+                        </div>
+                        {% endif %}
+                    </div>
                 </div>
-                {% endif %}
-                {% else %}
-                <div class="text-center py-5 text-muted">
-                    <i class="bx bx-calendar-x font-size-48 d-block mb-3"></i>
-                    <h5>{% trans "No appointments yet" %}</h5>
-                    <p>{% trans "Book the first appointment for this client" %}</p>
-                    <a href="{% url 'appointments:create' %}?client={{ client.pk }}" class="btn btn-primary mt-2">
-                        <i class="bx bx-calendar-plus me-1"></i>{% trans "Book Now" %}
-                    </a>
-                </div>
-                {% endif %}
             </div>
         </div>
 

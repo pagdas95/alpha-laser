@@ -1,5 +1,5 @@
 """
-Appointments Views
+Appointments Views - UPDATED with Service Details AJAX endpoint
 Place this at: alpha/appointments/views.py
 """
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -24,7 +24,7 @@ class AppointmentListView(LoginRequiredMixin, ListView):
     model = Appointment
     template_name = 'appointments/appointment_list.html'
     context_object_name = 'appointments'
-    paginate_by = 50  # For pagination if needed
+    paginate_by = 50
     
     def get_queryset(self):
         """
@@ -69,6 +69,8 @@ class AppointmentListView(LoginRequiredMixin, ListView):
         context['total_count'] = Appointment.objects.count()
         context['booked_count'] = Appointment.objects.filter(status='booked').count()
         context['completed_count'] = Appointment.objects.filter(status='completed').count()
+        context['no_show_count'] = Appointment.objects.filter(status='no_show').count()  # ✅ ADD
+        context['cancelled_count'] = Appointment.objects.filter(status='cancelled').count()  # ✅ ADD
         
         # Pass current filters
         context['current_status'] = self.request.GET.get('status', '')
@@ -110,8 +112,12 @@ class AppointmentChangeStatusView(LoginRequiredMixin, View):
 class AppointmentCreateView(LoginRequiredMixin, CreateView):
     model = Appointment
     template_name = 'appointments/appointment_form.html'
-    fields = ['client', 'service', 'staff', 'room', 'machine', 'start', 'end', 'notes', 'price_override']
+    form_class = None
     success_url = reverse_lazy('appointments:list')
+    
+    def get_form_class(self):
+        from .forms import AppointmentCreateForm
+        return AppointmentCreateForm
     
     def get_initial(self):
         """Pre-fill client if provided in URL parameter"""
@@ -119,7 +125,6 @@ class AppointmentCreateView(LoginRequiredMixin, CreateView):
         client_id = self.request.GET.get('client')
         if client_id:
             try:
-                # Just set the ID, Django will handle the validation
                 initial['client'] = client_id
             except ValueError:
                 pass
@@ -147,7 +152,11 @@ class AppointmentDetailView(LoginRequiredMixin, DetailView):
 class AppointmentUpdateView(LoginRequiredMixin, UpdateView):
     model = Appointment
     template_name = 'appointments/appointment_form.html'
-    fields = ['client', 'service', 'staff', 'room', 'machine', 'start', 'end', 'status', 'notes', 'price_override']
+    form_class = None
+    
+    def get_form_class(self):
+        from .forms import AppointmentUpdateForm
+        return AppointmentUpdateForm
     
     def get_success_url(self):
         messages.success(self.request, _('Appointment updated successfully!'))
@@ -168,6 +177,7 @@ class AppointmentCalendarView(LoginRequiredMixin, ListView):
     """Calendar view - placeholder for now"""
     model = Appointment
     template_name = 'appointments/calendar.html'
+
 
 class RoomCalendarView(LoginRequiredMixin, TemplateView):
     """Calendar view showing appointments by room"""
@@ -190,19 +200,54 @@ class RoomCalendarView(LoginRequiredMixin, TemplateView):
         return context
 
 
+# ✅ NEW: Get service details via AJAX
+@require_http_methods(["GET"])
+def get_service_details(request, service_id):
+    """
+    Return service details (price and duration) as JSON
+    Used for auto-filling appointment form
+    """
+    try:
+        from alpha.catalog.models import Service
+        
+        service = Service.objects.get(id=service_id)
+        
+        return JsonResponse({
+            'success': True,
+            'service': {
+                'id': service.id,
+                'name': service.name,
+                'default_price': float(service.default_price),
+                'duration_min': service.duration_min,
+            }
+        })
+    except Service.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'message': 'Service not found'
+        }, status=404)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': str(e)
+        }, status=400)
+
+
 @require_http_methods(["GET"])
 def get_room_appointments_json(request):
     """
     Return appointments filtered by room as JSON for FullCalendar
     """
+    from django.utils.dateparse import parse_datetime
+    
     # Get filters from request
-    start = request.GET.get('start')
-    end = request.GET.get('end')
+    start_str = request.GET.get('start')
+    end_str = request.GET.get('end')
     room_id = request.GET.get('room_id')
     
     # Build query
     appointments = Appointment.objects.select_related(
-        'client', 'service', 'room', 'staff'
+        'client', 'service', 'room', 'staff', 'machine'
     ).all()
     
     # Filter by room
@@ -210,23 +255,29 @@ def get_room_appointments_json(request):
         appointments = appointments.filter(room_id=room_id)
     
     # Filter by date range
-    if start:
-        appointments = appointments.filter(start__gte=start)
-    if end:
-        appointments = appointments.filter(end__lte=end)
+    if start_str and end_str:
+        try:
+            start_dt = parse_datetime(start_str)
+            end_dt = parse_datetime(end_str)
+            
+            if start_dt and end_dt:
+                appointments = appointments.filter(
+                    start__lt=end_dt,
+                    end__gt=start_dt
+                )
+        except Exception as e:
+            print(f"Error parsing dates: {e}")
     
     # Convert to FullCalendar format
     events = []
     for apt in appointments:
-        # Map your status to colors
         color_map = {
-            'booked': 'bg-primary',      # Κλεισμένο - Blue
-            'completed': 'bg-success',   # Ολοκληρώθηκε - Green
-            'no_show': 'bg-warning',     # Δεν προσήλθε - Yellow
-            'cancelled': 'bg-danger',    # Ακυρώθηκε - Red
+            'booked': 'bg-primary',
+            'completed': 'bg-success',
+            'no_show': 'bg-warning',
+            'cancelled': 'bg-danger',
         }
         
-        # Get client name
         client_name = str(apt.client)
         
         event = {
@@ -258,7 +309,7 @@ def get_room_appointments_json(request):
 @require_http_methods(["POST"])
 def update_appointment_ajax(request, appointment_id):
     """
-    Update appointment via AJAX from calendar (drag & drop)
+    Update appointment via AJAX from calendar (drag & drop or status change)
     """
     try:
         appointment = Appointment.objects.get(id=appointment_id)
@@ -268,14 +319,25 @@ def update_appointment_ajax(request, appointment_id):
         if 'start' in data:
             new_start = parse_datetime(data['start'])
             if new_start:
-                # Calculate duration
                 duration = appointment.end - appointment.start
                 appointment.start = new_start
                 appointment.end = new_start + duration
         
-        # Update room if changed (when dragging between calendars)
+        # Update room if changed
         if 'room_id' in data:
             appointment.room_id = data['room_id']
+        
+        # Update status if changed
+        if 'status' in data:
+            new_status = data['status']
+            valid_statuses = [choice[0] for choice in Appointment.STATUS_CHOICES]
+            if new_status in valid_statuses:
+                appointment.status = new_status
+            else:
+                return JsonResponse({
+                    'success': False,
+                    'message': f'Invalid status: {new_status}'
+                }, status=400)
         
         appointment.save()
         

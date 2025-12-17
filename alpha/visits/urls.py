@@ -14,4 +14,7 @@ urlpatterns = [
     path('<int:pk>/', views.VisitDetailView.as_view(), name='detail'),
     path('<int:pk>/edit/', views.VisitUpdateView.as_view(), name='edit'),
     path('<int:pk>/delete/', views.VisitDeleteView.as_view(), name='delete'),
+
+        # ✅ NEW: AJAX endpoint for notification bell updates
+    path('api/incomplete-count/', views.get_incomplete_visits_count, name='incomplete_count'),
 ]

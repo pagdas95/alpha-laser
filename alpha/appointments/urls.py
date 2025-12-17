@@ -41,4 +41,7 @@ urlpatterns = [
     path('api/appointments/<int:appointment_id>/update/', update_appointment_ajax, name='appointment-update-ajax'),
     path('api/appointments/<int:appointment_id>/delete/', delete_appointment_ajax, name='appointment-delete-ajax'),
 
+    # ✅ NEW: AJAX endpoints
+    path('api/service/<int:service_id>/', views.get_service_details, name='service_details')
+
 ]

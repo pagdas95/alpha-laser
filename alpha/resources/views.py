@@ -1,6 +1,5 @@
 """
-Resources Views - Simple Version
-Works with your exact simple models (name, notes, is_active)
+Resources Views - FIXED VERSION
 Place this at: alpha/resources/views.py
 """
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -76,7 +75,8 @@ class MachineCreateView(LoginRequiredMixin, CreateView):
     fields = ['name', 'notes', 'is_active']
     
     def get_success_url(self):
-        return reverse_lazy('alpha:resources:machine-detail', kwargs={'pk': self.object.pk})
+        # ✅ FIXED: Removed 'alpha:' prefix
+        return reverse_lazy('resources:machine-detail', kwargs={'pk': self.object.pk})
     
     def form_valid(self, form):
         messages.success(self.request, _('Machine created successfully!'))
@@ -90,7 +90,8 @@ class MachineUpdateView(LoginRequiredMixin, UpdateView):
     fields = ['name', 'notes', 'is_active']
     
     def get_success_url(self):
-        return reverse_lazy('alpha:resources:machine-detail', kwargs={'pk': self.object.pk})
+        # ✅ FIXED: Removed 'alpha:' prefix
+        return reverse_lazy('resources:machine-detail', kwargs={'pk': self.object.pk})
     
     def form_valid(self, form):
         messages.success(self.request, _('Machine updated successfully!'))
@@ -101,7 +102,8 @@ class MachineDeleteView(LoginRequiredMixin, DeleteView):
     """Delete a machine"""
     model = Machine
     template_name = 'resources/machine_confirm_delete.html'
-    success_url = reverse_lazy('alpha:resources:machine-list')
+    # ✅ FIXED: Removed 'alpha:' prefix
+    success_url = reverse_lazy('resources:machine-list')
     
     def delete(self, request, *args, **kwargs):
         messages.success(request, _('Machine deleted successfully.'))
@@ -149,7 +151,8 @@ class RoomCreateView(LoginRequiredMixin, CreateView):
     fields = ['name', 'is_active']
     
     def get_success_url(self):
-        return reverse_lazy('alpha:resources:room-detail', kwargs={'pk': self.object.pk})
+        # ✅ FIXED: Removed 'alpha:' prefix
+        return reverse_lazy('resources:room-detail', kwargs={'pk': self.object.pk})
     
     def form_valid(self, form):
         messages.success(self.request, _('Room created successfully!'))
@@ -163,7 +166,8 @@ class RoomUpdateView(LoginRequiredMixin, UpdateView):
     fields = ['name', 'is_active']
     
     def get_success_url(self):
-        return reverse_lazy('alpha:resources:room-detail', kwargs={'pk': self.object.pk})
+        # ✅ FIXED: Removed 'alpha:' prefix
+        return reverse_lazy('resources:room-detail', kwargs={'pk': self.object.pk})
     
     def form_valid(self, form):
         messages.success(self.request, _('Room updated successfully!'))
@@ -174,7 +178,8 @@ class RoomDeleteView(LoginRequiredMixin, DeleteView):
     """Delete a room"""
     model = Room
     template_name = 'resources/room_confirm_delete.html'
-    success_url = reverse_lazy('alpha:resources:room-list')
+    # ✅ FIXED: Removed 'alpha:' prefix
+    success_url = reverse_lazy('resources:room-list')
     
     def delete(self, request, *args, **kwargs):
         messages.success(request, _('Room deleted successfully.'))

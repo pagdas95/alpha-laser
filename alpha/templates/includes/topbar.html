@@ -66,35 +66,99 @@
                 </button>
             </div>
 
+            <!-- ============================================ -->
+            <!-- ✅ UPDATED NOTIFICATION BELL STARTS HERE ✅  -->
+            <!-- ============================================ -->
             <div class="dropdown d-inline-block">
                 <button type="button" class="btn header-item noti-icon position-relative" 
                 id="page-header-notifications-dropdown"
                 data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     <i data-feather="bell" class="icon-lg"></i>
-                    <span class="badge bg-danger rounded-pill">5</span>
+                    <!-- ✅ CHANGED: Dynamic badge count instead of hardcoded "5" -->
+                    {% if incomplete_visits_count > 0 %}
+                    <span class="badge bg-danger rounded-pill">{{ incomplete_visits_count }}</span>
+                    {% endif %}
                 </button>
                 <div class="dropdown-menu dropdown-menu-lg dropdown-menu-end p-0"
                     aria-labelledby="page-header-notifications-dropdown">
+                    <!-- ✅ CHANGED: Header text -->
                     <div class="p-3">
                         <div class="row align-items-center">
                             <div class="col">
-                                <h6 class="m-0">{% trans "Notifications" %}</h6>
+                                <h6 class="m-0">{% trans "Incomplete Visits" %}</h6>
                             </div>
                             <div class="col-auto">
-                                <a href="#!" class="small text-reset text-decoration-underline">{% trans "Unread" %} (3)</a>
+                                {% if incomplete_visits_count > 0 %}
+                                <a href="{% url 'visits:list' %}" class="small text-reset text-decoration-underline">
+                                    {% trans "View All" %} ({{ incomplete_visits_count }})
+                                </a>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
-                    <div data-simplebar style="max-height: 230px;">
-                        <!-- Notification items would go here -->
+                    <!-- ✅ CHANGED: Dropdown content with actual incomplete visits -->
+                    <div data-simplebar style="max-height: 350px;">
+                        {% if incomplete_visits %}
+                            {% for visit in incomplete_visits %}
+                            <a href="{% url 'visits:edit' visit.pk %}" class="text-reset notification-item">
+                                <div class="d-flex">
+                                    <div class="flex-shrink-0 avatar-sm me-3">
+                                        <span class="avatar-title bg-warning rounded-circle font-size-16">
+                                            <i class="bx bx-clipboard"></i>
+                                        </span>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">{{ visit.appointment.client.full_name }}</h6>
+                                        <div class="font-size-13 text-muted">
+                                            <p class="mb-1">
+                                                <strong>{{ visit.appointment.service.name }}</strong>
+                                                {% if visit.area %}
+                                                - {{ visit.area }}
+                                                {% endif %}
+                                            </p>
+                                            <p class="mb-1 text-danger">
+                                                <i class="bx bx-error-circle"></i>
+                                                {% trans "Missing" %}: 
+                                                {% with missing=visit.get_missing_fields %}
+                                                    {% for field in missing %}
+                                                        {{ field }}{% if not forloop.last %}, {% endif %}
+                                                    {% endfor %}
+                                                {% endwith %}
+                                            </p>
+                                            <p class="mb-0">
+                                                <i class="mdi mdi-clock-outline"></i> 
+                                                <span>{{ visit.time_since_creation }}</span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </a>
+                            {% endfor %}
+                        {% else %}
+                            <!-- ✅ NEW: Empty state when no incomplete visits -->
+                            <div class="text-center p-4">
+                                <div class="avatar-sm mx-auto mb-4">
+                                    <span class="avatar-title bg-success-subtle text-success rounded-circle font-size-24">
+                                        <i class="bx bx-check-circle"></i>
+                                    </span>
+                                </div>
+                                <h5 class="font-size-15">{% trans "All Caught Up!" %}</h5>
+                                <p class="text-muted mb-0">{% trans "No incomplete visits at the moment" %}</p>
+                            </div>
+                        {% endif %}
                     </div>
+                    <!-- ✅ CHANGED: Footer link -->
                     <div class="p-2 border-top d-grid">
-                        <a class="btn btn-sm btn-link font-size-14 text-center" href="javascript:void(0)">
-                            <i class="mdi mdi-arrow-right-circle me-1"></i> <span>{% trans "View More" %}</span> 
+                        <a class="btn btn-sm btn-link font-size-14 text-center" href="{% url 'visits:list' %}">
+                            <i class="mdi mdi-arrow-right-circle me-1"></i> 
+                            <span>{% trans "View All Visits" %}</span> 
                         </a>
                     </div>
                 </div>
             </div>
+            <!-- ============================================ -->
+            <!-- ✅ UPDATED NOTIFICATION BELL ENDS HERE ✅    -->
+            <!-- ============================================ -->
 
             {% if request.user.is_authenticated %}
             <div class="dropdown d-inline-block">

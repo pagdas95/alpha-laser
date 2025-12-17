@@ -197,6 +197,7 @@ TEMPLATES = [
                 "django.template.context_processors.tz",
                 "django.contrib.messages.context_processors.messages",
                 "alpha.users.context_processors.allauth_settings",
+                "alpha.core.context_processors.incomplete_visits",
             ],
         },
     },

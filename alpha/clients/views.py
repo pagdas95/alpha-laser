@@ -8,7 +8,7 @@ Place this at: alpha/clients/views.py
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import ListView, CreateView, DetailView, UpdateView, DeleteView
 from django.urls import reverse_lazy
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Sum
 from django.contrib import messages
 from django.utils.translation import gettext as _
 from .models import Client
@@ -86,7 +86,7 @@ class ClientCreateView(LoginRequiredMixin, CreateView):
 
 
 class ClientDetailView(LoginRequiredMixin, DetailView):
-    """View client details with appointment history"""
+    """View client details with appointment and visit history"""
     model = Client
     template_name = 'clients/client_detail.html'
     context_object_name = 'client'
@@ -102,6 +102,30 @@ class ClientDetailView(LoginRequiredMixin, DetailView):
         context['recent_appointments'] = appointments
         context['total_appointments'] = self.object.appointments.count()
         context['completed_visits'] = self.object.appointments.filter(status='completed').count()
+        
+        # ✅ Get visits for this client
+        from alpha.visits.models import Visit
+        visits = Visit.objects.filter(
+            appointment__client=self.object
+        ).select_related(
+            'appointment',
+            'appointment__service',
+            'staff',
+            'machine'
+        ).order_by('-appointment__start')[:10]  # Last 10 visits
+        
+        context['recent_visits'] = visits
+        context['total_visits'] = Visit.objects.filter(appointment__client=self.object).count()
+        
+        # ✅ Calculate total revenue from this client
+        revenue_stats = Visit.objects.filter(
+            appointment__client=self.object
+        ).aggregate(
+            total_charged=Sum('charge_amount'),
+            total_paid=Sum('paid_amount')
+        )
+        context['total_revenue'] = revenue_stats['total_paid'] or 0
+        context['total_charged'] = revenue_stats['total_charged'] or 0
         
         # Get consents
         context['consents'] = self.object.consents.all().order_by('-accepted_at')

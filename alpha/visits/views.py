@@ -1,8 +1,5 @@
-from django.shortcuts import render
-
-# Create your views here.
 """
-Visits Views
+Visits Views - UPDATED with notification count endpoint
 Place this at: alpha/visits/views.py
 """
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -11,6 +8,8 @@ from django.urls import reverse_lazy
 from django.db.models import Q, Sum, F
 from django.contrib import messages
 from django.utils.translation import gettext as _
+from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
 from .models import Visit
 
 
@@ -149,3 +148,60 @@ class VisitDeleteView(LoginRequiredMixin, DeleteView):
     def delete(self, request, *args, **kwargs):
         messages.success(request, _('Visit deleted successfully.'))
         return super().delete(request, *args, **kwargs)
+
+
+# ✅ NEW: Get incomplete visits count via AJAX
+@require_http_methods(["GET"])
+def get_incomplete_visits_count(request):
+    """
+    Return count of incomplete visits as JSON
+    Used for dynamically updating notification bell
+    """
+    if not request.user.is_authenticated:
+        return JsonResponse({
+            'success': True,
+            'count': 0,
+            'visits': []
+        })
+    
+    try:
+        # Get recent visits and check which are incomplete
+        recent_visits = Visit.objects.select_related(
+            'appointment',
+            'appointment__client',
+            'appointment__service',
+            'staff'
+        ).order_by('-created_at')[:50]
+        
+        # Filter incomplete visits using the is_complete property
+        incomplete_list = [v for v in recent_visits if not v.is_complete]
+        
+        # Limit to 10 for the dropdown
+        incomplete_list = incomplete_list[:10]
+        
+        # Build JSON response with visit details
+        visits_data = []
+        for visit in incomplete_list:
+            visits_data.append({
+                'id': visit.id,
+                'client_name': visit.appointment.client.full_name,
+                'service_name': visit.appointment.service.name,
+                'area': visit.area or '',
+                'missing_fields': visit.get_missing_fields(),
+                'time_since': visit.time_since_creation(),
+                'edit_url': f'/visits/{visit.id}/edit/'  # Adjust URL pattern as needed
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'count': len(incomplete_list),
+            'visits': visits_data
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': str(e),
+            'count': 0,
+            'visits': []
+        }, status=500)

@@ -44,15 +44,8 @@
                             </div>
                             {% endif %}
 
-                            <!-- Success message -->
-                            {% if messages %}
-                            {% for message in messages %}
-                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                                {{ message }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                            </div>
-                            {% endfor %}
-                            {% endif %}
+                            <!-- ✅ REMOVED: Messages block that was showing old messages -->
+                            <!-- Messages will show on the detail page after redirect -->
 
                             <div class="mb-3">
                                 <label for="id_name" class="form-label">Machine Name <span class="text-danger">*</span></label>
