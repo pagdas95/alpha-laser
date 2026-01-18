@@ -1,5 +1,5 @@
 """
-Appointments Views - UPDATED with Service Details AJAX endpoint
+Appointments Views - WITH AUTO-TRACKING OF WHO BOOKED THE APPOINTMENT
 Place this at: alpha/appointments/views.py
 """
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -36,7 +36,8 @@ class AppointmentListView(LoginRequiredMixin, ListView):
             'service', 
             'staff',
             'room',
-            'machine'
+            'machine',
+            'created_by'  # ✅ ADD: Load created_by to avoid N+1 queries
         ).all()
         
         # Filter by status if provided
@@ -59,7 +60,7 @@ class AppointmentListView(LoginRequiredMixin, ListView):
                 Q(notes__icontains=search)
             )
         
-        return queryset
+        return queryset.order_by('-start')
     
     def get_context_data(self, **kwargs):
         """Add extra context for the template"""
@@ -69,8 +70,8 @@ class AppointmentListView(LoginRequiredMixin, ListView):
         context['total_count'] = Appointment.objects.count()
         context['booked_count'] = Appointment.objects.filter(status='booked').count()
         context['completed_count'] = Appointment.objects.filter(status='completed').count()
-        context['no_show_count'] = Appointment.objects.filter(status='no_show').count()  # ✅ ADD
-        context['cancelled_count'] = Appointment.objects.filter(status='cancelled').count()  # ✅ ADD
+        context['no_show_count'] = Appointment.objects.filter(status='no_show').count()
+        context['cancelled_count'] = Appointment.objects.filter(status='cancelled').count()
         
         # Pass current filters
         context['current_status'] = self.request.GET.get('status', '')
@@ -131,6 +132,9 @@ class AppointmentCreateView(LoginRequiredMixin, CreateView):
         return initial
     
     def form_valid(self, form):
+        # ✅ NEW: Automatically set created_by to logged-in user
+        form.instance.created_by = self.request.user
+        
         messages.success(self.request, _('Appointment created successfully!'))
         return super().form_valid(form)
 
@@ -139,6 +143,10 @@ class AppointmentDetailView(LoginRequiredMixin, DetailView):
     model = Appointment
     template_name = 'appointments/appointment_detail.html'
     context_object_name = 'appointment'
+    
+    def get_queryset(self):
+        # ✅ ADD: Load created_by to avoid N+1 query
+        return super().get_queryset().select_related('created_by')
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -247,7 +255,7 @@ def get_room_appointments_json(request):
     
     # Build query
     appointments = Appointment.objects.select_related(
-        'client', 'service', 'room', 'staff', 'machine'
+        'client', 'service', 'room', 'staff', 'machine', 'created_by'  # ✅ ADD created_by
     ).all()
     
     # Filter by room
@@ -280,6 +288,9 @@ def get_room_appointments_json(request):
         
         client_name = str(apt.client)
         
+        # ✅ ADD: Include created_by info
+        created_by_name = apt.created_by.get_full_name() if apt.created_by else 'Unknown'
+        
         event = {
             'id': apt.id,
             'title': f"{client_name} - {apt.service.name}",
@@ -298,6 +309,8 @@ def get_room_appointments_json(request):
                 'status': apt.status,
                 'statusDisplay': apt.get_status_display(),
                 'notes': apt.notes or '',
+                'createdBy': created_by_name,  # ✅ ADD
+                'createdAt': apt.created_at.isoformat() if hasattr(apt, 'created_at') else '',  # ✅ ADD
             }
         }
         events.append(event)
@@ -378,6 +391,83 @@ def delete_appointment_ajax(request, appointment_id):
             'success': False,
             'message': 'Appointment not found'
         }, status=404)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': str(e)
+        }, status=400)
+
+@require_http_methods(["GET"])
+def check_room_availability(request):
+    """
+    Check if a room is available at a specific time
+    Returns conflicts if any exist
+    """
+    try:
+        room_id = request.GET.get('room_id')
+        start_str = request.GET.get('start')
+        end_str = request.GET.get('end')
+        appointment_id = request.GET.get('appointment_id')  # Exclude when editing
+        
+        if not all([room_id, start_str, end_str]):
+            return JsonResponse({
+                'success': False,
+                'message': 'Missing required parameters'
+            }, status=400)
+        
+        # Parse datetime
+        start = parse_datetime(start_str)
+        end = parse_datetime(end_str)
+        
+        if not start or not end:
+            return JsonResponse({
+                'success': False,
+                'message': 'Invalid datetime format'
+            }, status=400)
+        
+        if end <= start:
+            return JsonResponse({
+                'available': False,
+                'message': 'End time must be after start time'
+            })
+        
+        # Check for overlapping appointments
+        overlapping = Appointment.objects.filter(
+            room_id=room_id
+        ).filter(
+            Q(start__lt=end) & Q(end__gt=start)
+        ).exclude(
+            status='cancelled'
+        ).select_related('client', 'service')
+        
+        # Exclude current appointment if editing
+        if appointment_id:
+            overlapping = overlapping.exclude(pk=appointment_id)
+        
+        if overlapping.exists():
+            # Room is not available - return conflict details
+            conflicts = []
+            for apt in overlapping:
+                conflicts.append({
+                    'client': str(apt.client),
+                    'service': apt.service.name,
+                    'start': apt.start.strftime('%d/%m/%Y %H:%M'),
+                    'end': apt.end.strftime('%H:%M'),
+                    'status': apt.get_status_display(),
+                })
+            
+            return JsonResponse({
+                'available': False,
+                'message': f'⚠️ Room is already booked ({len(conflicts)} conflict(s))',
+                'conflicts': conflicts
+            })
+        else:
+            # Room is available
+            return JsonResponse({
+                'available': True,
+                'message': '✓ Room is available at this time'
+            })
+            
     except Exception as e:
         return JsonResponse({
             'success': False,

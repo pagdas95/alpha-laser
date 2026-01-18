@@ -429,4 +429,127 @@
         {% endif %}
     });
 </script>
+
+
+<script>
+// ============================================
+// ✅ REAL-TIME ROOM AVAILABILITY CHECKER
+// ============================================
+let availabilityCheckTimeout = null;
+
+function checkRoomAvailability() {
+    // Get form values
+    const roomSelect = document.querySelector('select[name="room"]');
+    const startInput = document.querySelector('input[name="start"]');
+    const endInput = document.querySelector('input[name="end"]');
+    
+    if (!roomSelect || !startInput || !endInput) {
+        return;
+    }
+    
+    const roomId = roomSelect.value;
+    const startValue = startInput.value;
+    const endValue = endInput.value;
+    
+    // Need all three values to check
+    if (!roomId || !startValue || !endValue) {
+        clearAvailabilityMessage();
+        return;
+    }
+    
+    console.log('🔍 Checking room availability...');
+    
+    // Build query parameters
+    const params = new URLSearchParams({
+        room_id: roomId,
+        start: startValue,
+        end: endValue
+    });
+    
+    // Make AJAX request
+    fetch(`/appointments/api/check-availability/?${params}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.available) {
+                // ✅ Room is available
+                showAvailabilityMessage('✓ Room is available', 'success');
+            } else {
+                // ❌ Room is NOT available
+                let message = data.message;
+                
+                if (data.conflicts && data.conflicts.length > 0) {
+                    const conflict = data.conflicts[0];
+                    message += `<br><small>Conflict: ${conflict.client} - ${conflict.service}<br>${conflict.start} - ${conflict.end}</small>`;
+                    
+                    // Also show browser alert
+                    alert(`⚠️ ${data.message}\n\nConflict with:\n${conflict.client} - ${conflict.service}\n${conflict.start} - ${conflict.end}\n\nPlease choose a different time or room.`);
+                }
+                
+                showAvailabilityMessage(message, 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error checking availability:', error);
+        });
+}
+
+function showAvailabilityMessage(message, type) {
+    clearAvailabilityMessage();
+    
+    const alert = document.createElement('div');
+    alert.id = 'availability-alert';
+    alert.className = `alert alert-${type} mt-2`;
+    alert.innerHTML = message;
+    
+    // Insert after room field
+    const roomField = document.querySelector('select[name="room"]').closest('.mb-3');
+    if (roomField) {
+        roomField.insertAdjacentElement('afterend', alert);
+    }
+}
+
+function clearAvailabilityMessage() {
+    const existing = document.getElementById('availability-alert');
+    if (existing) {
+        existing.remove();
+    }
+}
+
+// Attach event listeners when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    const roomSelect = document.querySelector('select[name="room"]');
+    const startInput = document.querySelector('input[name="start"]');
+    const endInput = document.querySelector('input[name="end"]');
+    
+    if (roomSelect && startInput && endInput) {
+        // Check availability when any field changes
+        [roomSelect, startInput, endInput].forEach(field => {
+            field.addEventListener('change', function() {
+                // Debounce - wait 500ms after last change
+                clearTimeout(availabilityCheckTimeout);
+                availabilityCheckTimeout = setTimeout(checkRoomAvailability, 500);
+            });
+        });
+        
+        console.log('✅ Room availability checker initialized');
+    }
+});
+</script>
+
+<style>
+#availability-alert {
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+</style>
 {% endblock %}

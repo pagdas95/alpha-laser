@@ -17,6 +17,17 @@ class Appointment(models.Model):
     notes   = models.TextField(blank=True)
     price_override = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
 
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="appointments_created",
+        verbose_name="Δημιουργήθηκε από"
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Ημερομηνία δημιουργίας")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Τελευταία ενημέρωση")
+
     class Meta:
         indexes = [
             models.Index(fields=["start"]),

@@ -60,3 +60,4 @@ class AppointmentCreateForm(AppointmentForm):
 class AppointmentUpdateForm(AppointmentForm):
     """Form for updating appointments (with status field)"""
     pass
+
