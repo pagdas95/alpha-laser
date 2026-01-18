@@ -115,12 +115,12 @@
                     <br><small class="text-muted">{{ visit.area }}</small>
                     {% endif %}
                 </td>
-                <td>
+                <td data-order="{{ visit.appointment.start|date:'Y-m-d H:i' }}">
                     <strong>{{ visit.appointment.start|date:"d/m/Y" }}</strong>
                     <br>
                     <small class="text-muted">{{ visit.appointment.start|date:"H:i" }}</small>
                 </td>
-                <td>{{ visit.staff.get_full_name|default:visit.staff.username }}</td>
+                <td>{{ visit.staff.name|default:visit.staff.username }}</td>
                 <td>
                     <strong>€{{ visit.charge_amount }}</strong>
                     {% if visit.client_package_item %}

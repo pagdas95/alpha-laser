@@ -225,7 +225,7 @@
                                             <br><small class="text-muted">{{ appointment.machine.name }}</small>
                                             {% endif %}
                                         </td>
-                                        <td>{{ appointment.staff.get_full_name|default:appointment.staff.username }}</td>
+                                        <td>{{ appointment.staff.name|default:appointment.staff.username }}</td>
                                         <td>
                                             {% if appointment.status == 'booked' %}
                                                 <span class="badge badge-soft-primary">{{ appointment.get_status_display }}</span>
@@ -300,7 +300,7 @@
                                             <br><small class="text-muted">{{ visit.machine.name }}</small>
                                             {% endif %}
                                         </td>
-                                        <td>{{ visit.staff.get_full_name|default:visit.staff.username }}</td>
+                                        <td>{{ visit.staff.name|default:visit.staff.username }}</td>
                                         <td>
                                             {% if visit.area %}
                                                 {{ visit.area }}

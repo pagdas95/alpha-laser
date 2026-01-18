@@ -117,14 +117,20 @@
                     <br><small class="text-muted">{{ appointment.machine.name }}</small>
                     {% endif %}
                 </td>
-                <td>
+                <td data-order="{{ appointment.start|date:'Y-m-d H:i' }}">
                     <strong>{{ appointment.start|date:"d/m/Y" }}</strong>
                     <br>
                     <small class="text-muted">
                         {{ appointment.start|date:"H:i" }} - {{ appointment.end|date:"H:i" }}
                     </small>
                 </td>
-                <td>{{ appointment.staff.get_full_name|default:appointment.staff.username }}</td>
+                <td>
+                    {% if appointment.staff.name %}
+                        {{ appointment.staff.name }}
+                    {% else %}
+                        {{ appointment.staff }}
+                    {% endif %}
+                </td>
                 <td>
                     <span class="badge bg-info-subtle text-info">
                         {{ appointment.room.name }}

@@ -140,7 +140,7 @@
                                         </div>
                                     </div>
                                     <div>
-                                        <h6 class="mb-1">{{ visit.staff.get_full_name|default:visit.staff.username }}</h6>
+                                        <h6 class="mb-1">{{ visit.staff.name|default:visit.staff.username }}</h6>
                                         {% if visit.machine %}
                                         <p class="text-muted mb-0 font-size-12">
                                             <i class="bx bx-desktop me-1"></i>{{ visit.machine.name }}

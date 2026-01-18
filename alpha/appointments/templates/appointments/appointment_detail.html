@@ -213,7 +213,7 @@
                                         </div>
                                     </div>
                                     <div>
-                                        <h6 class="mb-1">{{ appointment.staff.get_full_name|default:appointment.staff.username }}</h6>
+                                        <h6 class="mb-1">{{ appointment.staff.name |default:appointment.staff }}</h6>
                                         {% if appointment.staff.email %}
                                         <p class="text-muted mb-0 font-size-12">{{ appointment.staff.email }}</p>
                                         {% endif %}
