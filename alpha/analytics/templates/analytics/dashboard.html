@@ -1,0 +1,555 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{% trans "Analytics Dashboard" %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stats-card {
+        transition: transform 0.2s;
+    }
+    .stats-card:hover {
+        transform: translateY(-5px);
+    }
+    .chart-container {
+        position: relative;
+        height: 400px;
+        margin-bottom: 30px;
+    }
+    .month-selector {
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
+<li class="breadcrumb-item active">{% trans "Analytics" %}</li>
+{% endblock %}
+
+{% block content %}
+
+<!-- Month Selector -->
+<div class="row">
+    <div class="col-12">
+        <div class="month-selector">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h5 class="mb-0">
+                        <i class="bx bx-calendar me-2"></i>
+                        {% trans "Viewing:" %} <strong>{{ month_name }}</strong>
+                    </h5>
+                </div>
+                <div class="col-md-6 text-end">
+                    <div class="d-flex justify-content-end gap-2">
+                        <select id="monthSelector" class="form-select" style="width: 200px;">
+                            {% for month in available_months %}
+                            <option value="{{ month.value }}" {% if month.value == selected_month %}selected{% endif %}>
+                                {{ month.label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <button class="btn btn-success" id="exportExcel">
+                            <i class="bx bx-download me-1"></i>
+                            {% trans "Export Excel" %}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row">
+    <div class="col-xl-3 col-md-6">
+        <div class="card mini-stats-wid stats-card">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-grow-1">
+                        <p class="text-muted fw-medium">{% trans "Total Visits" %}</p>
+                        <h4 class="mb-0">{{ stats.total_visits }}</h4>
+                        <small class="text-muted">
+                            <i class="bx bx-check-circle text-success"></i> 
+                            {{ stats.fully_paid }} {% trans "paid" %}
+                        </small>
+                    </div>
+                    <div class="avatar-sm rounded-circle bg-primary align-self-center mini-stat-icon">
+                        <span class="avatar-title rounded-circle bg-primary">
+                            <i class="bx bx-check-double font-size-24"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6">
+        <div class="card mini-stats-wid stats-card">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-grow-1">
+                        <p class="text-muted fw-medium">{% trans "Total Revenue" %}</p>
+                        <h4 class="mb-0">€{{ stats.revenue|floatformat:2 }}</h4>
+                        <small class="text-muted">
+                            <i class="bx bx-trending-up text-success"></i> 
+                            {% trans "Charged this month" %}
+                        </small>
+                    </div>
+                    <div class="avatar-sm rounded-circle bg-success align-self-center mini-stat-icon">
+                        <span class="avatar-title rounded-circle bg-success">
+                            <i class="bx bx-euro font-size-24"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6">
+        <div class="card mini-stats-wid stats-card">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-grow-1">
+                        <p class="text-muted fw-medium">{% trans "Collected" %}</p>
+                        <h4 class="mb-0">€{{ stats.paid|floatformat:2 }}</h4>
+                        <small class="text-muted">
+                            {% widthratio stats.paid stats.revenue 100 %}% {% trans "of revenue" %}
+                        </small>
+                    </div>
+                    <div class="avatar-sm rounded-circle bg-info align-self-center mini-stat-icon">
+                        <span class="avatar-title rounded-circle bg-info">
+                            <i class="bx bx-wallet font-size-24"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6">
+        <div class="card mini-stats-wid stats-card">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-grow-1">
+                        <p class="text-muted fw-medium">{% trans "Pending" %}</p>
+                        <h4 class="mb-0">€{{ stats.pending|floatformat:2 }}</h4>
+                        <small class="text-muted">
+                            <i class="bx bx-time text-warning"></i> 
+                            {{ stats.unpaid }} {% trans "unpaid" %}
+                        </small>
+                    </div>
+                    <div class="avatar-sm rounded-circle bg-warning align-self-center mini-stat-icon">
+                        <span class="avatar-title rounded-circle bg-warning">
+                            <i class="bx bx-time-five font-size-24"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row 1 -->
+<div class="row">
+    <div class="col-xl-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="bx bx-line-chart me-2"></i>
+                    {% trans "Daily Revenue Trend" %}
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="dailyRevenueChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-4">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="bx bx-pie-chart me-2"></i>
+                    {% trans "Payment Status" %}
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="visitsChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row 2 -->
+<div class="row">
+    <div class="col-xl-6">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="bx bx-bar-chart me-2"></i>
+                    {% trans "Top Services by Revenue" %}
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="servicesChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-6">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="bx bx-user-check me-2"></i>
+                    {% trans "Staff Performance" %}
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="staffChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row 3 -->
+<div class="row">
+    <div class="col-xl-6">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="bx bx-door-open me-2"></i>
+                    {% trans "Room Utilization" %}
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="roomsChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-6">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="bx bx-chip me-2"></i>
+                    {% trans "Machine Utilization" %}
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="machinesChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Stats -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="bx bx-detail me-2"></i>
+                    {% trans "Detailed Statistics" %}
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="mb-3">{% trans "Appointments Breakdown" %}</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><i class="bx bx-check-circle text-success"></i> {% trans "Completed" %}</td>
+                                    <td class="text-end"><strong>{{ stats.completed }}</strong></td>
+                                </tr>
+                                <tr>
+                                    <td><i class="bx bx-calendar text-primary"></i> {% trans "Booked" %}</td>
+                                    <td class="text-end"><strong>{{ stats.booked }}</strong></td>
+                                </tr>
+                                <tr>
+                                    <td><i class="bx bx-x-circle text-danger"></i> {% trans "Cancelled" %}</td>
+                                    <td class="text-end"><strong>{{ stats.cancelled }}</strong></td>
+                                </tr>
+                                <tr>
+                                    <td><i class="bx bx-user-x text-warning"></i> {% trans "No Show" %}</td>
+                                    <td class="text-end"><strong>{{ stats.no_show }}</strong></td>
+                                </tr>
+                                <tr class="border-top">
+                                    <td><strong>{% trans "Total Appointments" %}</strong></td>
+                                    <td class="text-end"><strong>{{ stats.total_appointments }}</strong></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h6 class="mb-3">{% trans "Payment Breakdown" %}</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><i class="bx bx-check-circle text-success"></i> {% trans "Fully Paid" %}</td>
+                                    <td class="text-end"><strong>{{ stats.fully_paid }}</strong></td>
+                                </tr>
+                                <tr>
+                                    <td><i class="bx bx-time text-warning"></i> {% trans "Partially Paid" %}</td>
+                                    <td class="text-end"><strong>{{ stats.partially_paid }}</strong></td>
+                                </tr>
+                                <tr>
+                                    <td><i class="bx bx-x-circle text-danger"></i> {% trans "Unpaid" %}</td>
+                                    <td class="text-end"><strong>{{ stats.unpaid }}</strong></td>
+                                </tr>
+                                <tr class="border-top">
+                                    <td><strong>{% trans "Total Visits" %}</strong></td>
+                                    <td class="text-end"><strong>{{ stats.total_visits }}</strong></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock content %}
+
+{% block extra_js %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selectedMonth = '{{ selected_month }}';
+    
+    // Initialize all charts
+    initializeDailyRevenueChart();
+    initializeVisitsChart();
+    initializeServicesChart();
+    initializeStaffChart();
+    initializeRoomsChart();
+    initializeMachinesChart();
+    
+    // Month selector change handler
+    document.getElementById('monthSelector').addEventListener('change', function() {
+        window.location.href = '?month=' + this.value;
+    });
+    
+    // Export Excel handler
+    document.getElementById('exportExcel').addEventListener('click', function() {
+        window.location.href = '{% url "analytics:export-monthly" %}?month=' + selectedMonth;
+    });
+    
+    // Chart initialization functions
+    function initializeDailyRevenueChart() {
+        fetch(`{% url 'analytics:chart-data' %}?type=daily_revenue&month=${selectedMonth}`)
+            .then(response => response.json())
+            .then(data => {
+                const ctx = document.getElementById('dailyRevenueChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: data,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                            },
+                            title: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return '€' + value.toFixed(2);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+    }
+    
+    function initializeVisitsChart() {
+        fetch(`{% url 'analytics:chart-data' %}?type=visits&month=${selectedMonth}`)
+            .then(response => response.json())
+            .then(data => {
+                const ctx = document.getElementById('visitsChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: data,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                            }
+                        }
+                    }
+                });
+            });
+    }
+    
+    function initializeServicesChart() {
+        fetch(`{% url 'analytics:chart-data' %}?type=services&month=${selectedMonth}`)
+            .then(response => response.json())
+            .then(data => {
+                const ctx = document.getElementById('servicesChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: data,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        indexAxis: 'y',
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return '€' + value.toFixed(2);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+    }
+    
+    function initializeStaffChart() {
+        fetch(`{% url 'analytics:chart-data' %}?type=staff&month=${selectedMonth}`)
+            .then(response => response.json())
+            .then(data => {
+                const ctx = document.getElementById('staffChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: data,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                            },
+                            title: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                type: 'linear',
+                                display: true,
+                                position: 'left',
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Visits'
+                                }
+                            },
+                            y1: {
+                                type: 'linear',
+                                display: true,
+                                position: 'right',
+                                beginAtZero: true,
+                                grid: {
+                                    drawOnChartArea: false,
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Revenue (€)'
+                                },
+                                ticks: {
+                                    callback: function(value) {
+                                        return '€' + value.toFixed(0);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+    }
+    
+    function initializeRoomsChart() {
+        fetch(`{% url 'analytics:chart-data' %}?type=rooms&month=${selectedMonth}`)
+            .then(response => response.json())
+            .then(data => {
+                const ctx = document.getElementById('roomsChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: data,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                            },
+                            title: {
+                                display: false
+                            }
+                        }
+                    }
+                });
+            });
+    }
+    
+    function initializeMachinesChart() {
+        fetch(`{% url 'analytics:chart-data' %}?type=machines&month=${selectedMonth}`)
+            .then(response => response.json())
+            .then(data => {
+                const ctx = document.getElementById('machinesChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: data,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                            },
+                            title: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            });
+    }
+});
+</script>
+{% endblock %}

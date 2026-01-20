@@ -15,6 +15,14 @@
                     </a>
                 </li>
 
+                <!-- ====== NEW: Analytics ====== -->
+                <li>
+                    <a href="{% url 'analytics:dashboard' %}">
+                        <i data-feather="bar-chart-2"></i>
+                        <span data-key="t-analytics">{% trans "Analytics" %}</span>
+                    </a>
+                </li>
+
                 <!-- ====== SCHEDULING Section ====== -->
                 <li class="menu-title mt-2" data-key="t-scheduling">{% trans "SCHEDULING" %}</li>
 
@@ -87,7 +95,6 @@
                                 {% trans "Categories" %}
                             </a>
                         </li>
-                        <!-- <li><hr class="dropdown-divider my-2"></li> -->
                         <!-- Packages -->
                         <li>
                             <a href="{% url 'catalog:package-list' %}" data-key="t-packages">
@@ -102,6 +109,7 @@
                         </li>
                     </ul>
                 </li>
+                
                 <!-- ====== RESOURCES Section ====== -->
                 <li class="menu-title mt-2" data-key="t-resources">{% trans "RESOURCES" %}</li>
 

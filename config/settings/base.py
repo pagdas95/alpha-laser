@@ -92,6 +92,7 @@ LOCAL_APPS = [
     "alpha.catalog",
     "alpha.appointments",
     "alpha.visits",
+    "alpha.analytics",
     # Your stuff: custom apps go here
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps

@@ -28,6 +28,7 @@ urlpatterns = [
     path("visits/", include("alpha.visits.urls", namespace="visits")),
     path("catalog/", include("alpha.catalog.urls", namespace="catalog")),
     path("resources/", include("alpha.resources.urls", namespace="resources")),
+    path('analytics/', include('alpha.analytics.urls', namespace='analytics')),
     # ...
     # Media files
     *static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT),
