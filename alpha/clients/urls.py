@@ -15,4 +15,5 @@ urlpatterns = [
     path('<int:pk>/', views.ClientDetailView.as_view(), name='detail'),
     path('<int:pk>/edit/', views.ClientUpdateView.as_view(), name='edit'),
     path('<int:pk>/delete/', views.ClientDeleteView.as_view(), name='delete'),
+    path('export/excel/', views.ClientExportExcelView.as_view(), name='export-excel'),
 ]

@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{% trans "Scheduled Notifications" %}{% endblock %}
+
+{% block extra_css %}
+<!-- DataTables -->
+<link href="{% static 'libs/datatables.net-bs4/css/dataTables.bootstrap4.min.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'libs/datatables.net-responsive-bs4/css/responsive.bootstrap4.min.css' %}" rel="stylesheet" type="text/css" />
+{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
+<li class="breadcrumb-item active">{% trans "Scheduled Notifications" %}</li>
+{% endblock %}
+
+{% block content %}
+
+<div class="row align-items-center">
+    <div class="col-md-6">
+        <div class="mb-3">
+            <h5 class="card-title">
+                {% trans "Scheduled Notifications" %} 
+                <span class="text-muted fw-normal ms-2">({{ page_obj.paginator.count|default:0 }})</span>
+            </h5>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="d-flex flex-wrap align-items-center justify-content-end gap-2 mb-3">
+            <!-- Filter Buttons -->
+            <div class="btn-group" role="group">
+                <a href="{% url 'notifications:scheduled' %}" 
+                   class="btn btn-sm {% if not request.GET.status %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                    {% trans "All" %}
+                </a>
+                <a href="?status=pending" 
+                   class="btn btn-sm {% if request.GET.status == 'pending' %}btn-warning{% else %}btn-outline-warning{% endif %}">
+                    ⏳ {% trans "Pending" %} ({{ pending_count }})
+                </a>
+                <a href="?status=sent" 
+                   class="btn btn-sm {% if request.GET.status == 'sent' %}btn-success{% else %}btn-outline-success{% endif %}">
+                    ✅ {% trans "Sent" %} ({{ sent_count }})
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- end row -->
+
+<div class="table-responsive mb-4">
+    <table class="table align-middle datatable dt-responsive table-check nowrap" 
+           style="border-collapse: collapse; border-spacing: 0 8px; width: 100%;" 
+           id="scheduledTable">
+        <thead>
+            <tr>
+                <th scope="col">{% trans "Client" %}</th>
+                <th scope="col">{% trans "Appointment" %}</th>
+                <th scope="col">{% trans "Type" %}</th>
+                <th scope="col">{% trans "Channel" %}</th>
+                <th scope="col">{% trans "Scheduled For" %}</th>
+                <th scope="col">{% trans "Status" %}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for scheduled in scheduled_notifications %}
+            <tr>
+                <td>
+                    <div class="avatar-sm d-inline-block align-middle me-2">
+                        <div class="avatar-title bg-light-subtle text-primary font-size-20 m-0 rounded-circle">
+                            <i class="bx bxs-user"></i>
+                        </div>
+                    </div>
+                    <a href="{% url 'clients:detail' scheduled.appointment.client.pk %}" class="text-body fw-medium">
+                        {{ scheduled.appointment.client.full_name }}
+                    </a>
+                </td>
+                <td>
+                    <div>
+                        <a href="{% url 'appointments:detail' scheduled.appointment.pk %}" class="text-body">
+                            {{ scheduled.appointment.service.name }}
+                        </a>
+                    </div>
+                    <small class="text-muted">
+                        <i class="bx bx-calendar me-1"></i>{{ scheduled.appointment.start_time|date:"d M Y, g:i A" }}
+                    </small>
+                </td>
+                <td>
+                    <span class="badge bg-info-subtle text-info font-size-11">
+                        {{ scheduled.get_notification_type_display }}
+                    </span>
+                </td>
+                <td>
+                    {% if scheduled.send_sms and scheduled.send_email %}
+                        <span class="badge bg-primary-subtle text-primary font-size-11">
+                            <i class="bx bx-mobile"></i><i class="bx bx-envelope"></i> Both
+                        </span>
+                    {% elif scheduled.send_sms %}
+                        <span class="badge bg-success-subtle text-success font-size-11">
+                            <i class="bx bx-mobile"></i> SMS
+                        </span>
+                    {% elif scheduled.send_email %}
+                        <span class="badge bg-info-subtle text-info font-size-11">
+                            <i class="bx bx-envelope"></i> Email
+                        </span>
+                    {% else %}
+                        <span class="text-muted">—</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <i class="bx bx-time me-1 text-muted"></i>{{ scheduled.scheduled_for|date:"d M Y, g:i A" }}
+                </td>
+                <td>
+                    {% if scheduled.sent %}
+                        <span class="badge bg-success-subtle text-success font-size-11">
+                            <i class="bx bx-check-circle"></i> {% trans "Sent" %}
+                        </span>
+                        {% if scheduled.sent_at %}
+                            <br>
+                            <small class="text-muted">{{ scheduled.sent_at|date:"d M, g:i A" }}</small>
+                        {% endif %}
+                    {% else %}
+                        <span class="badge bg-warning-subtle text-warning font-size-11">
+                            <i class="bx bx-time-five"></i> {% trans "Pending" %}
+                        </span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" class="text-center py-5">
+                    <div class="text-muted">
+                        <i class="bx bx-time-five font-size-48 d-block mb-3"></i>
+                        <h5>{% trans "No scheduled notifications" %}</h5>
+                        <p>{% trans "Scheduled reminders will appear here automatically when appointments are booked" %}</p>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <!-- end table -->
+</div>
+<!-- end table responsive -->
+
+<!-- Stats Cards -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mini-stats-wid">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-grow-1">
+                        <p class="text-muted fw-medium">{% trans "Pending" %}</p>
+                        <h4 class="mb-0">{{ pending_count }}</h4>
+                    </div>
+                    <div class="avatar-sm rounded-circle bg-warning align-self-center mini-stat-icon">
+                        <span class="avatar-title rounded-circle bg-warning">
+                            <i class="bx bx-time-five font-size-24"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card mini-stats-wid">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-grow-1">
+                        <p class="text-muted fw-medium">{% trans "Sent" %}</p>
+                        <h4 class="mb-0">{{ sent_count }}</h4>
+                    </div>
+                    <div class="avatar-sm rounded-circle bg-success align-self-center mini-stat-icon">
+                        <span class="avatar-title rounded-circle bg-success">
+                            <i class="bx bx-check-circle font-size-24"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock content %}
+
+{% block extra_js %}
+<!-- Required datatable js -->
+<script src="{% static 'libs/datatables.net/js/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'libs/datatables.net-bs4/js/dataTables.bootstrap4.min.js' %}"></script>
+
+<!-- Responsive examples -->
+<script src="{% static 'libs/datatables.net-responsive/js/dataTables.responsive.min.js' %}"></script>
+<script src="{% static 'libs/datatables.net-responsive-bs4/js/responsive.bootstrap4.min.js' %}"></script>
+
+<script>
+$(document).ready(function() {
+    $('#scheduledTable').DataTable({
+        "order": [[ 4, "asc" ]], // Sort by scheduled_for ascending
+        "pageLength": 25,
+        "responsive": true,
+        "language": {
+            "search": "{% trans 'Search' %}:",
+            "lengthMenu": "{% trans 'Show' %} _MENU_ {% trans 'entries' %}",
+            "info": "{% trans 'Showing' %} _START_ {% trans 'to' %} _END_ {% trans 'of' %} _TOTAL_ {% trans 'notifications' %}",
+            "infoEmpty": "{% trans 'No notifications to show' %}",
+            "zeroRecords": "{% trans 'No matching notifications found' %}",
+            "paginate": {
+                "first": "{% trans 'First' %}",
+                "last": "{% trans 'Last' %}",
+                "next": "{% trans 'Next' %}",
+                "previous": "{% trans 'Previous' %}"
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

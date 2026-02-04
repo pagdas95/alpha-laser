@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{% trans "Edit Profile" %} - {{ staff_member.name|default:staff_member.username }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
+<li class="breadcrumb-item"><a href="{% url 'staff:list' %}">{% trans "Staff" %}</a></li>
+<li class="breadcrumb-item"><a href="{% url 'staff:detail' staff_member.username %}">{{ staff_member.name|default:staff_member.username }}</a></li>
+<li class="breadcrumb-item active">{% trans "Edit Profile" %}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bx bx-edit-alt me-2"></i>
+                    {% trans "Edit Staff Profile" %} - {{ staff_member.name|default:staff_member.username }}
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <!-- Professional Information -->
+                    <h6 class="mb-3 text-primary">
+                        <i class="bx bx-briefcase me-2"></i>{% trans "Professional Information" %}
+                    </h6>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.position.id_for_label }}" class="form-label">
+                                {% trans "Position" %} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.position }}
+                            {% if form.position.errors %}
+                                <div class="invalid-feedback d-block">{{ form.position.errors }}</div>
+                            {% endif %}
+                            <small class="text-muted">{{ form.position.help_text }}</small>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.employment_type.id_for_label }}" class="form-label">
+                                {% trans "Employment Type" %}
+                            </label>
+                            {{ form.employment_type }}
+                            {% if form.employment_type.errors %}
+                                <div class="invalid-feedback d-block">{{ form.employment_type.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.hire_date.id_for_label }}" class="form-label">
+                                {% trans "Hire Date" %}
+                            </label>
+                            {{ form.hire_date }}
+                            {% if form.hire_date.errors %}
+                                <div class="invalid-feedback d-block">{{ form.hire_date.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.employee_id.id_for_label }}" class="form-label">
+                                {% trans "Employee ID" %}
+                            </label>
+                            {{ form.employee_id }}
+                            {% if form.employee_id.errors %}
+                                <div class="invalid-feedback d-block">{{ form.employee_id.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <!-- Contact Information -->
+                    <h6 class="mb-3 text-primary">
+                        <i class="bx bx-phone me-2"></i>{% trans "Contact Information" %}
+                    </h6>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ form.phone.id_for_label }}" class="form-label">
+                                {% trans "Phone" %}
+                            </label>
+                            {{ form.phone }}
+                            {% if form.phone.errors %}
+                                <div class="invalid-feedback d-block">{{ form.phone.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ form.emergency_contact.id_for_label }}" class="form-label">
+                                {% trans "Emergency Contact" %}
+                            </label>
+                            {{ form.emergency_contact }}
+                            {% if form.emergency_contact.errors %}
+                                <div class="invalid-feedback d-block">{{ form.emergency_contact.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ form.emergency_phone.id_for_label }}" class="form-label">
+                                {% trans "Emergency Phone" %}
+                            </label>
+                            {{ form.emergency_phone }}
+                            {% if form.emergency_phone.errors %}
+                                <div class="invalid-feedback d-block">{{ form.emergency_phone.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <!-- Leave Allowance -->
+                    <h6 class="mb-3 text-primary">
+                        <i class="bx bx-calendar-check me-2"></i>{% trans "Leave Management - 3 Separate Balances" %}
+                    </h6>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ form.annual_leave_allowance.id_for_label }}" class="form-label">
+                                {% trans "Annual Leave Allowance (Days)" %} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.annual_leave_allowance }}
+                            {% if form.annual_leave_allowance.errors %}
+                                <div class="invalid-feedback d-block">{{ form.annual_leave_allowance.errors }}</div>
+                            {% endif %}
+                            <small class="text-muted">{{ form.annual_leave_allowance.help_text }}</small>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ form.sick_leave_allowance.id_for_label }}" class="form-label">
+                                {% trans "Sick Leave Allowance (Days)" %} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.sick_leave_allowance }}
+                            {% if form.sick_leave_allowance.errors %}
+                                <div class="invalid-feedback d-block">{{ form.sick_leave_allowance.errors }}</div>
+                            {% endif %}
+                            <small class="text-muted">{{ form.sick_leave_allowance.help_text }}</small>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ form.other_balance.id_for_label }}" class="form-label">
+                                {% trans "Compensation Balance (Days)" %}
+                            </label>
+                            {{ form.other_balance }}
+                            {% if form.other_balance.errors %}
+                                <div class="invalid-feedback d-block">{{ form.other_balance.errors }}</div>
+                            {% endif %}
+                            <small class="text-muted">{{ form.other_balance.help_text }}</small>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="bx bx-info-circle me-2"></i>
+                        <strong>{% trans "3 Separate Leave Types:" %}</strong>
+                        <ul class="mb-0 mt-2">
+                            <li><strong>{% trans "Annual Leave" %}:</strong> {% trans "Regular leave + Half days" %}</li>
+                            <li><strong>{% trans "Sick Leave" %}:</strong> {% trans "Tracked separately from annual leave" %}</li>
+                            <li><strong>{% trans "Compensation" %}:</strong> {% trans "Bonus days earned (starts at 0, increases with 'Other' entries)" %}</li>
+                        </ul>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <!-- Professional Details -->
+                    <h6 class="mb-3 text-primary">
+                        <i class="bx bx-book-alt me-2"></i>{% trans "Professional Details" %}
+                    </h6>
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label for="{{ form.specializations.id_for_label }}" class="form-label">
+                                {% trans "Specializations" %}
+                            </label>
+                            {{ form.specializations }}
+                            {% if form.specializations.errors %}
+                                <div class="invalid-feedback d-block">{{ form.specializations.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-12 mb-3">
+                            <label for="{{ form.certifications.id_for_label }}" class="form-label">
+                                {% trans "Certifications" %}
+                            </label>
+                            {{ form.certifications }}
+                            {% if form.certifications.errors %}
+                                <div class="invalid-feedback d-block">{{ form.certifications.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-12 mb-3">
+                            <label for="{{ form.bio.id_for_label }}" class="form-label">
+                                {% trans "Bio" %}
+                            </label>
+                            {{ form.bio }}
+                            {% if form.bio.errors %}
+                                <div class="invalid-feedback d-block">{{ form.bio.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <!-- Profile Picture & Settings -->
+                    <h6 class="mb-3 text-primary">
+                        <i class="bx bx-cog me-2"></i>{% trans "Settings" %}
+                    </h6>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.avatar.id_for_label }}" class="form-label">
+                                {% trans "Profile Picture" %}
+                            </label>
+                            {{ form.avatar }}
+                            {% if form.avatar.errors %}
+                                <div class="invalid-feedback d-block">{{ form.avatar.errors }}</div>
+                            {% endif %}
+                            {% if object.avatar %}
+                                <div class="mt-2">
+                                    <img src="{{ object.avatar.url }}" alt="" class="img-thumbnail" style="max-width: 150px;">
+                                    <p class="text-muted small mt-1">{% trans "Current avatar" %}</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    {{ form.is_active_staff }}
+                                    <label class="form-check-label" for="{{ form.is_active_staff.id_for_label }}">
+                                        {% trans "Active Staff Member" %}
+                                    </label>
+                                </div>
+                                {% if form.is_active_staff.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.is_active_staff.errors }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    {{ form.can_be_booked }}
+                                    <label class="form-check-label" for="{{ form.can_be_booked.id_for_label }}">
+                                        {% trans "Can Be Booked for Appointments" %}
+                                    </label>
+                                </div>
+                                {% if form.can_be_booked.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.can_be_booked.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger" role="alert">
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Submit Buttons -->
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <a href="{% url 'staff:detail' staff_member.username %}" class="btn btn-light">
+                            <i class="bx bx-x me-1"></i> {% trans "Cancel" %}
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bx bx-check me-1"></i> {% trans "Save Profile" %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

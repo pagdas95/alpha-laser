@@ -29,15 +29,7 @@
                 <i class="fa fa-fw fa-bars"></i>
             </button>
 
-            <!-- App Search-->
-            <form class="app-search d-none d-lg-block">
-                <div class="position-relative">
-                    <input type="text" class="form-control" placeholder="{% trans 'Search...' %}">
-                    <button class="btn btn-primary" type="button">
-                        <i class="bx bx-search-alt align-middle"></i>
-                    </button>
-                </div>
-            </form>
+ 
         </div>
 
         <div class="d-flex">
@@ -66,22 +58,18 @@
                 </button>
             </div>
 
-            <!-- ============================================ -->
-            <!-- ✅ UPDATED NOTIFICATION BELL STARTS HERE ✅  -->
-            <!-- ============================================ -->
+            <!-- Notification Bell -->
             <div class="dropdown d-inline-block">
                 <button type="button" class="btn header-item noti-icon position-relative" 
                 id="page-header-notifications-dropdown"
                 data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     <i data-feather="bell" class="icon-lg"></i>
-                    <!-- ✅ CHANGED: Dynamic badge count instead of hardcoded "5" -->
                     {% if incomplete_visits_count > 0 %}
                     <span class="badge bg-danger rounded-pill">{{ incomplete_visits_count }}</span>
                     {% endif %}
                 </button>
                 <div class="dropdown-menu dropdown-menu-lg dropdown-menu-end p-0"
                     aria-labelledby="page-header-notifications-dropdown">
-                    <!-- ✅ CHANGED: Header text -->
                     <div class="p-3">
                         <div class="row align-items-center">
                             <div class="col">
@@ -96,7 +84,6 @@
                             </div>
                         </div>
                     </div>
-                    <!-- ✅ CHANGED: Dropdown content with actual incomplete visits -->
                     <div data-simplebar style="max-height: 350px;">
                         {% if incomplete_visits %}
                             {% for visit in incomplete_visits %}
@@ -135,7 +122,6 @@
                             </a>
                             {% endfor %}
                         {% else %}
-                            <!-- ✅ NEW: Empty state when no incomplete visits -->
                             <div class="text-center p-4">
                                 <div class="avatar-sm mx-auto mb-4">
                                     <span class="avatar-title bg-success-subtle text-success rounded-circle font-size-24">
@@ -147,7 +133,6 @@
                             </div>
                         {% endif %}
                     </div>
-                    <!-- ✅ CHANGED: Footer link -->
                     <div class="p-2 border-top d-grid">
                         <a class="btn btn-sm btn-link font-size-14 text-center" href="{% url 'visits:list' %}">
                             <i class="mdi mdi-arrow-right-circle me-1"></i> 
@@ -156,28 +141,51 @@
                     </div>
                 </div>
             </div>
-            <!-- ============================================ -->
-            <!-- ✅ UPDATED NOTIFICATION BELL ENDS HERE ✅    -->
-            <!-- ============================================ -->
 
+            <!-- ============================================ -->
+            <!-- ✅ UPDATED USER PROFILE DROPDOWN STARTS HERE -->
+            <!-- ============================================ -->
             {% if request.user.is_authenticated %}
             <div class="dropdown d-inline-block">
                 <button type="button" class="btn header-item bg-light-subtle border-start border-end" 
                 id="page-header-user-dropdown"
                 data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    <img class="rounded-circle header-profile-user" 
-                         src="{% static 'images/users/avatar-1.jpg' %}"
-                         alt="Header Avatar">
-                    <span class="d-none d-xl-inline-block ms-1 fw-medium">{{ request.user.get_full_name|default:request.user.username }}</span>
+                    <!-- ✅ UPDATED: Show staff avatar if exists -->
+                    {% if request.user.staff_profile and request.user.staff_profile.avatar %}
+                        <img class="rounded-circle header-profile-user" 
+                             src="{{ request.user.staff_profile.avatar.url }}"
+                             alt="{{ request.user.name|default:request.user.username }}">
+                    {% else %}
+                        <img class="rounded-circle header-profile-user" 
+                             src="{% static 'images/users/avatar-1.jpg' %}"
+                             alt="Header Avatar">
+                    {% endif %}
+                    
+                    <span class="d-none d-xl-inline-block ms-1 fw-medium">
+                        {{ request.user.name|default:request.user.username }}
+                    </span>
                     <i class="mdi mdi-chevron-down d-none d-xl-inline-block"></i>
                 </button>
+                
                 <div class="dropdown-menu dropdown-menu-end">
-                    <a class="dropdown-item" href="{% url 'users:detail' request.user.username %}">
-                        <i class="mdi mdi mdi-face-man font-size-16 align-middle me-1"></i> {% trans "Profile" %}
-                    </a>
+                    <!-- ✅ UPDATED: Link to staff profile if exists -->
+                    {% if request.user.staff_profile %}
+                        <a class="dropdown-item" href="{% url 'staff:detail' request.user.username %}">
+                            <i class="mdi mdi-account-circle font-size-16 align-middle me-1"></i> 
+                            {% trans "My Staff Profile" %}
+                        </a>
+                    {% else %}
+                        <a class="dropdown-item" href="{% url 'users:detail' request.user.username %}">
+                            <i class="mdi mdi-face-man font-size-16 align-middle me-1"></i> 
+                            {% trans "Profile" %}
+                        </a>
+                    {% endif %}
+                    
                     <div class="dropdown-divider"></div>
+                    
                     <a class="dropdown-item" href="{% url 'account_logout' %}">
-                        <i class="mdi mdi-logout font-size-16 align-middle me-1"></i> {% trans "Logout" %}
+                        <i class="mdi mdi-logout font-size-16 align-middle me-1"></i> 
+                        {% trans "Logout" %}
                     </a>
                 </div>
             </div>
@@ -188,6 +196,9 @@
                 </a>
             </div>
             {% endif %}
+            <!-- ============================================ -->
+            <!-- ✅ UPDATED USER PROFILE DROPDOWN ENDS HERE   -->
+            <!-- ============================================ -->
         </div>
     </div>
 </header>

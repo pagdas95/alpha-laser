@@ -423,13 +423,18 @@ class ExportMonthlyReportView(LoginRequiredMixin, TemplateView):
         # Create workbook
         wb = Workbook()
         
-        # Create sheets
+        # Create existing sheets
         self._create_summary_sheet(wb, start_date, end_date)
         self._create_visits_sheet(wb, start_date, end_date)
         self._create_services_sheet(wb, start_date, end_date)
         self._create_staff_sheet(wb, start_date, end_date)
         self._create_rooms_sheet(wb, start_date, end_date)
         self._create_machines_sheet(wb, start_date, end_date)
+        
+        # ✅ NEW: Create detailed appointment sheets
+        self._create_cancelled_appointments_sheet(wb, start_date, end_date)
+        self._create_no_show_appointments_sheet(wb, start_date, end_date)
+        self._create_completed_appointments_sheet(wb, start_date, end_date)
         
         # Remove default sheet
         if 'Sheet' in wb.sheetnames:
@@ -695,6 +700,336 @@ class ExportMonthlyReportView(LoginRequiredMixin, TemplateView):
         # Auto-size columns
         for col in range(1, 5):
             ws.column_dimensions[get_column_letter(col)].width = 20
+    
+    # ========================================
+    # ✅ NEW: 3 DETAILED APPOINTMENT SHEETS
+    # ========================================
+    
+    def _create_cancelled_appointments_sheet(self, wb, start_date, end_date):
+        """Create detailed list of cancelled appointments with client names"""
+        ws = wb.create_sheet("Cancelled Appointments")
+        
+        # Headers
+        headers = [
+            'Date', 'Time', 'Client Name', 'Service', 'Staff', 
+            'Room', 'Duration', 'Price', 'Cancellation Reason'
+        ]
+        
+        # Style headers (RED for cancelled)
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col)
+            cell.value = header
+            cell.font = Font(bold=True, color="FFFFFF")
+            cell.fill = PatternFill(start_color="DC3545", end_color="DC3545", fill_type="solid")
+            cell.alignment = Alignment(horizontal='center')
+            cell.border = Border(
+                left=Side(style='thin'),
+                right=Side(style='thin'),
+                top=Side(style='thin'),
+                bottom=Side(style='thin')
+            )
+        
+        # Get cancelled appointments with related data
+        cancelled_appointments = Appointment.objects.filter(
+            start__gte=start_date,
+            start__lt=end_date,
+            status='cancelled'
+        ).select_related(
+            'client', 'service', 'staff', 'room'
+        ).order_by('start')
+        
+        # Write data
+        row = 2
+        for apt in cancelled_appointments:
+            # Get staff name
+            if hasattr(apt.staff, 'name') and apt.staff.name:
+                staff_name = apt.staff.name
+            else:
+                staff_name = apt.staff.username
+            
+            # Calculate duration
+            duration_minutes = int((apt.end - apt.start).total_seconds() / 60)
+            
+            # Get price
+            price = float(apt.price_override) if apt.price_override else float(apt.service.default_price)
+            
+            ws.cell(row=row, column=1, value=apt.start.strftime('%d/%m/%Y'))
+            ws.cell(row=row, column=2, value=apt.start.strftime('%H:%M'))
+            ws.cell(row=row, column=3, value=apt.client.full_name)
+            ws.cell(row=row, column=4, value=apt.service.name)
+            ws.cell(row=row, column=5, value=staff_name)
+            ws.cell(row=row, column=6, value=apt.room.name)
+            ws.cell(row=row, column=7, value=f"{duration_minutes} min")
+            ws.cell(row=row, column=8, value=price)
+            ws.cell(row=row, column=9, value=apt.notes or "")
+            
+            # Format price cell
+            ws.cell(row=row, column=8).number_format = '€#,##0.00'
+            
+            row += 1
+        
+        # Add total count
+        total_row = row + 1
+        ws.cell(row=total_row, column=1, value="TOTAL:")
+        ws.cell(row=total_row, column=1).font = Font(bold=True)
+        ws.cell(row=total_row, column=3, value=f"{cancelled_appointments.count()} cancelled appointments")
+        ws.cell(row=total_row, column=3).font = Font(bold=True)
+        
+        # Calculate total lost revenue
+        total_lost = sum(
+            float(apt.price_override) if apt.price_override else float(apt.service.default_price)
+            for apt in cancelled_appointments
+        )
+        ws.cell(row=total_row, column=7, value="Lost Revenue:")
+        ws.cell(row=total_row, column=7).font = Font(bold=True)
+        ws.cell(row=total_row, column=8, value=total_lost)
+        ws.cell(row=total_row, column=8).font = Font(bold=True, color="DC3545")
+        ws.cell(row=total_row, column=8).number_format = '€#,##0.00'
+        
+        # Auto-size columns
+        column_widths = {
+            'A': 12, 'B': 10, 'C': 25, 'D': 30, 'E': 20,
+            'F': 15, 'G': 12, 'H': 12, 'I': 40,
+        }
+        for col_letter, width in column_widths.items():
+            ws.column_dimensions[col_letter].width = width
+        
+        # Freeze header row
+        ws.freeze_panes = 'A2'
+    
+    def _create_no_show_appointments_sheet(self, wb, start_date, end_date):
+        """Create detailed list of no-show appointments with client names and phone"""
+        ws = wb.create_sheet("No-Show Appointments")
+        
+        # Headers
+        headers = [
+            'Date', 'Time', 'Client Name', 'Client Phone', 'Service', 
+            'Staff', 'Room', 'Price', 'Notes'
+        ]
+        
+        # Style headers (ORANGE for no-show)
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col)
+            cell.value = header
+            cell.font = Font(bold=True, color="FFFFFF")
+            cell.fill = PatternFill(start_color="FFC107", end_color="FFC107", fill_type="solid")
+            cell.alignment = Alignment(horizontal='center')
+            cell.border = Border(
+                left=Side(style='thin'),
+                right=Side(style='thin'),
+                top=Side(style='thin'),
+                bottom=Side(style='thin')
+            )
+        
+        # Get no-show appointments with related data
+        no_show_appointments = Appointment.objects.filter(
+            start__gte=start_date,
+            start__lt=end_date,
+            status='no_show'
+        ).select_related(
+            'client', 'service', 'staff', 'room'
+        ).order_by('start')
+        
+        # Write data
+        row = 2
+        for apt in no_show_appointments:
+            # Get staff name
+            if hasattr(apt.staff, 'name') and apt.staff.name:
+                staff_name = apt.staff.name
+            else:
+                staff_name = apt.staff.username
+            
+            # Get price
+            price = float(apt.price_override) if apt.price_override else float(apt.service.default_price)
+            
+            ws.cell(row=row, column=1, value=apt.start.strftime('%d/%m/%Y'))
+            ws.cell(row=row, column=2, value=apt.start.strftime('%H:%M'))
+            ws.cell(row=row, column=3, value=apt.client.full_name)
+            ws.cell(row=row, column=4, value=apt.client.phone)
+            ws.cell(row=row, column=5, value=apt.service.name)
+            ws.cell(row=row, column=6, value=staff_name)
+            ws.cell(row=row, column=7, value=apt.room.name)
+            ws.cell(row=row, column=8, value=price)
+            ws.cell(row=row, column=9, value=apt.notes or "")
+            
+            # Format price cell
+            ws.cell(row=row, column=8).number_format = '€#,##0.00'
+            
+            # Highlight client phone for easy follow-up
+            ws.cell(row=row, column=4).fill = PatternFill(
+                start_color="FFF3CD", end_color="FFF3CD", fill_type="solid"
+            )
+            
+            row += 1
+        
+        # Add total count
+        total_row = row + 1
+        ws.cell(row=total_row, column=1, value="TOTAL:")
+        ws.cell(row=total_row, column=1).font = Font(bold=True)
+        ws.cell(row=total_row, column=3, value=f"{no_show_appointments.count()} no-show appointments")
+        ws.cell(row=total_row, column=3).font = Font(bold=True)
+        
+        # Calculate total lost revenue
+        total_lost = sum(
+            float(apt.price_override) if apt.price_override else float(apt.service.default_price)
+            for apt in no_show_appointments
+        )
+        ws.cell(row=total_row, column=7, value="Lost Revenue:")
+        ws.cell(row=total_row, column=7).font = Font(bold=True)
+        ws.cell(row=total_row, column=8, value=total_lost)
+        ws.cell(row=total_row, column=8).font = Font(bold=True, color="FFC107")
+        ws.cell(row=total_row, column=8).number_format = '€#,##0.00'
+        
+        # Auto-size columns
+        column_widths = {
+            'A': 12, 'B': 10, 'C': 25, 'D': 15, 'E': 30,
+            'F': 20, 'G': 15, 'H': 12, 'I': 40,
+        }
+        for col_letter, width in column_widths.items():
+            ws.column_dimensions[col_letter].width = width
+        
+        # Freeze header row
+        ws.freeze_panes = 'A2'
+    
+    def _create_completed_appointments_sheet(self, wb, start_date, end_date):
+        """Create detailed list of completed appointments with payment details"""
+        ws = wb.create_sheet("Completed Appointments")
+        
+        # Headers
+        headers = [
+            'Date', 'Time', 'Client Name', 'Service', 'Staff', 
+            'Room', 'Machine', 'Charged', 'Paid', 'Balance', 'Payment Status'
+        ]
+        
+        # Style headers (GREEN for completed)
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col)
+            cell.value = header
+            cell.font = Font(bold=True, color="FFFFFF")
+            cell.fill = PatternFill(start_color="28A745", end_color="28A745", fill_type="solid")
+            cell.alignment = Alignment(horizontal='center')
+            cell.border = Border(
+                left=Side(style='thin'),
+                right=Side(style='thin'),
+                top=Side(style='thin'),
+                bottom=Side(style='thin')
+            )
+        
+        # Get completed appointments with visits
+        completed_appointments = Appointment.objects.filter(
+            start__gte=start_date,
+            start__lt=end_date,
+            status='completed'
+        ).select_related(
+            'client', 'service', 'staff', 'room'
+        ).prefetch_related('visit').order_by('start')
+        
+        # Write data
+        row = 2
+        total_charged = 0
+        total_paid = 0
+        
+        for apt in completed_appointments:
+            # Get staff name
+            if hasattr(apt.staff, 'name') and apt.staff.name:
+                staff_name = apt.staff.name
+            else:
+                staff_name = apt.staff.username
+            
+            # Get visit data if exists
+            if hasattr(apt, 'visit'):
+                visit = apt.visit
+                charged = float(visit.charge_amount)
+                paid = float(visit.paid_amount)
+                balance = charged - paid
+                
+                # Determine payment status
+                if paid >= charged:
+                    payment_status = "Fully Paid"
+                elif paid > 0:
+                    payment_status = "Partially Paid"
+                else:
+                    payment_status = "Unpaid"
+                
+                machine_name = visit.machine.name if visit.machine else ""
+            else:
+                # No visit record
+                price = float(apt.price_override) if apt.price_override else float(apt.service.default_price)
+                charged = price
+                paid = 0
+                balance = charged
+                payment_status = "No Visit Record"
+                machine_name = ""
+            
+            ws.cell(row=row, column=1, value=apt.start.strftime('%d/%m/%Y'))
+            ws.cell(row=row, column=2, value=apt.start.strftime('%H:%M'))
+            ws.cell(row=row, column=3, value=apt.client.full_name)
+            ws.cell(row=row, column=4, value=apt.service.name)
+            ws.cell(row=row, column=5, value=staff_name)
+            ws.cell(row=row, column=6, value=apt.room.name)
+            ws.cell(row=row, column=7, value=machine_name)
+            ws.cell(row=row, column=8, value=charged)
+            ws.cell(row=row, column=9, value=paid)
+            ws.cell(row=row, column=10, value=balance)
+            ws.cell(row=row, column=11, value=payment_status)
+            
+            # Format currency cells
+            ws.cell(row=row, column=8).number_format = '€#,##0.00'
+            ws.cell(row=row, column=9).number_format = '€#,##0.00'
+            ws.cell(row=row, column=10).number_format = '€#,##0.00'
+            
+            # Color-code payment status
+            status_cell = ws.cell(row=row, column=11)
+            if payment_status == "Fully Paid":
+                status_cell.fill = PatternFill(start_color="D4EDDA", end_color="D4EDDA", fill_type="solid")
+                status_cell.font = Font(color="155724")
+            elif payment_status == "Partially Paid":
+                status_cell.fill = PatternFill(start_color="FFF3CD", end_color="FFF3CD", fill_type="solid")
+                status_cell.font = Font(color="856404")
+            elif payment_status == "Unpaid":
+                status_cell.fill = PatternFill(start_color="F8D7DA", end_color="F8D7DA", fill_type="solid")
+                status_cell.font = Font(color="721C24")
+            
+            total_charged += charged
+            total_paid += paid
+            
+            row += 1
+        
+        # Add totals row
+        total_row = row + 1
+        ws.cell(row=total_row, column=1, value="TOTALS:")
+        ws.cell(row=total_row, column=1).font = Font(bold=True)
+        ws.cell(row=total_row, column=3, value=f"{completed_appointments.count()} completed appointments")
+        ws.cell(row=total_row, column=3).font = Font(bold=True)
+        
+        ws.cell(row=total_row, column=7, value="Total Charged:")
+        ws.cell(row=total_row, column=7).font = Font(bold=True)
+        ws.cell(row=total_row, column=8, value=total_charged)
+        ws.cell(row=total_row, column=8).font = Font(bold=True)
+        ws.cell(row=total_row, column=8).number_format = '€#,##0.00'
+        
+        ws.cell(row=total_row + 1, column=7, value="Total Paid:")
+        ws.cell(row=total_row + 1, column=7).font = Font(bold=True)
+        ws.cell(row=total_row + 1, column=8, value=total_paid)
+        ws.cell(row=total_row + 1, column=8).font = Font(bold=True, color="28A745")
+        ws.cell(row=total_row + 1, column=8).number_format = '€#,##0.00'
+        
+        ws.cell(row=total_row + 2, column=7, value="Outstanding:")
+        ws.cell(row=total_row + 2, column=7).font = Font(bold=True)
+        ws.cell(row=total_row + 2, column=8, value=total_charged - total_paid)
+        ws.cell(row=total_row + 2, column=8).font = Font(bold=True, color="DC3545")
+        ws.cell(row=total_row + 2, column=8).number_format = '€#,##0.00'
+        
+        # Auto-size columns
+        column_widths = {
+            'A': 12, 'B': 10, 'C': 25, 'D': 30, 'E': 20,
+            'F': 15, 'G': 20, 'H': 12, 'I': 12, 'J': 12, 'K': 15,
+        }
+        for col_letter, width in column_widths.items():
+            ws.column_dimensions[col_letter].width = width
+        
+        # Freeze header row
+        ws.freeze_panes = 'A2'
 
 
 class AnalyticsDebugView(LoginRequiredMixin, TemplateView):

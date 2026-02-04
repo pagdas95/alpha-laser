@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{% trans "Staff Members" %}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
+<li class="breadcrumb-item active">{% trans "Staff" %}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row align-items-center">
+    <div class="col-md-6">
+        <div class="mb-3">
+            <h5 class="card-title">
+                {% trans "Staff Members" %} 
+                <span class="text-muted fw-normal ms-2">({{ total_staff }})</span>
+            </h5>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="d-flex flex-wrap align-items-center justify-content-end gap-2 mb-3">
+            <!-- Filter Dropdown -->
+            <div class="dropdown">
+                <button class="btn btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="bx bx-filter-alt me-1"></i>
+                    {% trans "Filter" %}
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="?">{% trans "All Staff" %}</a></li>
+                    <li><a class="dropdown-item" href="?status=active">{% trans "Active Only" %}</a></li>
+                    <li><a class="dropdown-item" href="?status=inactive">{% trans "Inactive" %}</a></li>
+                </ul>
+            </div>
+            
+            <!-- Add Staff (future feature) -->
+            <a href="{% url 'admin:users_user_add' %}" class="btn btn-primary">
+                <i class="bx bx-plus me-1"></i> {% trans "Add Staff" %}
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Staff Grid -->
+<div class="row">
+    {% for staff in staff_members %}
+    <div class="col-xl-3 col-sm-6">
+        <div class="card text-center">
+            <div class="card-body">
+                <div class="dropdown text-end">
+                    <a class="text-muted dropdown-toggle font-size-16" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="bx bx-dots-horizontal-rounded"></i>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-end">
+                        <a class="dropdown-item" href="{% url 'staff:detail' staff.username %}">
+                            <i class="bx bx-show-alt me-2"></i>{% trans "View Profile" %}
+                        </a>
+                        <a class="dropdown-item" href="{% url 'staff:edit' staff.username %}">
+                            <i class="bx bx-edit-alt me-2"></i>{% trans "Edit" %}
+                        </a>
+                        <a class="dropdown-item" href="{% url 'staff:dayoff-list' staff.username %}">
+                            <i class="bx bx-calendar me-2"></i>{% trans "Day Offs" %}
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="mx-auto mb-4">
+                    {% if staff.staff_profile.avatar %}
+                        <img src="{{ staff.staff_profile.avatar.url }}" alt="" class="avatar-xl rounded-circle img-thumbnail">
+                    {% else %}
+                        <div class="avatar-xl mx-auto">
+                            <div class="avatar-title bg-light-subtle text-primary display-4 m-0 rounded-circle">
+                                <i class="bx bxs-user-circle"></i>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <h5 class="font-size-16 mb-1">
+                    <a href="{% url 'staff:detail' staff.username %}" class="text-body">
+                        {{ staff.name|default:staff.username }}
+                    </a>
+                </h5>
+                
+                {% if staff.staff_profile %}
+                    <p class="text-muted mb-2">{{ staff.staff_profile.get_position_display }}</p>
+                    
+                    <!-- Status Badge -->
+                    {% if staff.staff_profile.is_active_staff %}
+                        <span class="badge badge-soft-success mb-2">
+                            <i class="bx bx-check-circle"></i> {% trans "Active" %}
+                        </span>
+                    {% else %}
+                        <span class="badge badge-soft-danger mb-2">
+                            <i class="bx bx-x-circle"></i> {% trans "Inactive" %}
+                        </span>
+                    {% endif %}
+                    
+                    <!-- Years of Service -->
+                    {% if staff.staff_profile.years_of_service > 0 %}
+                        <small class="text-muted d-block">
+                            {{ staff.staff_profile.years_of_service }} 
+                            {% if staff.staff_profile.years_of_service == 1 %}
+                                {% trans "year" %}
+                            {% else %}
+                                {% trans "years" %}
+                            {% endif %}
+                            {% trans "of service" %}
+                        </small>
+                    {% endif %}
+                {% else %}
+                    <p class="text-muted mb-2">{% trans "Staff Member" %}</p>
+                {% endif %}
+            </div>
+
+            <div class="btn-group" role="group">
+                <a href="{% url 'staff:detail' staff.username %}" class="btn btn-outline-light text-truncate">
+                    <i class="uil uil-user me-1"></i> {% trans "Profile" %}
+                </a>
+                <a href="{% url 'staff:dayoff-add' staff.username %}" class="btn btn-outline-light text-truncate">
+                    <i class="uil uil-calendar-alt me-1"></i> {% trans "Day Off" %}
+                </a>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="text-center py-5">
+            <i class="bx bx-user-x font-size-48 text-muted d-block mb-3"></i>
+            <h5>{% trans "No staff members found" %}</h5>
+            <p class="text-muted">{% trans "Add staff members to get started" %}</p>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Pagination if needed -->
+{% if is_paginated %}
+<div class="row g-0 align-items-center mb-4">
+    <div class="col-sm-6">
+        <div>
+            <p class="mb-sm-0">
+                {% trans "Showing" %} {{ page_obj.start_index }} {% trans "to" %} {{ page_obj.end_index }} 
+                {% trans "of" %} {{ page_obj.paginator.count }} {% trans "staff members" %}
+            </p>
+        </div>
+    </div>
+    <div class="col-sm-6">
+        <div class="float-sm-end">
+            <ul class="pagination mb-sm-0">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a href="?page={{ page_obj.previous_page_number }}" class="page-link">
+                            <i class="mdi mdi-chevron-left"></i>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <a href="#" class="page-link"><i class="mdi mdi-chevron-left"></i></a>
+                    </li>
+                {% endif %}
+                
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active">
+                            <a href="#" class="page-link">{{ num }}</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item">
+                            <a href="?page={{ num }}" class="page-link">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a href="?page={{ page_obj.next_page_number }}" class="page-link">
+                            <i class="mdi mdi-chevron-right"></i>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <a href="#" class="page-link"><i class="mdi mdi-chevron-right"></i></a>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock content %}

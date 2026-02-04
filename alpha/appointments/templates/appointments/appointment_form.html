@@ -552,4 +552,276 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 }
 </style>
+
+<script>
+    // Staff Availability Checker
+    (function() {
+        'use strict';
+        
+        const staffSelect = document.getElementById('id_staff');
+        const startInput = document.querySelector('input[name="start"]');
+        const endInput = document.querySelector('input[name="end"]');
+        
+        if (!staffSelect || !startInput || !endInput) {
+            console.log('Staff availability checker: Required fields not found');
+            return;
+        }
+        
+        // Create alert container if it doesn't exist
+        let alertContainer = document.getElementById('staff-availability-alert');
+        if (!alertContainer) {
+            alertContainer = document.createElement('div');
+            alertContainer.id = 'staff-availability-alert';
+            alertContainer.style.marginTop = '10px';
+            
+            // Insert after staff select field
+            const staffGroup = staffSelect.closest('.mb-3') || staffSelect.closest('.form-group');
+            if (staffGroup) {
+                staffGroup.appendChild(alertContainer);
+            }
+        }
+        
+        /**
+         * Check if selected staff is available at selected date/time
+         */
+        function checkStaffAvailability() {
+            const staffId = staffSelect.value;
+            const startValue = startInput.value;
+            const endValue = endInput.value;
+            
+            // Clear previous alerts
+            alertContainer.innerHTML = '';
+            
+            // Only check if all values are present
+            if (!staffId || !startValue || !endValue) {
+                return;
+            }
+            
+            // Show loading indicator
+            showLoadingIndicator();
+            
+            // Build URL with parameters
+            const url = new URL('/appointments/api/check-staff-availability/', window.location.origin);
+            url.searchParams.append('staff_id', staffId);
+            url.searchParams.append('start', startValue);
+            url.searchParams.append('end', endValue);
+            
+            // Make AJAX request
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    hideLoadingIndicator();
+                    
+                    if (data.available === false) {
+                        // Staff is NOT available - show warning
+                        showAlert('warning', data.message, data.dayoff);
+                    } else if (data.available === true) {
+                        // Staff IS available - show success
+                        showAlert('success', data.message);
+                    } else if (data.success === false) {
+                        // API error
+                        showAlert('danger', 'Error checking availability: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    hideLoadingIndicator();
+                    console.error('Staff availability check failed:', error);
+                    showAlert('danger', 'Failed to check staff availability');
+                });
+        }
+        
+        /**
+         * Display alert message
+         */
+        function showAlert(type, message, dayoffInfo) {
+            let alertClass = 'alert-info';
+            let icon = 'ℹ️';
+            
+            if (type === 'success') {
+                alertClass = 'alert-success';
+                icon = '✓';
+            } else if (type === 'warning') {
+                alertClass = 'alert-warning';
+                icon = '⚠️';
+            } else if (type === 'danger') {
+                alertClass = 'alert-danger';
+                icon = '✕';
+            }
+            
+            let html = `
+                <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                    <strong>${icon} ${message}</strong>
+            `;
+            
+            // Add day-off details if provided
+            if (dayoffInfo) {
+                html += `
+                    <hr>
+                    <small>
+                        <strong>Type:</strong> ${dayoffInfo.type}<br>
+                        <strong>Period:</strong> ${dayoffInfo.start_date} - ${dayoffInfo.end_date}
+                        ${dayoffInfo.reason ? `<br><strong>Reason:</strong> ${dayoffInfo.reason}` : ''}
+                    </small>
+                `;
+            }
+            
+            html += `
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+            
+            alertContainer.innerHTML = html;
+        }
+        
+        /**
+         * Show loading indicator
+         */
+        function showLoadingIndicator() {
+            alertContainer.innerHTML = `
+                <div class="alert alert-info">
+                    <div class="spinner-border spinner-border-sm me-2" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    Checking staff availability...
+                </div>
+            `;
+        }
+        
+        /**
+         * Hide loading indicator
+         */
+        function hideLoadingIndicator() {
+            // Will be replaced by actual alert or cleared
+        }
+        
+        /**
+         * Debounce function to avoid too many API calls
+         */
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+        
+        // Create debounced check function (wait 500ms after user stops typing)
+        const debouncedCheck = debounce(checkStaffAvailability, 500);
+        
+        // Attach event listeners
+        staffSelect.addEventListener('change', checkStaffAvailability);
+        startInput.addEventListener('change', checkStaffAvailability);
+        endInput.addEventListener('change', checkStaffAvailability);
+        
+        // Also check on input (for datetime-local fields)
+        startInput.addEventListener('input', debouncedCheck);
+        endInput.addEventListener('input', debouncedCheck);
+        
+        // Check on page load if editing existing appointment
+        if (staffSelect.value && startInput.value && endInput.value) {
+            checkStaffAvailability();
+        }
+        
+        console.log('Staff availability checker initialized');
+    })();
+    
+    
+    /**
+     * Optional: Dynamically update staff dropdown based on selected dates
+     * This will refresh the available staff list when dates change
+     */
+    function refreshAvailableStaff() {
+        const staffSelect = document.getElementById('id_staff');
+        const startInput = document.querySelector('input[name="start"]');
+        const endInput = document.querySelector('input[name="end"]');
+        
+        if (!staffSelect || !startInput || !endInput) return;
+        
+        const startValue = startInput.value;
+        const endValue = endInput.value;
+        
+        if (!startValue || !endValue) return;
+        
+        // Save currently selected value
+        const currentSelection = staffSelect.value;
+        
+        // Build URL
+        const url = new URL('/appointments/api/get-available-staff/', window.location.origin);
+        url.searchParams.append('start', startValue);
+        url.searchParams.append('end', endValue);
+        
+        // Fetch available staff
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.staff) {
+                    // Clear current options (except first "Select..." option)
+                    const firstOption = staffSelect.options[0];
+                    staffSelect.innerHTML = '';
+                    staffSelect.appendChild(firstOption);
+                    
+                    // Add available staff
+                    data.staff.forEach(staff => {
+                        const option = document.createElement('option');
+                        option.value = staff.id;
+                        option.textContent = staff.name;
+                        staffSelect.appendChild(option);
+                    });
+                    
+                    // Try to restore previous selection if still available
+                    if (currentSelection) {
+                        staffSelect.value = currentSelection;
+                    }
+                    
+                    console.log(`Loaded ${data.count} available staff members`);
+                }
+            })
+            .catch(error => {
+                console.error('Failed to refresh staff list:', error);
+            });
+    }
+    
+    // Optional: Uncomment to enable dynamic staff filtering
+    // document.querySelector('input[name="start"]')?.addEventListener('change', refreshAvailableStaff);
+    // document.querySelector('input[name="end"]')?.addEventListener('change', refreshAvailableStaff);
+    </script>
+    
+    <!-- Optional: Add CSS for better alert styling -->
+    <style>
+    #staff-availability-alert .alert {
+        animation: slideDown 0.3s ease-out;
+    }
+    
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    #staff-availability-alert .alert-warning {
+        background-color: #fff3cd;
+        border-color: #ffc107;
+        color: #856404;
+    }
+    
+    #staff-availability-alert .alert-success {
+        background-color: #d1e7dd;
+        border-color: #198754;
+        color: #0f5132;
+    }
+    
+    #staff-availability-alert .alert hr {
+        border-color: rgba(0,0,0,0.1);
+        margin: 0.75rem 0;
+    }
+    </style>
 {% endblock %}

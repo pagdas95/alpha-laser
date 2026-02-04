@@ -80,3 +80,10 @@ INSTALLED_APPS += ["django_extensions"]
 CELERY_TASK_EAGER_PROPAGATES = True
 # Your stuff...
 # ------------------------------------------------------------------------------
+TWILIO_ACCOUNT_SID = 'AC5cff0e9ea9e180fd836d4b9fc937598e'
+TWILIO_AUTH_TOKEN ='99dfd75e15d4c958f917690bbe23656b'
+TWILIO_PHONE_NUMBER ='+12766001098'
+
+NOTIFICATIONS_ENABLED = True
+SEND_SMS_ON_BOOKING = True
+SEND_EMAIL_ON_BOOKING = True
