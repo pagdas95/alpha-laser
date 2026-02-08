@@ -80,3 +80,11 @@ INSTALLED_APPS += ["django_extensions"]
 CELERY_TASK_EAGER_PROPAGATES = True
 # Your stuff...
 # ------------------------------------------------------------------------------
+<<<<<<< HEAD
+=======
+
+
+NOTIFICATIONS_ENABLED = True
+SEND_SMS_ON_BOOKING = True
+SEND_EMAIL_ON_BOOKING = True
+>>>>>>> 79c0c9f (i remove the secrets)
