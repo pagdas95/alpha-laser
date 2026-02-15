@@ -208,7 +208,7 @@ class RoomCalendarView(LoginRequiredMixin, TemplateView):
         return context
 
 
-# ✅ NEW: Get service details via AJAX
+# ✅ NEW: Get service details via AJAX  
 @require_http_methods(["GET"])
 def get_service_details(request, service_id):
     """
@@ -468,6 +468,168 @@ def check_room_availability(request):
                 'message': '✓ Room is available at this time'
             })
             
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': str(e)
+        }, status=400)
+    
+@require_http_methods(["GET"])
+def check_staff_availability(request):
+    """
+    Check if a staff member is available (not on approved leave) at a specific time
+    Returns unavailable message if staff is on leave
+    """
+    try:
+        staff_id = request.GET.get('staff_id')
+        start_str = request.GET.get('start')
+        end_str = request.GET.get('end')
+        
+        if not all([staff_id, start_str, end_str]):
+            return JsonResponse({
+                'success': False,
+                'message': 'Missing required parameters'
+            }, status=400)
+        
+        # Parse datetime
+        start = parse_datetime(start_str)
+        end = parse_datetime(end_str)
+        
+        if not start or not end:
+            return JsonResponse({
+                'success': False,
+                'message': 'Invalid datetime format'
+            }, status=400)
+        
+        # Get staff member
+        from alpha.users.models import User
+        try:
+            staff = User.objects.get(id=staff_id)
+        except User.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'message': 'Staff member not found'
+            }, status=404)
+        
+        # Check if staff is on approved leave
+        try:
+            from alpha.staff.models import DayOff
+            
+            # Convert to dates for comparison
+            start_date = start.date()
+            end_date = end.date()
+            
+            # Check for overlapping approved day-offs
+            overlapping_dayoffs = DayOff.objects.filter(
+                staff=staff,
+                status='approved',
+                start_date__lte=end_date,
+                end_date__gte=start_date
+            ).select_related('staff')
+            
+            if overlapping_dayoffs.exists():
+                # Staff is on leave
+                dayoff = overlapping_dayoffs.first()
+                leave_type = dayoff.get_type_display()
+                
+                return JsonResponse({
+                    'available': False,
+                    'message': f'⚠️ {staff.name or staff.username} is on {leave_type} from {dayoff.start_date.strftime("%d/%m/%Y")} to {dayoff.end_date.strftime("%d/%m/%Y")}',
+                    'dayoff': {
+                        'type': leave_type,
+                        'start_date': dayoff.start_date.strftime('%d/%m/%Y'),
+                        'end_date': dayoff.end_date.strftime('%d/%m/%Y'),
+                        'reason': dayoff.reason or ''
+                    }
+                })
+            else:
+                # Staff is available
+                return JsonResponse({
+                    'available': True,
+                    'message': f'✓ {staff.name or staff.username} is available at this time'
+                })
+                
+        except ImportError:
+            # Staff app not installed - assume available
+            return JsonResponse({
+                'available': True,
+                'message': '✓ Staff member is available'
+            })
+            
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': str(e)
+        }, status=400)
+
+
+@require_http_methods(["GET"])
+def get_available_staff(request):
+    """
+    Get list of available staff for a given date/time range
+    Excludes staff on approved leave
+    """
+    try:
+        start_str = request.GET.get('start')
+        end_str = request.GET.get('end')
+        
+        if not all([start_str, end_str]):
+            return JsonResponse({
+                'success': False,
+                'message': 'Missing required parameters'
+            }, status=400)
+        
+        # Parse datetime
+        start = parse_datetime(start_str)
+        end = parse_datetime(end_str)
+        
+        if not start or not end:
+            return JsonResponse({
+                'success': False,
+                'message': 'Invalid datetime format'
+            }, status=400)
+        
+        from alpha.users.models import User
+        
+        # Get all active staff
+        all_staff = User.objects.filter(is_staff=True, is_active=True)
+        
+        # Filter out staff on leave
+        try:
+            from alpha.staff.models import DayOff
+            
+            start_date = start.date()
+            end_date = end.date()
+            
+            # Get staff IDs who are on approved leave
+            staff_on_leave_ids = DayOff.objects.filter(
+                status='approved',
+                start_date__lte=end_date,
+                end_date__gte=start_date
+            ).values_list('staff_id', flat=True)
+            
+            # Exclude staff on leave
+            available_staff = all_staff.exclude(id__in=staff_on_leave_ids)
+            
+        except ImportError:
+            # Staff app not installed - return all staff
+            available_staff = all_staff
+        
+        # Format response
+        staff_list = []
+        for staff in available_staff:
+            staff_list.append({
+                'id': staff.id,
+                'name': staff.name or staff.username,
+                'username': staff.username,
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'staff': staff_list,
+            'count': len(staff_list)
+        })
+        
     except Exception as e:
         return JsonResponse({
             'success': False,

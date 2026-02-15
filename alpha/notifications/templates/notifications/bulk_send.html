@@ -1,0 +1,723 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{% trans "Bulk Notifications" %}{% endblock %}
+
+{% block extra_css %}
+<!-- DataTables -->
+<link href="{% static 'libs/datatables.net-bs4/css/dataTables.bootstrap4.min.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'libs/datatables.net-responsive-bs4/css/responsive.bootstrap4.min.css' %}" rel="stylesheet" type="text/css" />
+<style>
+    .character-count {
+        font-size: 0.875rem;
+        color: #74788d;
+    }
+    .character-count.warning {
+        color: #f1b44c;
+    }
+    .character-count.danger {
+        color: #f46a6a;
+    }
+    .template-badge {
+        display: inline-block;
+        margin: 2px;
+        padding: 4px 8px;
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        user-select: none;
+    }
+    .template-badge:hover {
+        background: #e9ecef;
+        border-color: #adb5bd;
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
+<li class="breadcrumb-item active">{% trans "Bulk Notifications" %}</li>
+{% endblock %}
+
+{% block content %}
+
+{% if messages %}
+<div class="messages-container mb-3">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if form.errors %}
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <h5>{% trans "Form Errors:" %}</h5>
+    <ul>
+        {% for field, errors in form.errors.items %}
+            {% for error in errors %}
+            <li><strong>{{ field }}:</strong> {{ error }}</li>
+            {% endfor %}
+        {% endfor %}
+    </ul>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+{% endif %}
+
+<!-- MAIN NOTIFICATION FORM -->
+<form method="post" id="bulkNotificationForm">
+    {% csrf_token %}
+    
+
+    <!-- ✨ TEMPLATE SELECTOR ✨ -->
+    <div class="mb-4">
+        <div class="card border-primary">
+            <div class="card-header bg-primary-subtle">
+                <h5 class="card-title mb-0 text-primary">
+                    <i class="bx bx-file"></i> {% trans "Use a Template" %} 
+                    <small class="text-muted">({% trans "Optional" %})</small>
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row align-items-end">
+                    <div class="col-md-8">
+                        <label for="templateSelect" class="form-label">{% trans "Select Template" %}</label>
+                        <select name="template" id="templateSelect" class="form-select">
+                            <option value="">-- {% trans "Choose a template" %} --</option>
+                            {% for template in templates %}
+                            <option value="{{ template.id }}" 
+                                    data-sms="{{ template.sms_body }}"
+                                    data-email-subject="{{ template.email_subject }}"
+                                    data-email-body="{{ template.email_body }}">
+                                {{ template.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <small class="text-muted">
+                            <i class="bx bx-info-circle"></i> 
+                            {% trans "Templates can use variables like" %} 
+                            <code>{client_name}</code>, <code>{phone}</code>, <code>{email}</code>
+                        </small>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="{% url 'notifications:template-create' %}" class="btn btn-outline-primary w-100" target="_blank">
+                            <i class="bx bx-plus"></i> {% trans "Create New Template" %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Notification Type Selection -->
+    <div class="mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title mb-3">{% trans "Notification Type" %}</h5>
+                <div class="d-flex gap-3">
+                    {% for value, label in form.notification_type.field.choices %}
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" 
+                               name="notification_type" id="type_{{ value }}" 
+                               value="{{ value }}" {% if value == 'sms' %}checked{% endif %}>
+                        <label class="form-check-label" for="type_{{ value }}">
+                            {{ label }}
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SMS Section -->
+    <div id="smsSection" class="mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">📱 {% trans "SMS Message" %}</h5>
+            </div>
+            <div class="card-body">
+                <textarea name="sms_message" id="smsMessage" class="form-control" rows="4" 
+                          placeholder="{% trans 'Enter SMS message (max 160 characters)...' %}" 
+                          maxlength="160">Test message from bulk send</textarea>
+                <div class="character-count mt-2">
+                    <span id="smsCharCount">0</span> / 160 {% trans "characters" %}
+                </div>
+                <div class="mt-2">
+                    <small class="text-muted">
+                        <strong>{% trans "Insert variable:" %}</strong>
+                    </small>
+                    <span class="template-badge" onclick="insertVariable('smsMessage', '{client_name}')">{client_name}</span>
+                    <span class="template-badge" onclick="insertVariable('smsMessage', '{phone}')">{phone}</span>
+                    <span class="template-badge" onclick="insertVariable('smsMessage', '{email}')">{email}</span>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Email Section -->
+    <div id="emailSection" class="mb-4" style="display: none;">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">📧 {% trans "Email Message" %}</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="emailSubject" class="form-label">{% trans "Subject" %}</label>
+                    <input type="text" name="email_subject" id="emailSubject" class="form-control" 
+                           placeholder="{% trans 'Enter email subject...' %}">
+                </div>
+                <div class="mb-3">
+                    <label for="emailMessage" class="form-label">{% trans "Message" %}</label>
+                    <textarea name="email_message" id="emailMessage" class="form-control" rows="8"
+                              placeholder="{% trans 'Enter email message...' %}"></textarea>
+                </div>
+                <div class="mt-2">
+                    <small class="text-muted">
+                        <strong>{% trans "Insert variable:" %}</strong>
+                    </small>
+                    <span class="template-badge" onclick="insertVariable('emailSubject', '{client_name}')">{client_name}</span>
+                    <span class="template-badge" onclick="insertVariable('emailMessage', '{client_name}')">{client_name}</span>
+                    <span class="template-badge" onclick="insertVariable('emailMessage', '{phone}')">{phone}</span>
+                    <span class="template-badge" onclick="insertVariable('emailMessage', '{email}')">{email}</span>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- EXACT SAME HEADER AS CLIENT LIST -->
+    <div class="row align-items-center">
+        <div class="col-md-6">
+            <div class="mb-3">
+                <h5 class="card-title">
+                    {% trans "Client List" %} 
+                    <span class="text-muted fw-normal ms-2">({{ client_count }})</span>
+                </h5>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="d-flex flex-wrap align-items-center justify-content-end gap-2 mb-3">
+                <!-- View Toggle - SAME AS CLIENT LIST -->
+                <div>
+                    <ul class="nav nav-pills">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="{% url 'notifications:bulk-send' %}" 
+                               data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans 'List' %}">
+                                <i class="bx bx-list-ul"></i>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" 
+                               data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans 'Grid' %}">
+                                <i class="bx bx-grid-alt"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Send to All Button - SAME STYLE AS "Add New" -->
+                <div>
+                    <button type="button" class="btn btn-primary" id="sendToAllBtn">
+                        <i class="bx bx-check-circle me-1"></i> {% trans "Send to All" %} ({{ client_count }})
+                    </button>
+                </div>
+                
+                <!-- More Actions - SAME AS CLIENT LIST -->
+                <div class="dropdown">
+                    <a class="btn btn-link text-muted py-1 font-size-16 shadow-none dropdown-toggle" 
+                       href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="bx bx-dots-horizontal-rounded"></i>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="#">
+                            <i class="bx bx-export me-2"></i>{% trans "Export Selected" %}
+                        </a></li>
+                        <li><a class="dropdown-item" href="#">
+                            <i class="bx bx-filter me-2"></i>{% trans "Advanced Filters" %}
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#">
+                            <i class="bx bx-info-circle me-2"></i>{% trans "Selection Info" %}
+                        </a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- end row -->
+
+    <div class="table-responsive mb-4">
+        <table class="table align-middle datatable dt-responsive table-check nowrap" 
+               style="border-collapse: collapse; border-spacing: 0 8px; width: 100%;" 
+               id="clientsTable">
+            <thead>
+                <tr>
+                    <th scope="col" style="width: 50px;">
+                        <div class="form-check font-size-16">
+                            <input type="checkbox" class="form-check-input" id="checkAll">
+                            <label class="form-check-label" for="checkAll"></label>
+                        </div>
+                    </th>
+                    <th scope="col">{% trans "Name" %}</th>
+                    <th scope="col">{% trans "Date of Birth" %}</th>
+                    <th scope="col">{% trans "Phone" %}</th>
+                    <th scope="col">{% trans "Email" %}</th>
+                    <th scope="col">{% trans "Contact Methods" %}</th>
+                    <th style="width: 80px; min-width: 80px;">{% trans "Action" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for client in clients %}
+                <tr>
+                    <th scope="row">
+                        <div class="form-check font-size-16">
+                            <input type="checkbox" class="form-check-input client-checkbox" 
+                                   id="client{{ client.id }}" value="{{ client.id }}">
+                            <label class="form-check-label" for="client{{ client.id }}"></label>
+                        </div>
+                    </th>
+                    <td>
+                        <div class="avatar-sm d-inline-block align-middle me-2">
+                            <div class="avatar-title bg-light-subtle text-primary font-size-20 m-0 rounded-circle">
+                                <i class="bx bxs-user"></i>
+                            </div>
+                        </div>
+                        <a href="#" class="text-body fw-medium">
+                            {{ client.full_name }}
+                        </a>
+                    </td>
+                    <td>
+                        {% if client.birth_date %}
+                            <i class="bx bx-calendar me-1 text-muted"></i>{{ client.birth_date|date:"d/m/Y" }}
+                           
+                        {% else %}
+                            <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if client.phone %}
+                            <i class="bx bx-phone me-1 text-muted"></i>{{ client.phone }}
+                        {% else %}
+                            <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if client.email %}
+                            <i class="bx bx-envelope me-1 text-muted"></i>{{ client.email }}
+                        {% else %}
+                            <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="d-flex gap-2">
+                            {% if client.phone %}
+                            <span class="badge bg-success-subtle text-success font-size-11">
+                                SMS
+                            </span>
+                            {% endif %}
+                            {% if client.email %}
+                            <span class="badge bg-primary-subtle text-primary font-size-11">
+                                Email
+                            </span>
+                            {% endif %}
+                            {% if not client.phone and not client.email %}
+                            <span class="text-muted font-size-11">{% trans "No contact info" %}</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td>
+                        <div class="dropdown">
+                            <button class="btn btn-link font-size-16 shadow-none py-0 text-muted dropdown-toggle" 
+                                    type="button" data-bs-toggle="dropdown">
+                                <i class="bx bx-dots-horizontal-rounded"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <a class="dropdown-item" href="#">
+                                        <i class="bx bx-show-alt me-2"></i>{% trans "View Details" %}
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="#">
+                                        <i class="bx bx-envelope me-2"></i>{% trans "Send Email" %}
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="#">
+                                        <i class="bx bx-phone me-2"></i>{% trans "Send SMS" %}
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center py-5">
+                        <div class="text-muted">
+                            <i class="bx bx-user-x font-size-48 d-block mb-3"></i>
+                            <h5>{% trans "No clients found" %}</h5>
+                            <p>{% trans "Add your first client to get started" %}</p>
+                            <a href="#" class="btn btn-primary mt-2">
+                                <i class="bx bx-plus me-1"></i>{% trans "Add Client" %}
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <!-- end table -->
+    </div>
+    <!-- end table responsive -->
+
+    <!-- Hidden fields -->
+    <input type="hidden" name="selected_clients" id="selectedClientsInput" value="[]">
+    <input type="hidden" name="send_to_all" id="sendToAllInput" value="true">
+
+    <!-- Submit Button -->
+    <div class="mb-4">
+        <button type="submit" class="btn btn-primary btn-lg" id="sendBtn">
+            <i class="bx bx-send"></i> <span id="sendBtnText">{% trans "Send to All" %} ({{ client_count }})</span>
+        </button>
+        <a href="{% url 'notifications:logs' %}" class="btn btn-secondary btn-lg">
+            <i class="bx bx-x"></i> {% trans "Cancel" %}
+        </a>
+        <span class="text-muted ms-3">
+            <span id="selectedCountText">{{ client_count }} {% trans "clients selected" %}</span>
+        </span>
+    </div>
+
+</form>
+<!-- End of main form -->
+
+<!-- Stats Cards -->
+<div class="row">
+    <div class="col-md-4">
+        <div class="card mini-stats-wid">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-grow-1">
+                        <p class="text-muted fw-medium">{% trans "Total Clients" %}</p>
+                        <h4 class="mb-0">{{ client_count }}</h4>
+                    </div>
+                    <div class="avatar-sm rounded-circle bg-primary align-self-center mini-stat-icon">
+                        <span class="avatar-title rounded-circle bg-primary">
+                            <i class="bx bx-user font-size-24"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card mini-stats-wid">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-grow-1">
+                        <p class="text-muted fw-medium">{% trans "With Email" %}</p>
+                        <h4 class="mb-0">—</h4>
+                    </div>
+                    <div class="avatar-sm rounded-circle bg-success align-self-center mini-stat-icon">
+                        <span class="avatar-title rounded-circle bg-success">
+                            <i class="bx bx-envelope font-size-24"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card mini-stats-wid">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-grow-1">
+                        <p class="text-muted fw-medium">{% trans "New This Month" %}</p>
+                        <h4 class="mb-0">—</h4>
+                    </div>
+                    <div class="avatar-sm rounded-circle bg-info align-self-center mini-stat-icon">
+                        <span class="avatar-title rounded-circle bg-info">
+                            <i class="bx bx-calendar font-size-24"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock content %}
+
+{% block extra_js %}
+<!-- Required datatable js -->
+<script src="{% static 'libs/datatables.net/js/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'libs/datatables.net-bs4/js/dataTables.bootstrap4.min.js' %}"></script>
+
+<!-- Responsive examples -->
+<script src="{% static 'libs/datatables.net-responsive/js/dataTables.responsive.min.js' %}"></script>
+<script src="{% static 'libs/datatables.net-responsive-bs4/js/responsive.bootstrap4.min.js' %}"></script>
+
+<script>
+$(document).ready(function() {
+    // Initialize DataTable - EXACT SAME AS CLIENT LIST
+    $('#clientsTable').DataTable({
+        "order": [[ 1, "asc" ]],
+        "pageLength": 25,
+        "responsive": true,
+        "language": {
+            "search": "{% trans 'Search' %}:",
+            "lengthMenu": "{% trans 'Show' %} _MENU_ {% trans 'entries' %}",
+            "info": "{% trans 'Showing' %} _START_ {% trans 'to' %} _END_ {% trans 'of' %} _TOTAL_ {% trans 'clients' %}",
+            "infoEmpty": "{% trans 'No clients to show' %}",
+            "zeroRecords": "{% trans 'No matching clients found' %}",
+            "paginate": {
+                "first": "{% trans 'First' %}",
+                "last": "{% trans 'Last' %}",
+                "next": "{% trans 'Next' %}",
+                "previous": "{% trans 'Previous' %}"
+            }
+        }
+    });
+
+    // ✨ Template Auto-Fill ✨
+    const templateSelect = document.getElementById('templateSelect');
+    if (templateSelect) {
+        templateSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            if (selectedOption.value) {
+                const smsBody = selectedOption.getAttribute('data-sms');
+                const emailSubject = selectedOption.getAttribute('data-email-subject');
+                const emailBody = selectedOption.getAttribute('data-email-body');
+                
+                // Fill SMS field
+                if (smsBody && smsTextarea) {
+                    smsTextarea.value = smsBody;
+                    smsTextarea.dispatchEvent(new Event('input')); // Update character count
+                }
+                
+                // Fill email fields
+                const emailSubjectField = document.getElementById('emailSubject');
+                const emailMessageField = document.getElementById('emailMessage');
+                
+                if (emailSubject && emailSubjectField) {
+                    emailSubjectField.value = emailSubject;
+                }
+                if (emailBody && emailMessageField) {
+                    emailMessageField.value = emailBody;
+                }
+            }
+        });
+    }
+
+    // ✨ Insert Variable Function ✨
+    window.insertVariable = function(fieldId, variable) {
+        const field = document.getElementById(fieldId);
+        if (!field) return;
+        
+        const startPos = field.selectionStart;
+        const endPos = field.selectionEnd;
+        const text = field.value;
+        
+        field.value = text.substring(0, startPos) + variable + text.substring(endPos);
+        field.focus();
+        field.selectionStart = field.selectionEnd = startPos + variable.length;
+        
+        // Update character count if SMS
+        if (fieldId === 'smsMessage') {
+            field.dispatchEvent(new Event('input'));
+        }
+    };
+
+
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Get elements
+    const notificationTypeRadios = document.querySelectorAll('input[name="notification_type"]');
+    const smsSection = document.getElementById('smsSection');
+    const emailSection = document.getElementById('emailSection');
+    const smsTextarea = document.getElementById('smsMessage');
+    const smsCharCount = document.getElementById('smsCharCount');
+    const sendToAllBtn = document.getElementById('sendToAllBtn');
+    const sendToAllInput = document.getElementById('sendToAllInput');
+    const checkAllCheckbox = document.getElementById('checkAll');
+    const clientCheckboxes = document.querySelectorAll('.client-checkbox');
+    const selectedClientsInput = document.getElementById('selectedClientsInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const sendBtnText = document.getElementById('sendBtnText');
+    const selectedCountText = document.getElementById('selectedCountText');
+    const form = document.getElementById('bulkNotificationForm');
+    
+    let sendToAll = true; // Start with send to all
+
+    // Toggle sections
+    function updateSections() {
+        const selectedType = document.querySelector('input[name="notification_type"]:checked')?.value || 'sms';
+        
+        if (selectedType === 'sms') {
+            smsSection.style.display = 'block';
+            emailSection.style.display = 'none';
+        } else if (selectedType === 'email') {
+            smsSection.style.display = 'none';
+            emailSection.style.display = 'block';
+        } else {
+            smsSection.style.display = 'block';
+            emailSection.style.display = 'block';
+        }
+    }
+
+    // Character counter
+    if (smsTextarea) {
+        smsTextarea.addEventListener('input', function() {
+            const count = this.value.length;
+            smsCharCount.textContent = count;
+            
+            if (count > 160) {
+                smsCharCount.classList.add('danger');
+                smsCharCount.classList.remove('warning');
+            } else if (count > 140) {
+                smsCharCount.classList.add('warning');
+                smsCharCount.classList.remove('danger');
+            } else {
+                smsCharCount.classList.remove('warning', 'danger');
+            }
+        });
+        smsTextarea.dispatchEvent(new Event('input'));
+    }
+
+    // Update UI based on selection mode
+    function updateUI() {
+        if (sendToAll) {
+            // Send to all mode
+            sendToAllBtn.classList.add('active');
+            sendToAllBtn.innerHTML = '<i class="bx bx-check-circle me-1"></i> {% trans "Send to All" %} ({{ client_count }})';
+            sendBtnText.textContent = '{% trans "Send to All" %} ({{ client_count }})';
+            selectedCountText.textContent = '{{ client_count }} {% trans "clients selected" %}';
+            sendToAllInput.value = 'true';
+            
+            // Disable checkboxes
+            clientCheckboxes.forEach(cb => {
+                cb.checked = false;
+                cb.disabled = true;
+            });
+            if (checkAllCheckbox) {
+                checkAllCheckbox.checked = false;
+                checkAllCheckbox.disabled = true;
+            }
+        } else {
+            // Manual selection mode
+            sendToAllBtn.classList.remove('active');
+            sendToAllBtn.innerHTML = '<i class="bx bx-user-check me-1"></i> {% trans "Select Manually" %}';
+            sendToAllInput.value = 'false';
+            
+            // Enable checkboxes
+            clientCheckboxes.forEach(cb => cb.disabled = false);
+            if (checkAllCheckbox) checkAllCheckbox.disabled = false;
+            
+            updateSelectedCount();
+        }
+    }
+
+    // Update selected count
+    function updateSelectedCount() {
+        const selected = Array.from(clientCheckboxes).filter(cb => cb.checked);
+        const count = selected.length;
+        
+        sendBtnText.textContent = `{% trans "Send to" %} ${count} {% trans "client" %}${count !== 1 ? 's' : ''}`;
+        selectedCountText.textContent = `${count} {% trans "client" %}${count !== 1 ? 's' : ''} {% trans "selected" %}`;
+        
+        const ids = selected.map(cb => cb.value);
+        selectedClientsInput.value = JSON.stringify(ids);
+    }
+
+    // Send to all button click
+    sendToAllBtn.addEventListener('click', function() {
+        sendToAll = !sendToAll;
+        updateUI();
+    });
+
+    // Check all functionality - SAME AS CLIENT LIST
+    if (checkAllCheckbox) {
+        checkAllCheckbox.addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('tbody input[type="checkbox"]');
+            checkboxes.forEach(checkbox => checkbox.checked = this.checked);
+            updateSelectedCount();
+        });
+    }
+
+    // Individual checkboxes
+    clientCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            updateSelectedCount();
+            if (checkAllCheckbox) {
+                checkAllCheckbox.checked = Array.from(clientCheckboxes).every(cb => cb.checked);
+            }
+        });
+    });
+
+    // Notification type change
+    notificationTypeRadios.forEach(radio => {
+        radio.addEventListener('change', updateSections);
+    });
+
+    // Form validation
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const selectedType = document.querySelector('input[name="notification_type"]:checked')?.value || 'sms';
+            const smsMessage = smsTextarea?.value || '';
+            const emailSubject = document.getElementById('emailSubject')?.value || '';
+            const emailMessage = document.getElementById('emailMessage')?.value || '';
+            
+            let errors = [];
+            
+            if (!sendToAll) {
+                const selected = Array.from(clientCheckboxes).filter(cb => cb.checked);
+                if (selected.length === 0) {
+                    errors.push('{% trans "Please select at least one client or use Send to All" %}');
+                }
+            }
+            
+            if (selectedType === 'sms' || selectedType === 'both') {
+                if (!smsMessage.trim()) {
+                    errors.push('{% trans "Please enter an SMS message" %}');
+                }
+            }
+            
+            if (selectedType === 'email' || selectedType === 'both') {
+                if (!emailSubject.trim() || !emailMessage.trim()) {
+                    errors.push('{% trans "Please enter both email subject and message" %}');
+                }
+            }
+            
+            if (errors.length > 0) {
+                e.preventDefault();
+                alert(errors.join('\n'));
+                return false;
+            }
+            
+            const count = sendToAll ? '{{ client_count }}' : 
+                Array.from(clientCheckboxes).filter(cb => cb.checked).length;
+            
+            if (!confirm(`{% trans "Are you sure you want to send notifications to" %} ${count} {% trans "clients?" %}`)) {
+                e.preventDefault();
+                return false;
+            }
+        });
+    }
+
+    // Initialize
+    updateSections();
+    updateUI();
+});
+</script>
+{% endblock %}

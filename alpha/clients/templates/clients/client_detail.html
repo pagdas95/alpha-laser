@@ -77,6 +77,71 @@
                                 <td>{{ client.birth_date|date:"d/m/Y" }}</td>
                             </tr>
                             {% endif %}
+                            
+                            <!-- Notification Preferences -->
+                            <tr>
+                                <td colspan="2" class="pt-3">
+                                    <h6 class="font-size-13 text-muted mb-2">
+                                        <i class="bx bx-bell"></i> {% trans "Notification Preferences" %}
+                                    </h6>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>{% trans "Booking SMS" %}:</th>
+                                <td>
+                                    {% if client.receive_booking_sms %}
+                                        <span class="badge bg-success-subtle text-success">
+                                            <i class="bx bx-check"></i> {% trans "Enabled" %}
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-danger-subtle text-danger">
+                                            <i class="bx bx-x"></i> {% trans "Disabled" %}
+                                        </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>{% trans "Booking Email" %}:</th>
+                                <td>
+                                    {% if client.receive_booking_email %}
+                                        <span class="badge bg-success-subtle text-success">
+                                            <i class="bx bx-check"></i> {% trans "Enabled" %}
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-danger-subtle text-danger">
+                                            <i class="bx bx-x"></i> {% trans "Disabled" %}
+                                        </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>{% trans "Reminder SMS" %}:</th>
+                                <td>
+                                    {% if client.receive_reminder_sms %}
+                                        <span class="badge bg-success-subtle text-success">
+                                            <i class="bx bx-check"></i> {% trans "Enabled" %}
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-danger-subtle text-danger">
+                                            <i class="bx bx-x"></i> {% trans "Disabled" %}
+                                        </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>{% trans "Reminder Email" %}:</th>
+                                <td>
+                                    {% if client.receive_reminder_email %}
+                                        <span class="badge bg-success-subtle text-success">
+                                            <i class="bx bx-check"></i> {% trans "Enabled" %}
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-danger-subtle text-danger">
+                                            <i class="bx bx-x"></i> {% trans "Disabled" %}
+                                        </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>

@@ -20,6 +20,29 @@ class Client(models.Model):
     skin_type  = models.CharField("Τύπος δέρματος", max_length=3, choices=SKIN_TYPE_CHOICES, blank=True, null=True)
     hair_color = models.CharField("Χρώμα τριχών", max_length=12, choices=HAIR_COLOR_CHOICES, blank=True, null=True)
 
+    # ✨✨✨ NEW: Notification Preferences ✨✨✨
+    receive_booking_sms = models.BooleanField(
+        "Λήψη SMS κράτησης",
+        default=True,
+        help_text="Αποστολή SMS επιβεβαίωσης κράτησης"
+    )
+    receive_booking_email = models.BooleanField(
+        "Λήψη Email κράτησης",
+        default=True,
+        help_text="Αποστολή email επιβεβαίωσης κράτησης"
+    )
+    receive_reminder_sms = models.BooleanField(
+        "Λήψη SMS υπενθύμισης",
+        default=True,
+        help_text="Αποστολή SMS υπενθύμισης 24 ώρες πριν το ραντεβού"
+    )
+    receive_reminder_email = models.BooleanField(
+        "Λήψη Email υπενθύμισης",
+        default=True,
+        help_text="Αποστολή email υπενθύμισης 24 ώρες πριν το ραντεβού"
+    )
+    # ✨✨✨ END NEW FIELDS ✨✨✨
+
     class Meta:
         ordering = ["full_name"]
 

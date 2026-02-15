@@ -1,0 +1,292 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{{ staff_member.name|default:staff_member.username }} - {% trans "Day Offs" %}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
+<li class="breadcrumb-item"><a href="{% url 'staff:list' %}">{% trans "Staff" %}</a></li>
+<li class="breadcrumb-item"><a href="{% url 'staff:detail' staff_member.username %}">{{ staff_member.name|default:staff_member.username }}</a></li>
+<li class="breadcrumb-item active">{% trans "Day Offs" %}</li>
+{% endblock %}
+
+{% block content %}
+
+<!-- Header -->
+<div class="row align-items-center">
+    <div class="col-md-6">
+        <div class="mb-3">
+            <h5 class="card-title">
+                {% trans "Day Offs for" %} {{ staff_member.name|default:staff_member.username }}
+                <span class="text-muted fw-normal ms-2">({{ total_dayoffs }})</span>
+            </h5>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="d-flex flex-wrap align-items-center justify-content-end gap-2 mb-3">
+            <!-- Filter by Status -->
+            <div class="dropdown">
+                <button class="btn btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="bx bx-filter-alt me-1"></i>
+                    {% if request.GET.status == 'pending' %}
+                        {% trans "Pending" %}
+                    {% elif request.GET.status == 'approved' %}
+                        {% trans "Approved" %}
+                    {% elif request.GET.status == 'rejected' %}
+                        {% trans "Rejected" %}
+                    {% else %}
+                        {% trans "All Status" %}
+                    {% endif %}
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="?">{% trans "All Status" %}</a></li>
+                    <li><a class="dropdown-item" href="?status=pending">{% trans "Pending" %}</a></li>
+                    <li><a class="dropdown-item" href="?status=approved">{% trans "Approved" %}</a></li>
+                    <li><a class="dropdown-item" href="?status=rejected">{% trans "Rejected" %}</a></li>
+                </ul>
+            </div>
+            
+            <a href="{% url 'staff:dayoff-add' staff_member.username %}" class="btn btn-primary">
+                <i class="bx bx-plus me-1"></i> {% trans "Add Day Off" %}
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row">
+    <div class="col-md-4">
+        <div class="card mini-stats-wid">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-grow-1">
+                        <p class="text-muted fw-medium">{% trans "Total Requests" %}</p>
+                        <h4 class="mb-0">{{ total_dayoffs }}</h4>
+                    </div>
+                    <div class="avatar-sm rounded-circle bg-primary align-self-center mini-stat-icon">
+                        <span class="avatar-title rounded-circle bg-primary">
+                            <i class="bx bx-calendar font-size-24"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card mini-stats-wid">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-grow-1">
+                        <p class="text-muted fw-medium">{% trans "Pending" %}</p>
+                        <h4 class="mb-0">{{ pending_count }}</h4>
+                    </div>
+                    <div class="avatar-sm rounded-circle bg-warning align-self-center mini-stat-icon">
+                        <span class="avatar-title rounded-circle bg-warning">
+                            <i class="bx bx-hourglass font-size-24"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card mini-stats-wid">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-grow-1">
+                        <p class="text-muted fw-medium">{% trans "Approved" %}</p>
+                        <h4 class="mb-0">{{ approved_count }}</h4>
+                    </div>
+                    <div class="avatar-sm rounded-circle bg-success align-self-center mini-stat-icon">
+                        <span class="avatar-title rounded-circle bg-success">
+                            <i class="bx bx-check-circle font-size-24"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Day Offs Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                {% if dayoffs %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>{% trans "Type" %}</th>
+                                <th>{% trans "Start Date" %}</th>
+                                <th>{% trans "End Date" %}</th>
+                                <th>{% trans "Duration" %}</th>
+                                <th>{% trans "Status" %}</th>
+                                <th>{% trans "Reason" %}</th>
+                                <th>{% trans "Actions" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for dayoff in dayoffs %}
+                            <tr {% if dayoff.is_active %}class="table-active"{% endif %}>
+                                <td>
+                                    <i class="bx 
+                                        {% if dayoff.type == 'vacation' %}bx-sun
+                                        {% elif dayoff.type == 'sick' %}bx-plus-medical
+                                        {% elif dayoff.type == 'personal' %}bx-user
+                                        {% elif dayoff.type == 'training' %}bx-book-open
+                                        {% else %}bx-calendar
+                                        {% endif %} me-2"></i>
+                                    {{ dayoff.get_type_display }}
+                                </td>
+                                <td>{{ dayoff.start_date|date:"d M, Y" }}</td>
+                                <td>{{ dayoff.end_date|date:"d M, Y" }}</td>
+                                <td>
+                                    <span class="badge badge-soft-info">
+                                        {{ dayoff.duration_days }} 
+                                        {% if dayoff.duration_days == 1 %}{% trans "day" %}{% else %}{% trans "days" %}{% endif %}
+                                    </span>
+                                    {% if dayoff.is_active %}
+                                        <span class="badge badge-soft-success ms-1">{% trans "Active" %}</span>
+                                    {% elif dayoff.is_upcoming %}
+                                        <span class="badge badge-soft-primary ms-1">{% trans "Upcoming" %}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if dayoff.status == 'approved' %}
+                                        <span class="badge badge-soft-success">
+                                            <i class="bx bx-check"></i> {% trans "Approved" %}
+                                        </span>
+                                    {% elif dayoff.status == 'pending' %}
+                                        <span class="badge badge-soft-warning">
+                                            <i class="bx bx-hourglass"></i> {% trans "Pending" %}
+                                        </span>
+                                    {% else %}
+                                        <span class="badge badge-soft-danger">
+                                            <i class="bx bx-x"></i> {% trans "Rejected" %}
+                                        </span>
+                                    {% endif %}
+                                    {% if dayoff.approved_by %}
+                                        <br><small class="text-muted">
+                                            {% trans "by" %} {{ dayoff.approved_by.name|default:dayoff.approved_by.username }}
+                                        </small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if dayoff.reason %}
+                                        <small>{{ dayoff.reason|truncatewords:10 }}</small>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-link dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                            <i class="bx bx-dots-horizontal-rounded"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li>
+                                                <a class="dropdown-item" href="{% url 'staff:dayoff-edit' dayoff.pk %}">
+                                                    <i class="bx bx-edit-alt me-2"></i>{% trans "Edit" %}
+                                                </a>
+                                            </li>
+                                            {% if dayoff.status == 'pending' and user.is_staff %}
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <a class="dropdown-item text-success" href="{% url 'staff:dayoff-approve' dayoff.pk %}">
+                                                    <i class="bx bx-check me-2"></i>{% trans "Approve" %}
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item text-danger" href="{% url 'staff:dayoff-reject' dayoff.pk %}">
+                                                    <i class="bx bx-x me-2"></i>{% trans "Reject" %}
+                                                </a>
+                                            </li>
+                                            {% endif %}
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <a class="dropdown-item text-danger" href="{% url 'staff:dayoff-delete' dayoff.pk %}">
+                                                    <i class="bx bx-trash me-2"></i>{% trans "Delete" %}
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="bx bx-calendar-x font-size-48 text-muted d-block mb-3"></i>
+                    <h5>{% trans "No day offs found" %}</h5>
+                    <p class="text-muted">{% trans "No day off requests match the current filters" %}</p>
+                    <a href="{% url 'staff:dayoff-add' staff_member.username %}" class="btn btn-primary">
+                        <i class="bx bx-plus me-1"></i> {% trans "Add Day Off" %}
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <p class="text-muted mb-0">
+                    {% trans "Showing" %} {{ page_obj.start_index }} {% trans "to" %} {{ page_obj.end_index }} 
+                    {% trans "of" %} {{ page_obj.paginator.count }}
+                </p>
+            </div>
+            <ul class="pagination mb-0">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}" class="page-link">
+                            <i class="mdi mdi-chevron-left"></i>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <a href="#" class="page-link"><i class="mdi mdi-chevron-left"></i></a>
+                    </li>
+                {% endif %}
+                
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active">
+                            <a href="#" class="page-link">{{ num }}</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item">
+                            <a href="?page={{ num }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}" class="page-link">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a href="?page={{ page_obj.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}" class="page-link">
+                            <i class="mdi mdi-chevron-right"></i>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <a href="#" class="page-link"><i class="mdi mdi-chevron-right"></i></a>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock content %}

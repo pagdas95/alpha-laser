@@ -30,7 +30,7 @@
                     {% endif %}
                 </h4>
 
-                <form method="post" class="needs-validation" novalidate>
+                <form method="post" class="needs-validation" novalidate">
                     {% csrf_token %}
                     
                     <!-- Show form errors if any -->
@@ -174,10 +174,89 @@
                         </div>
                     </div>
 
+                    <!-- ✨✨✨ NEW: Notification Preferences Section ✨✨✨ -->
+                    <div class="row">
+                        <div class="col-12">
+                            <h5 class="font-size-14 mb-3 mt-3">
+                                <i class="bx bx-bell me-2"></i>{% trans "Notification Preferences" %}
+                            </h5>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <i class="bx bx-info-circle"></i>
+                                <small>{% trans "Select which types of notifications the client wants to receive" %}</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Booking Notifications -->
+                        <div class="col-md-6">
+                            <div class="card border">
+                                <div class="card-body">
+                                    <h6 class="card-title mb-3">📅 {% trans "Booking Confirmations" %}</h6>
+                                    
+                                    <div class="form-check mb-2">
+                                        {{ form.receive_booking_sms }}
+                                        <label class="form-check-label" for="{{ form.receive_booking_sms.id_for_label }}">
+                                            <i class="bx bx-message-dots text-primary"></i> {{ form.receive_booking_sms.label }}
+                                        </label>
+                                        {% if form.receive_booking_sms.help_text %}
+                                        <small class="text-muted d-block ms-4">{{ form.receive_booking_sms.help_text }}</small>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="form-check">
+                                        {{ form.receive_booking_email }}
+                                        <label class="form-check-label" for="{{ form.receive_booking_email.id_for_label }}">
+                                            <i class="bx bx-envelope text-primary"></i> {{ form.receive_booking_email.label }}
+                                        </label>
+                                        {% if form.receive_booking_email.help_text %}
+                                        <small class="text-muted d-block ms-4">{{ form.receive_booking_email.help_text }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Reminder Notifications -->
+                        <div class="col-md-6">
+                            <div class="card border">
+                                <div class="card-body">
+                                    <h6 class="card-title mb-3">⏰ {% trans "24-Hour Reminders" %}</h6>
+                                    
+                                    <div class="form-check mb-2">
+                                        {{ form.receive_reminder_sms }}
+                                        <label class="form-check-label" for="{{ form.receive_reminder_sms.id_for_label }}">
+                                            <i class="bx bx-message-dots text-warning"></i> {{ form.receive_reminder_sms.label }}
+                                        </label>
+                                        {% if form.receive_reminder_sms.help_text %}
+                                        <small class="text-muted d-block ms-4">{{ form.receive_reminder_sms.help_text }}</small>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="form-check">
+                                        {{ form.receive_reminder_email }}
+                                        <label class="form-check-label" for="{{ form.receive_reminder_email.id_for_label }}">
+                                            <i class="bx bx-envelope text-warning"></i> {{ form.receive_reminder_email.label }}
+                                        </label>
+                                        {% if form.receive_reminder_email.help_text %}
+                                        <small class="text-muted d-block ms-4">{{ form.receive_reminder_email.help_text }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- ✨✨✨ END Notification Preferences Section ✨✨✨ -->
+
                     <!-- Action Buttons -->
                     <div class="row">
                         <div class="col-12">
-                            <div class="d-flex gap-2 justify-content-end">
+                            <div class="d-flex gap-2 justify-content-end mt-3">
                                 <a href="{% url 'clients:list' %}" class="btn btn-light">
                                     <i class="bx bx-x me-1"></i>{% trans "Cancel" %}
                                 </a>
@@ -206,6 +285,12 @@
         const formControls = document.querySelectorAll('select, input[type="text"], input[type="email"], input[type="date"], textarea');
         formControls.forEach(control => {
             control.classList.add('form-control');
+        });
+
+        // Add form-check-input class to checkboxes
+        const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(checkbox => {
+            checkbox.classList.add('form-check-input');
         });
 
         // Form validation

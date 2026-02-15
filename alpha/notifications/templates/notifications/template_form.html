@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
+<li class="breadcrumb-item"><a href="{% url 'notifications:templates' %}">{% trans "Templates" %}</a></li>
+<li class="breadcrumb-item active">{{ title }}</li>
+{% endblock %}
+
+{% block content %}
+
+<div class="row">
+    <div class="col-lg-8 offset-lg-2">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">{{ title }}</h4>
+            </div>
+            <div class="card-body">
+                
+                <div class="alert alert-info">
+                    <i class="bx bx-info-circle"></i>
+                    <strong>{% trans "Pro Tip:" %}</strong> 
+                    {% trans "Use variables to personalize messages:" %}
+                    <ul class="mb-0 mt-2">
+                        <li><code>{client_name}</code> - {% trans "Client's full name" %}</li>
+                        <li><code>{phone}</code> - {% trans "Client's phone number" %}</li>
+                        <li><code>{email}</code> - {% trans "Client's email address" %}</li>
+                    </ul>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.name.id_for_label }}" class="form-label">
+                            {{ form.name.label }} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                            <div class="invalid-feedback d-block">{{ form.name.errors.0 }}</div>
+                        {% endif %}
+                        <small class="text-muted">{% trans "Give your template a descriptive name" %}</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.notification_type.id_for_label }}" class="form-label">
+                            {{ form.notification_type.label }}
+                        </label>
+                        {{ form.notification_type }}
+                        {% if form.notification_type.errors %}
+                            <div class="invalid-feedback d-block">{{ form.notification_type.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <hr class="my-4">
+
+                    <h5 class="mb-3">📱 {% trans "SMS Template" %}</h5>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.sms_body.id_for_label }}" class="form-label">
+                            {{ form.sms_body.label }}
+                        </label>
+                        {{ form.sms_body }}
+                        {% if form.sms_body.errors %}
+                            <div class="invalid-feedback d-block">{{ form.sms_body.errors.0 }}</div>
+                        {% endif %}
+                        <div class="d-flex justify-content-between mt-1">
+                            <small class="text-muted">{{ form.sms_body.help_text }}</small>
+                            <small class="text-muted">
+                                <span id="smsCharCount">0</span>/160 {% trans "characters" %}
+                            </small>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <h5 class="mb-3">📧 {% trans "Email Template" %}</h5>
+
+                    <div class="mb-3">
+                        <label for="{{ form.email_subject.id_for_label }}" class="form-label">
+                            {{ form.email_subject.label }}
+                        </label>
+                        {{ form.email_subject }}
+                        {% if form.email_subject.errors %}
+                            <div class="invalid-feedback d-block">{{ form.email_subject.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.email_body.id_for_label }}" class="form-label">
+                            {{ form.email_body.label }}
+                        </label>
+                        {{ form.email_body }}
+                        {% if form.email_body.errors %}
+                            <div class="invalid-feedback d-block">{{ form.email_body.errors.0 }}</div>
+                        {% endif %}
+                        <small class="text-muted d-block">{{ form.email_body.help_text }}</small>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="mb-3 form-check">
+                        {{ form.is_active }}
+                        <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                            {{ form.is_active.label }}
+                        </label>
+                        <small class="text-muted d-block">{% trans "Inactive templates won't appear in the template selector" %}</small>
+                    </div>
+
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bx bx-save"></i> {{ submit_text }}
+                        </button>
+                        <a href="{% url 'notifications:templates' %}" class="btn btn-secondary">
+                            <i class="bx bx-x"></i> {% trans "Cancel" %}
+                        </a>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Character counter for SMS
+    const smsBody = document.getElementById('{{ form.sms_body.id_for_label }}');
+    const smsCharCount = document.getElementById('smsCharCount');
+    
+    if (smsBody && smsCharCount) {
+        function updateSmsCount() {
+            const count = smsBody.value.length;
+            smsCharCount.textContent = count;
+            
+            if (count > 160) {
+                smsCharCount.classList.add('text-danger');
+            } else if (count > 140) {
+                smsCharCount.classList.add('text-warning');
+                smsCharCount.classList.remove('text-danger');
+            } else {
+                smsCharCount.classList.remove('text-warning', 'text-danger');
+            }
+        }
+        
+        smsBody.addEventListener('input', updateSmsCount);
+        updateSmsCount(); // Initial count
+    }
+});
+</script>
+{% endblock %}

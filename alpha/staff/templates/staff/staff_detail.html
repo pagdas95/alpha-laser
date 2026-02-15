@@ -1,0 +1,361 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{{ staff_member.name|default:staff_member.username }} - {% trans "Profile" %}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
+<li class="breadcrumb-item"><a href="{% url 'staff:list' %}">{% trans "Staff" %}</a></li>
+<li class="breadcrumb-item active">{{ staff_member.name|default:staff_member.username }}</li>
+{% endblock %}
+
+{% block content %}
+
+<!-- Profile Header -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-lg-4">
+                        <div class="text-center">
+                            {% if staff_profile.avatar %}
+                                <img src="{{ staff_profile.avatar.url }}" alt="" class="avatar-xl rounded-circle img-thumbnail mb-3" style="width: 150px; height: 150px; object-fit: cover;">
+                            {% else %}
+                                <div class="avatar-xl mx-auto mb-3">
+                                    <div class="avatar-title bg-light-subtle text-primary display-1 m-0 rounded-circle" style="width: 150px; height: 150px;">
+                                        <i class="bx bxs-user-circle"></i>
+                                    </div>
+                                </div>
+                            {% endif %}
+                            
+                            <h5 class="mb-1">{{ staff_member.name|default:staff_member.username }}</h5>
+                            <p class="text-muted mb-2">{{ staff_profile.get_position_display }}</p>
+                            
+                            {% if staff_profile.is_active_staff %}
+                                <span class="badge badge-soft-success mb-3">
+                                    <i class="bx bx-check-circle"></i> {% trans "Active" %}
+                                </span>
+                            {% else %}
+                                <span class="badge badge-soft-danger mb-3">
+                                    <i class="bx bx-x-circle"></i> {% trans "Inactive" %}
+                                </span>
+                            {% endif %}
+                            
+                            <div class="mt-3">
+                                <a href="{% url 'staff:edit' staff_member.username %}" class="btn btn-primary btn-sm">
+                                    <i class="bx bx-edit-alt me-1"></i> {% trans "Edit Profile" %}
+                                </a>
+                                <a href="{% url 'staff:dayoff-add' staff_member.username %}" class="btn btn-success btn-sm">
+                                    <i class="bx bx-plus me-1"></i> {% trans "Add Day Off" %}
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-8">
+                        <div class="mt-4 mt-lg-0">
+                            <h5 class="font-size-15 mb-3">{% trans "Professional Information" %}</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <p class="text-muted mb-1"><i class="bx bx-briefcase me-2"></i>{% trans "Position" %}</p>
+                                        <h6 class="font-size-14 mb-0">{{ staff_profile.get_position_display }}</h6>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <p class="text-muted mb-1"><i class="bx bx-time me-2"></i>{% trans "Employment Type" %}</p>
+                                        <h6 class="font-size-14 mb-0">{{ staff_profile.get_employment_type_display }}</h6>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <p class="text-muted mb-1"><i class="bx bx-calendar me-2"></i>{% trans "Hire Date" %}</p>
+                                        <h6 class="font-size-14 mb-0">
+                                            {% if staff_profile.hire_date %}
+                                                {{ staff_profile.hire_date|date:"d M, Y" }}
+                                                ({{ staff_profile.years_of_service }} 
+                                                {% if staff_profile.years_of_service == 1 %}{% trans "year" %}{% else %}{% trans "years" %}{% endif %})
+                                            {% else %}
+                                                <span class="text-muted">{% trans "Not set" %}</span>
+                                            {% endif %}
+                                        </h6>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <p class="text-muted mb-1"><i class="bx bx-id-card me-2"></i>{% trans "Employee ID" %}</p>
+                                        <h6 class="font-size-14 mb-0">{{ staff_profile.employee_id|default:"Not set" }}</h6>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <h5 class="font-size-15 mb-3 mt-3">{% trans "Contact Information" %}</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <p class="text-muted mb-1"><i class="bx bx-envelope me-2"></i>{% trans "Email" %}</p>
+                                        <h6 class="font-size-14 mb-0">{{ staff_member.email|default:"Not set" }}</h6>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <p class="text-muted mb-1"><i class="bx bx-phone me-2"></i>{% trans "Phone" %}</p>
+                                        <h6 class="font-size-14 mb-0">{{ staff_profile.phone|default:"Not set" }}</h6>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <p class="text-muted mb-1"><i class="bx bx-user-pin me-2"></i>{% trans "Emergency Contact" %}</p>
+                                        <h6 class="font-size-14 mb-0">{{ staff_profile.emergency_contact|default:"Not set" }}</h6>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <p class="text-muted mb-1"><i class="bx bx-phone-call me-2"></i>{% trans "Emergency Phone" %}</p>
+                                        <h6 class="font-size-14 mb-0">{{ staff_profile.emergency_phone|default:"Not set" }}</h6>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {% if staff_profile.bio %}
+                            <h5 class="font-size-15 mb-3 mt-3">{% trans "About" %}</h5>
+                            <p class="text-muted">{{ staff_profile.bio }}</p>
+                            {% endif %}
+                            
+                            {% if staff_profile.certifications %}
+                            <h5 class="font-size-15 mb-2 mt-3">{% trans "Certifications" %}</h5>
+                            <p class="text-muted">{{ staff_profile.certifications }}</p>
+                            {% endif %}
+                            
+                            {% if staff_profile.specializations %}
+                            <h5 class="font-size-15 mb-2 mt-3">{% trans "Specializations" %}</h5>
+                            <p class="text-muted">{{ staff_profile.specializations }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Cards - 3 SEPARATE LEAVE TYPES -->
+<div class="row">
+    <!-- Regular Leave Balance -->
+    <div class="col-md-3">
+        <div class="card mini-stats-wid">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-grow-1">
+                        <p class="text-muted fw-medium">{% trans "Leave Balance" %}</p>
+                        <h4 class="mb-0 {% if leave_balance < 5 %}text-danger{% elif leave_balance < 10 %}text-warning{% else %}text-success{% endif %}">
+                            {{ leave_balance|floatformat:1 }}
+                        </h4>
+                        <small class="text-muted">{% trans "days remaining" %}</small>
+                    </div>
+                    <div class="avatar-sm rounded-circle {% if leave_balance < 5 %}bg-danger{% elif leave_balance < 10 %}bg-warning{% else %}bg-success{% endif %} align-self-center mini-stat-icon">
+                        <span class="avatar-title rounded-circle {% if leave_balance < 5 %}bg-danger{% elif leave_balance < 10 %}bg-warning{% else %}bg-success{% endif %}">
+                            <i class="bx bx-calendar font-size-24"></i>
+                        </span>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <small class="text-muted">
+                        {{ leave_used|floatformat:1 }} / {{ leave_allowance|floatformat:1 }} {% trans "used" %}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sick Leave Balance -->
+    <div class="col-md-3">
+        <div class="card mini-stats-wid">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-grow-1">
+                        <p class="text-muted fw-medium">{% trans "Sick Leave" %}</p>
+                        <h4 class="mb-0 {% if sick_balance < 2 %}text-danger{% elif sick_balance < 5 %}text-warning{% else %}text-info{% endif %}">
+                            {{ sick_balance|floatformat:1 }}
+                        </h4>
+                        <small class="text-muted">{% trans "days remaining" %}</small>
+                    </div>
+                    <div class="avatar-sm rounded-circle {% if sick_balance < 2 %}bg-danger{% elif sick_balance < 5 %}bg-warning{% else %}bg-info{% endif %} align-self-center mini-stat-icon">
+                        <span class="avatar-title rounded-circle {% if sick_balance < 2 %}bg-danger{% elif sick_balance < 5 %}bg-warning{% else %}bg-info{% endif %}">
+                            <i class="bx bx-plus-medical font-size-24"></i>
+                        </span>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <small class="text-muted">
+                        {{ sick_used|floatformat:1 }} / {{ sick_allowance|floatformat:1 }} {% trans "used" %}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Other/Compensation Balance -->
+    <div class="col-md-3">
+        <div class="card mini-stats-wid">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-grow-1">
+                        <p class="text-muted fw-medium">{% trans "Compensation Days" %}</p>
+                        <h4 class="mb-0 text-primary">
+                            {{ other_balance|floatformat:1 }}
+                        </h4>
+                        <small class="text-muted">{% trans "bonus days earned" %}</small>
+                    </div>
+                    <div class="avatar-sm rounded-circle bg-primary align-self-center mini-stat-icon">
+                        <span class="avatar-title rounded-circle bg-primary">
+                            <i class="bx bx-gift font-size-24"></i>
+                        </span>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <small class="text-muted">
+                        +{{ other_total|floatformat:1 }} {% trans "added this year" %}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Total Day Offs -->
+    <div class="col-md-3">
+        <div class="card mini-stats-wid">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-grow-1">
+                        <p class="text-muted fw-medium">{% trans "Pending Requests" %}</p>
+                        <h4 class="mb-0">{{ pending_dayoffs }}</h4>
+                    </div>
+                    <div class="avatar-sm rounded-circle bg-warning align-self-center mini-stat-icon">
+                        <span class="avatar-title rounded-circle bg-warning">
+                            <i class="bx bx-hourglass font-size-24"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Current Day Off Alert -->
+{% if current_dayoff %}
+<div class="row">
+    <div class="col-12">
+        <div class="alert alert-warning" role="alert">
+            <h5 class="alert-heading"><i class="bx bx-info-circle me-2"></i>{% trans "Currently on Day Off" %}</h5>
+            <p class="mb-0">
+                <strong>{{ staff_member.name|default:staff_member.username }}</strong> 
+                {% trans "is currently on" %} {{ current_dayoff.get_type_display|lower }}
+                {% trans "from" %} {{ current_dayoff.start_date|date:"d M" }} 
+                {% trans "to" %} {{ current_dayoff.end_date|date:"d M, Y" }}
+            </p>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Day Offs Section -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="bx bx-calendar me-2"></i>{% trans "Upcoming Day Offs" %}
+                    </h5>
+                    <a href="{% url 'staff:dayoff-list' staff_member.username %}" class="btn btn-sm btn-light">
+                        {% trans "View All" %} <i class="bx bx-right-arrow-alt"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if upcoming_dayoffs %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>{% trans "Type" %}</th>
+                                <th>{% trans "Start Date" %}</th>
+                                <th>{% trans "End Date" %}</th>
+                                <th>{% trans "Days" %}</th>
+                                <th>{% trans "Status" %}</th>
+                                <th>{% trans "Actions" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for dayoff in upcoming_dayoffs %}
+                            <tr>
+                                <td>
+                                    <i class="bx bx-calendar-event me-1"></i>
+                                    {{ dayoff.get_type_display }}
+                                </td>
+                                <td>{{ dayoff.start_date|date:"d M, Y" }}</td>
+                                <td>{{ dayoff.end_date|date:"d M, Y" }}</td>
+                                <td>{{ dayoff.duration_days }}</td>
+                                <td>
+                                    {% if dayoff.status == 'approved' %}
+                                        <span class="badge badge-soft-success">
+                                            <i class="bx bx-check"></i> {% trans "Approved" %}
+                                        </span>
+                                    {% elif dayoff.status == 'pending' %}
+                                        <span class="badge badge-soft-warning">
+                                            <i class="bx bx-hourglass"></i> {% trans "Pending" %}
+                                        </span>
+                                    {% else %}
+                                        <span class="badge badge-soft-danger">
+                                            <i class="bx bx-x"></i> {% trans "Rejected" %}
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-link dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                            <i class="bx bx-dots-horizontal-rounded"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li><a class="dropdown-item" href="{% url 'staff:dayoff-edit' dayoff.pk %}">
+                                                <i class="bx bx-edit-alt me-2"></i>{% trans "Edit" %}
+                                            </a></li>
+                                            {% if dayoff.status == 'pending' %}
+                                            <li><a class="dropdown-item text-success" href="{% url 'staff:dayoff-approve' dayoff.pk %}">
+                                                <i class="bx bx-check me-2"></i>{% trans "Approve" %}
+                                            </a></li>
+                                            <li><a class="dropdown-item text-danger" href="{% url 'staff:dayoff-reject' dayoff.pk %}">
+                                                <i class="bx bx-x me-2"></i>{% trans "Reject" %}
+                                            </a></li>
+                                            {% endif %}
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li><a class="dropdown-item text-danger" href="{% url 'staff:dayoff-delete' dayoff.pk %}">
+                                                <i class="bx bx-trash me-2"></i>{% trans "Delete" %}
+                                            </a></li>
+                                        </ul>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="bx bx-calendar-x font-size-48 text-muted d-block mb-3"></i>
+                    <p class="text-muted">{% trans "No upcoming day offs scheduled" %}</p>
+                    <a href="{% url 'staff:dayoff-add' staff_member.username %}" class="btn btn-sm btn-primary">
+                        <i class="bx bx-plus me-1"></i> {% trans "Add Day Off" %}
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock content %}

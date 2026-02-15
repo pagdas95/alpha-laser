@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{% trans "Notification Details" %}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
+<li class="breadcrumb-item"><a href="{% url 'notifications:logs' %}">{% trans "Notification Logs" %}</a></li>
+<li class="breadcrumb-item active">{% trans "Details" %}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex align-items-center justify-content-between">
+                    <h4 class="card-title mb-0">{% trans "Notification Details" %}</h4>
+                    <div>
+                        <a href="{% url 'notifications:logs' %}" class="btn btn-secondary">
+                            <i class="bx bx-arrow-back"></i> {% trans "Back to Logs" %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                
+                <!-- Status Badge -->
+                <div class="mb-4">
+                    {% if log.status == 'sent' %}
+                        <span class="badge bg-success-subtle text-success font-size-14 px-3 py-2">
+                            <i class="bx bx-check-circle"></i> {% trans "Sent Successfully" %}
+                        </span>
+                    {% elif log.status == 'failed' %}
+                        <span class="badge bg-danger-subtle text-danger font-size-14 px-3 py-2">
+                            <i class="bx bx-x-circle"></i> {% trans "Failed" %}
+                        </span>
+                    {% elif log.status == 'pending' %}
+                        <span class="badge bg-warning-subtle text-warning font-size-14 px-3 py-2">
+                            <i class="bx bx-time-five"></i> {% trans "Pending" %}
+                        </span>
+                    {% endif %}
+                    
+                    {% if log.channel == 'sms' %}
+                        <span class="badge bg-primary-subtle text-primary font-size-14 px-3 py-2 ms-2">
+                            <i class="bx bx-mobile"></i> {% trans "SMS" %}
+                        </span>
+                    {% elif log.channel == 'email' %}
+                        <span class="badge bg-info-subtle text-info font-size-14 px-3 py-2 ms-2">
+                            <i class="bx bx-envelope"></i> {% trans "Email" %}
+                        </span>
+                    {% endif %}
+                </div>
+
+                <!-- Main Information -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card border mb-4">
+                            <div class="card-header bg-light">
+                                <h5 class="card-title mb-0">
+                                    <i class="bx bx-user"></i> {% trans "Recipient Information" %}
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                {% if log.client %}
+                                    <div class="mb-3">
+                                        <label class="text-muted mb-1">{% trans "Client" %}</label>
+                                        <h6 class="mb-0">
+                                            <a href="{% url 'clients:detail' log.client.pk %}">
+                                                {{ log.client.full_name }}
+                                            </a>
+                                        </h6>
+                                    </div>
+                                {% endif %}
+                                
+                                <div class="mb-3">
+                                    <label class="text-muted mb-1">{% trans "Recipient" %}</label>
+                                    <h6 class="mb-0">
+                                        {% if log.channel == 'sms' %}
+                                            <i class="bx bx-phone me-1"></i>{{ log.recipient }}
+                                        {% else %}
+                                            <i class="bx bx-envelope me-1"></i>{{ log.recipient }}
+                                        {% endif %}
+                                    </h6>
+                                </div>
+                                
+                                {% if log.appointment %}
+                                    <div class="mb-0">
+                                        <label class="text-muted mb-1">{% trans "Related Appointment" %}</label>
+                                        <h6 class="mb-0">
+                                            <a href="{% url 'appointments:detail' log.appointment.pk %}">
+                                                {{ log.appointment.service.name }} - {{ log.appointment.start_time|date:"d M Y, g:i A" }}
+                                            </a>
+                                        </h6>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card border mb-4">
+                            <div class="card-header bg-light">
+                                <h5 class="card-title mb-0">
+                                    <i class="bx bx-info-circle"></i> {% trans "Notification Details" %}
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="text-muted mb-1">{% trans "Sent At" %}</label>
+                                    <h6 class="mb-0">{{ log.created_at|date:"d M Y, g:i A" }}</h6>
+                                </div>
+                                
+                                {% if log.sent_by %}
+                                    <div class="mb-3">
+                                        <label class="text-muted mb-1">{% trans "Sent By" %}</label>
+                                        <h6 class="mb-0">{{ log.sent_by.name }}</h6>
+                                    </div>
+                                {% endif %}
+                                
+                                <div class="mb-3">
+                                    <label class="text-muted mb-1">{% trans "Type" %}</label>
+                                    <h6 class="mb-0">{{ log.get_notification_type_display }}</h6>
+                                </div>
+                                
+                                {% if log.external_id %}
+                                    <div class="mb-0">
+                                        <label class="text-muted mb-1">{% trans "External ID" %}</label>
+                                        <h6 class="mb-0">
+                                            <code class="text-muted">{{ log.external_id }}</code>
+                                        </h6>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Message Content -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card border mb-4">
+                            <div class="card-header bg-light">
+                                <h5 class="card-title mb-0">
+                                    <i class="bx bx-message-square-detail"></i> {% trans "Message Content" %}
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                {% if log.subject %}
+                                    <div class="mb-3">
+                                        <label class="text-muted mb-1">{% trans "Subject" %}</label>
+                                        <h6 class="mb-0">{{ log.subject }}</h6>
+                                    </div>
+                                {% endif %}
+                                
+                                <div class="mb-0">
+                                    <label class="text-muted mb-1">{% trans "Message" %}</label>
+                                    <div class="bg-light p-3 rounded">
+                                        {{ log.message|linebreaksbr }}
+                                    </div>
+                                </div>
+                                
+                                {% if log.channel == 'sms' %}
+                                    <div class="mt-2">
+                                        <small class="text-muted">
+                                            <i class="bx bx-info-circle"></i>
+                                            {% trans "Character count" %}: {{ log.message|length }}/160
+                                        </small>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Error Details (if failed) -->
+                {% if log.status == 'failed' and log.error_message %}
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card border border-danger mb-4">
+                            <div class="card-header bg-danger-subtle">
+                                <h5 class="card-title mb-0 text-danger">
+                                    <i class="bx bx-error"></i> {% trans "Error Details" %}
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert alert-danger mb-0">
+                                    <strong>{% trans "Error Message:" %}</strong><br>
+                                    {{ log.error_message }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Metadata (if exists) -->
+                {% if log.metadata %}
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card border">
+                            <div class="card-header bg-light">
+                                <h5 class="card-title mb-0">
+                                    <i class="bx bx-data"></i> {% trans "Additional Data" %}
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <pre class="bg-light p-3 rounded mb-0"><code>{{ log.metadata }}</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+{% load static i18n crispy_forms_tags %}
+
+{% block title %}
+    {% if object %}
+        {% trans "Edit Day Off" %}
+    {% else %}
+        {% trans "Request Day Off" %}
+    {% endif %}
+{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
+<li class="breadcrumb-item"><a href="{% url 'staff:list' %}">{% trans "Staff" %}</a></li>
+<li class="breadcrumb-item active">
+    {% if object %}{% trans "Edit Day Off" %}{% else %}{% trans "Request Day Off" %}{% endif %}
+</li>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bx bx-calendar-plus me-2"></i>
+                    {% if object %}
+                        {% trans "Edit Day Off Request" %}
+                    {% else %}
+                        {% trans "Request Day Off" %}
+                    {% endif %}
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label for="{{ form.staff.id_for_label }}" class="form-label">
+                                {% trans "Staff Member" %} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.staff }}
+                            {% if form.staff.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.staff.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.start_date.id_for_label }}" class="form-label">
+                                {% trans "Start Date" %} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.start_date }}
+                            {% if form.start_date.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.start_date.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.end_date.id_for_label }}" class="form-label">
+                                {% trans "End Date" %} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.end_date }}
+                            {% if form.end_date.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.end_date.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-12 mb-3">
+                            <label for="{{ form.type.id_for_label }}" class="form-label">
+                                {% trans "Type" %} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.type }}
+                            {% if form.type.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.type.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-12 mb-3">
+                            <label for="{{ form.reason.id_for_label }}" class="form-label">
+                                {% trans "Reason" %}
+                            </label>
+                            {{ form.reason }}
+                            {% if form.reason.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.reason.errors }}
+                                </div>
+                            {% endif %}
+                            <small class="text-muted">{% trans "Optional: Provide additional details about your request" %}</small>
+                        </div>
+                    </div>
+                    
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger" role="alert">
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+                    
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <a href="javascript:history.back()" class="btn btn-light">
+                            <i class="bx bx-x me-1"></i> {% trans "Cancel" %}
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bx bx-check me-1"></i>
+                            {% if object %}
+                                {% trans "Update Request" %}
+                            {% else %}
+                                {% trans "Submit Request" %}
+                            {% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Help Card -->
+        <div class="card border-info">
+            <div class="card-body">
+                <h6 class="card-title">
+                    <i class="bx bx-info-circle me-2 text-info"></i>
+                    {% trans "Leave Deduction Rules" %}
+                </h6>
+                <ul class="mb-0">
+                    <li><strong>{% trans "Leave" %}:</strong> {% trans "-1 day per day taken" %}</li>
+                    <li><strong>{% trans "Sick Leave" %}:</strong> {% trans "-1 day per day taken" %}</li>
+                    <li><strong>{% trans "Half Day" %}:</strong> {% trans "-0.5 days (single day only)" %}</li>
+                    <li><strong>{% trans "Other/Compensation" %}:</strong> {% trans "ALWAYS +1 day (regardless of duration)" %}</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock content %}
+
+{% block extra_js %}
+<script>
+// Handle half-day leave type
+function updateDateFields(leaveType) {
+    const startDateInput = document.querySelector('input[name="start_date"]');
+    const endDateInput = document.querySelector('input[name="end_date"]');
+    
+    if (leaveType === 'half_day') {
+        // For half day, auto-set end_date to start_date
+        if (startDateInput.value) {
+            endDateInput.value = startDateInput.value;
+        }
+        endDateInput.readOnly = true;
+        endDateInput.style.backgroundColor = '#f0f0f0';
+        
+        // Add event listener to sync dates
+        startDateInput.addEventListener('change', function() {
+            endDateInput.value = this.value;
+        });
+    } else {
+        endDateInput.readOnly = false;
+        endDateInput.style.backgroundColor = '';
+    }
+}
+
+// Calculate and show duration/deduction when dates change
+document.addEventListener('DOMContentLoaded', function() {
+    const startDateInput = document.querySelector('input[name="start_date"]');
+    const endDateInput = document.querySelector('input[name="end_date"]');
+    const typeSelect = document.querySelector('select[name="type"]');
+    
+    // Initialize if half_day is already selected
+    if (typeSelect && typeSelect.value === 'half_day') {
+        updateDateFields('half_day');
+    }
+    
+    function calculateDeduction() {
+        if (startDateInput.value && endDateInput.value && typeSelect.value) {
+            const start = new Date(startDateInput.value);
+            const end = new Date(endDateInput.value);
+            const diffTime = Math.abs(end - start);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            
+            let deduction = 0;
+            const leaveType = typeSelect.value;
+            
+            if (leaveType === 'half_day') {
+                deduction = -0.5;
+            } else if (leaveType === 'leave' || leaveType === 'sick') {
+                deduction = -diffDays;
+            } else if (leaveType === 'other') {
+                deduction = 1.0;  // ALWAYS +1, not based on days
+            }
+            
+            // Show deduction message
+            let deductionMsg = document.getElementById('deduction-message');
+            if (!deductionMsg) {
+                deductionMsg = document.createElement('div');
+                deductionMsg.id = 'deduction-message';
+                deductionMsg.className = 'alert alert-info mt-3';
+                typeSelect.parentElement.appendChild(deductionMsg);
+            }
+            
+            const deductionText = deduction > 0 ? 
+                `<strong>+${deduction}</strong> day will be added to leave balance (compensation)` :
+                `<strong>${deduction}</strong> days will be deducted from leave balance`;
+            
+            deductionMsg.innerHTML = `
+                <i class="bx bx-info-circle me-2"></i>
+                Duration: <strong>${diffDays}</strong> day${diffDays > 1 ? 's' : ''}<br>
+                ${deductionText}
+            `;
+        }
+    }
+    
+    startDateInput.addEventListener('change', calculateDeduction);
+    endDateInput.addEventListener('change', calculateDeduction);
+    typeSelect.addEventListener('change', calculateDeduction);
+    
+    // Initial calculation if all values are set
+    calculateDeduction();
+});
+</script>
+{% endblock %}

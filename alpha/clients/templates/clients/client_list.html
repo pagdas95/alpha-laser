@@ -1,297 +1,297 @@
-{% extends "base.html" %}
-{% load static i18n %}
+    {% extends "base.html" %}
+    {% load static i18n %}
 
-{% block title %}{% trans "Clients" %}{% endblock %}
+    {% block title %}{% trans "Clients" %}{% endblock %}
 
-{% block extra_css %}
-<!-- DataTables -->
-<link href="{% static 'libs/datatables.net-bs4/css/dataTables.bootstrap4.min.css' %}" rel="stylesheet" type="text/css" />
-<link href="{% static 'libs/datatables.net-responsive-bs4/css/responsive.bootstrap4.min.css' %}" rel="stylesheet" type="text/css" />
-{% endblock %}
+    {% block extra_css %}
+    <!-- DataTables -->
+    <link href="{% static 'libs/datatables.net-bs4/css/dataTables.bootstrap4.min.css' %}" rel="stylesheet" type="text/css" />
+    <link href="{% static 'libs/datatables.net-responsive-bs4/css/responsive.bootstrap4.min.css' %}" rel="stylesheet" type="text/css" />
+    {% endblock %}
 
-{% block breadcrumb %}
-<li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
-<li class="breadcrumb-item active">{% trans "Clients" %}</li>
-{% endblock %}
+    {% block breadcrumb %}
+    <li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
+    <li class="breadcrumb-item active">{% trans "Clients" %}</li>
+    {% endblock %}
 
-{% block content %}
-<div class="row align-items-center">
-    <div class="col-md-6">
-        <div class="mb-3">
-            <h5 class="card-title">
-                {% trans "Client List" %} 
-                <span class="text-muted fw-normal ms-2">({{ total_count }})</span>
-            </h5>
-        </div>
-    </div>
-
-    <div class="col-md-6">
-        <div class="d-flex flex-wrap align-items-center justify-content-end gap-2 mb-3">
-            <!-- View Toggle -->
-            <div>
-                <ul class="nav nav-pills">
-                    <li class="nav-item">
-                        <a class="nav-link active" href="{% url 'clients:list' %}" 
-                           data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans 'List' %}">
-                            <i class="bx bx-list-ul"></i>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#" 
-                           data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans 'Grid' %}">
-                            <i class="bx bx-grid-alt"></i>
-                        </a>
-                    </li>
-                </ul>
-            </div>
-
-            <!-- Add New Button -->
-            <div>
-                <a href="{% url 'clients:create' %}" class="btn btn-primary">
-                    <i class="bx bx-plus me-1"></i> {% trans "Add New" %}
-                </a>
-            </div>
-            
-            <!-- More Actions -->
-            <div class="dropdown">
-                <a class="btn btn-link text-muted py-1 font-size-16 shadow-none dropdown-toggle" 
-                   href="#" role="button" data-bs-toggle="dropdown">
-                    <i class="bx bx-dots-horizontal-rounded"></i>
-                </a>
-                <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item" href="#">
-                        <i class="bx bx-export me-2"></i>{% trans "Export to Excel" %}
-                    </a></li>
-                    <li><a class="dropdown-item" href="#">
-                        <i class="bx bx-import me-2"></i>{% trans "Import Clients" %}
-                    </a></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item" href="#">
-                        <i class="bx bx-envelope me-2"></i>{% trans "Send Bulk Email" %}
-                    </a></li>
-                </ul>
+    {% block content %}
+    <div class="row align-items-center">
+        <div class="col-md-6">
+            <div class="mb-3">
+                <h5 class="card-title">
+                    {% trans "Client List" %} 
+                    <span class="text-muted fw-normal ms-2">({{ total_count }})</span>
+                </h5>
             </div>
         </div>
-    </div>
-</div>
-<!-- end row -->
 
-<div class="table-responsive mb-4">
-    <table class="table align-middle datatable dt-responsive table-check nowrap" 
-           style="border-collapse: collapse; border-spacing: 0 8px; width: 100%;" 
-           id="clientsTable">
-        <thead>
-            <tr>
-                <th scope="col" style="width: 50px;">
-                    <div class="form-check font-size-16">
-                        <input type="checkbox" class="form-check-input" id="checkAll">
-                        <label class="form-check-label" for="checkAll"></label>
-                    </div>
-                </th>
-                <th scope="col">{% trans "Name" %}</th>
-                <th scope="col">{% trans "Phone" %}</th>
-                <th scope="col">{% trans "Email" %}</th>
-                <th scope="col">{% trans "Profile" %}</th>
-                <th style="width: 80px; min-width: 80px;">{% trans "Action" %}</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for client in clients %}
-            <tr>
-                <th scope="row">
-                    <div class="form-check font-size-16">
-                        <input type="checkbox" class="form-check-input" id="client{{ client.id }}">
-                        <label class="form-check-label" for="client{{ client.id }}"></label>
-                    </div>
-                </th>
-                <td>
-                    <div class="avatar-sm d-inline-block align-middle me-2">
-                        <div class="avatar-title bg-light-subtle text-primary font-size-20 m-0 rounded-circle">
-                            <i class="bx bxs-user"></i>
+        <div class="col-md-6">
+            <div class="d-flex flex-wrap align-items-center justify-content-end gap-2 mb-3">
+                <!-- View Toggle -->
+                <div>
+                    <ul class="nav nav-pills">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="{% url 'clients:list' %}" 
+                            data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans 'List' %}">
+                                <i class="bx bx-list-ul"></i>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" 
+                            data-bs-toggle="tooltip" data-bs-placement="top" title="{% trans 'Grid' %}">
+                                <i class="bx bx-grid-alt"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Add New Button -->
+                <div>
+                    <a href="{% url 'clients:create' %}" class="btn btn-primary">
+                        <i class="bx bx-plus me-1"></i> {% trans "Add New" %}
+                    </a>
+                </div>
+                
+                <!-- More Actions -->
+                <div class="dropdown">
+                    <a class="btn btn-link text-muted py-1 font-size-16 shadow-none dropdown-toggle" 
+                    href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="bx bx-dots-horizontal-rounded"></i>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <a class="dropdown-item" href="{% url 'clients:export-excel' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}">
+                            <i class="bx bx-export me-2"></i>{% trans "Export to Excel" %}
+                        </a>
+                        <li><a class="dropdown-item" href="#">
+                            <i class="bx bx-import me-2"></i>{% trans "Import Clients" %}
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#">
+                            <i class="bx bx-envelope me-2"></i>{% trans "Send Bulk Email" %}
+                        </a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- end row -->
+
+    <div class="table-responsive mb-4">
+        <table class="table align-middle datatable dt-responsive table-check nowrap" 
+            style="border-collapse: collapse; border-spacing: 0 8px; width: 100%;" 
+            id="clientsTable">
+            <thead>
+                <tr>
+                    <th scope="col" style="width: 50px;">
+                        <div class="form-check font-size-16">
+                            <input type="checkbox" class="form-check-input" id="checkAll">
+                            <label class="form-check-label" for="checkAll"></label>
+                        </div>
+                    </th>
+                    <th scope="col">{% trans "Name" %}</th>
+                    <th scope="col">{% trans "Phone" %}</th>
+                    <th scope="col">{% trans "Email" %}</th>
+                    <th scope="col">{% trans "Profile" %}</th>
+                    <th style="width: 80px; min-width: 80px;">{% trans "Action" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for client in clients %}
+                <tr>
+                    <th scope="row">
+                        <div class="form-check font-size-16">
+                            <input type="checkbox" class="form-check-input" id="client{{ client.id }}">
+                            <label class="form-check-label" for="client{{ client.id }}"></label>
+                        </div>
+                    </th>
+                    <td>
+                        <div class="avatar-sm d-inline-block align-middle me-2">
+                            <div class="avatar-title bg-light-subtle text-primary font-size-20 m-0 rounded-circle">
+                                <i class="bx bxs-user"></i>
+                            </div>
+                        </div>
+                        <a href="{% url 'clients:detail' client.pk %}" class="text-body fw-medium">
+                            {{ client.full_name }}
+                        </a>
+                    </td>
+                    <td>
+                        <i class="bx bx-phone me-1 text-muted"></i>{{ client.phone }}
+                    </td>
+                    <td>
+                        {% if client.email %}
+                            <i class="bx bx-envelope me-1 text-muted"></i>{{ client.email }}
+                        {% else %}
+                            <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="d-flex gap-2">
+                            {% if client.skin_type %}
+                            <span class="badge bg-info-subtle text-info font-size-11">
+                                {{ client.get_skin_type_display }}
+                            </span>
+                            {% endif %}
+                            {% if client.hair_color %}
+                            <span class="badge bg-primary-subtle text-primary font-size-11">
+                                {{ client.get_hair_color_display }}
+                            </span>
+                            {% endif %}
+                            {% if not client.skin_type and not client.hair_color %}
+                            <span class="text-muted font-size-11">{% trans "No profile data" %}</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td>
+                        <div class="dropdown">
+                            <button class="btn btn-link font-size-16 shadow-none py-0 text-muted dropdown-toggle" 
+                                    type="button" data-bs-toggle="dropdown">
+                                <i class="bx bx-dots-horizontal-rounded"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'clients:detail' client.pk %}">
+                                        <i class="bx bx-show-alt me-2"></i>{% trans "View Details" %}
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'clients:edit' client.pk %}">
+                                        <i class="bx bx-edit-alt me-2"></i>{% trans "Edit" %}
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'appointments:create' %}?client={{ client.pk }}">
+                                        <i class="bx bx-calendar-plus me-2"></i>{% trans "Book Appointment" %}
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item text-danger" href="{% url 'clients:delete' client.pk %}">
+                                        <i class="bx bx-trash me-2"></i>{% trans "Delete" %}
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center py-5">
+                        <div class="text-muted">
+                            <i class="bx bx-user-x font-size-48 d-block mb-3"></i>
+                            <h5>{% trans "No clients found" %}</h5>
+                            <p>{% trans "Add your first client to get started" %}</p>
+                            <a href="{% url 'clients:create' %}" class="btn btn-primary mt-2">
+                                <i class="bx bx-plus me-1"></i>{% trans "Add Client" %}
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <!-- end table -->
+    </div>
+    <!-- end table responsive -->
+
+    <!-- Stats Cards -->
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card mini-stats-wid">
+                <div class="card-body">
+                    <div class="d-flex">
+                        <div class="flex-grow-1">
+                            <p class="text-muted fw-medium">{% trans "Total Clients" %}</p>
+                            <h4 class="mb-0">{{ total_count }}</h4>
+                        </div>
+                        <div class="avatar-sm rounded-circle bg-primary align-self-center mini-stat-icon">
+                            <span class="avatar-title rounded-circle bg-primary">
+                                <i class="bx bx-user font-size-24"></i>
+                            </span>
                         </div>
                     </div>
-                    <a href="{% url 'clients:detail' client.pk %}" class="text-body fw-medium">
-                        {{ client.full_name }}
-                    </a>
-                </td>
-                <td>
-                    <i class="bx bx-phone me-1 text-muted"></i>{{ client.phone }}
-                </td>
-                <td>
-                    {% if client.email %}
-                        <i class="bx bx-envelope me-1 text-muted"></i>{{ client.email }}
-                    {% else %}
-                        <span class="text-muted">—</span>
-                    {% endif %}
-                </td>
-                <td>
-                    <div class="d-flex gap-2">
-                        {% if client.skin_type %}
-                        <span class="badge bg-info-subtle text-info font-size-11">
-                            {{ client.get_skin_type_display }}
-                        </span>
-                        {% endif %}
-                        {% if client.hair_color %}
-                        <span class="badge bg-primary-subtle text-primary font-size-11">
-                            {{ client.get_hair_color_display }}
-                        </span>
-                        {% endif %}
-                        {% if not client.skin_type and not client.hair_color %}
-                        <span class="text-muted font-size-11">{% trans "No profile data" %}</span>
-                        {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card mini-stats-wid">
+                <div class="card-body">
+                    <div class="d-flex">
+                        <div class="flex-grow-1">
+                            <p class="text-muted fw-medium">{% trans "With Email" %}</p>
+                            <h4 class="mb-0">{{ with_email_count }}</h4>
+                        </div>
+                        <div class="avatar-sm rounded-circle bg-success align-self-center mini-stat-icon">
+                            <span class="avatar-title rounded-circle bg-success">
+                                <i class="bx bx-envelope font-size-24"></i>
+                            </span>
+                        </div>
                     </div>
-                </td>
-                <td>
-                    <div class="dropdown">
-                        <button class="btn btn-link font-size-16 shadow-none py-0 text-muted dropdown-toggle" 
-                                type="button" data-bs-toggle="dropdown">
-                            <i class="bx bx-dots-horizontal-rounded"></i>
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li>
-                                <a class="dropdown-item" href="{% url 'clients:detail' client.pk %}">
-                                    <i class="bx bx-show-alt me-2"></i>{% trans "View Details" %}
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item" href="{% url 'clients:edit' client.pk %}">
-                                    <i class="bx bx-edit-alt me-2"></i>{% trans "Edit" %}
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item" href="{% url 'appointments:create' %}?client={{ client.pk }}">
-                                    <i class="bx bx-calendar-plus me-2"></i>{% trans "Book Appointment" %}
-                                </a>
-                            </li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li>
-                                <a class="dropdown-item text-danger" href="{% url 'clients:delete' client.pk %}">
-                                    <i class="bx bx-trash me-2"></i>{% trans "Delete" %}
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="6" class="text-center py-5">
-                    <div class="text-muted">
-                        <i class="bx bx-user-x font-size-48 d-block mb-3"></i>
-                        <h5>{% trans "No clients found" %}</h5>
-                        <p>{% trans "Add your first client to get started" %}</p>
-                        <a href="{% url 'clients:create' %}" class="btn btn-primary mt-2">
-                            <i class="bx bx-plus me-1"></i>{% trans "Add Client" %}
-                        </a>
-                    </div>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    <!-- end table -->
-</div>
-<!-- end table responsive -->
-
-<!-- Stats Cards -->
-<div class="row">
-    <div class="col-md-4">
-        <div class="card mini-stats-wid">
-            <div class="card-body">
-                <div class="d-flex">
-                    <div class="flex-grow-1">
-                        <p class="text-muted fw-medium">{% trans "Total Clients" %}</p>
-                        <h4 class="mb-0">{{ total_count }}</h4>
-                    </div>
-                    <div class="avatar-sm rounded-circle bg-primary align-self-center mini-stat-icon">
-                        <span class="avatar-title rounded-circle bg-primary">
-                            <i class="bx bx-user font-size-24"></i>
-                        </span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card mini-stats-wid">
+                <div class="card-body">
+                    <div class="d-flex">
+                        <div class="flex-grow-1">
+                            <p class="text-muted fw-medium">{% trans "New This Month" %}</p>
+                            <h4 class="mb-0">—</h4>
+                        </div>
+                        <div class="avatar-sm rounded-circle bg-info align-self-center mini-stat-icon">
+                            <span class="avatar-title rounded-circle bg-info">
+                                <i class="bx bx-calendar font-size-24"></i>
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="card mini-stats-wid">
-            <div class="card-body">
-                <div class="d-flex">
-                    <div class="flex-grow-1">
-                        <p class="text-muted fw-medium">{% trans "With Email" %}</p>
-                        <h4 class="mb-0">{{ with_email_count }}</h4>
-                    </div>
-                    <div class="avatar-sm rounded-circle bg-success align-self-center mini-stat-icon">
-                        <span class="avatar-title rounded-circle bg-success">
-                            <i class="bx bx-envelope font-size-24"></i>
-                        </span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card mini-stats-wid">
-            <div class="card-body">
-                <div class="d-flex">
-                    <div class="flex-grow-1">
-                        <p class="text-muted fw-medium">{% trans "New This Month" %}</p>
-                        <h4 class="mb-0">—</h4>
-                    </div>
-                    <div class="avatar-sm rounded-circle bg-info align-self-center mini-stat-icon">
-                        <span class="avatar-title rounded-circle bg-info">
-                            <i class="bx bx-calendar font-size-24"></i>
-                        </span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
-{% endblock content %}
+    {% endblock content %}
 
-{% block extra_js %}
-<!-- Required datatable js -->
-<script src="{% static 'libs/datatables.net/js/jquery.dataTables.min.js' %}"></script>
-<script src="{% static 'libs/datatables.net-bs4/js/dataTables.bootstrap4.min.js' %}"></script>
+    {% block extra_js %}
+    <!-- Required datatable js -->
+    <script src="{% static 'libs/datatables.net/js/jquery.dataTables.min.js' %}"></script>
+    <script src="{% static 'libs/datatables.net-bs4/js/dataTables.bootstrap4.min.js' %}"></script>
 
-<!-- Responsive examples -->
-<script src="{% static 'libs/datatables.net-responsive/js/dataTables.responsive.min.js' %}"></script>
-<script src="{% static 'libs/datatables.net-responsive-bs4/js/responsive.bootstrap4.min.js' %}"></script>
+    <!-- Responsive examples -->
+    <script src="{% static 'libs/datatables.net-responsive/js/dataTables.responsive.min.js' %}"></script>
+    <script src="{% static 'libs/datatables.net-responsive-bs4/js/responsive.bootstrap4.min.js' %}"></script>
 
-<script>
-    // Initialize DataTable
-    $(document).ready(function() {
-        $('#clientsTable').DataTable({
-            "order": [[ 1, "asc" ]], // Sort by name column ascending
-            "pageLength": 25,
-            "responsive": true,
-            "language": {
-                "search": "{% trans 'Search' %}:",
-                "lengthMenu": "{% trans 'Show' %} _MENU_ {% trans 'entries' %}",
-                "info": "{% trans 'Showing' %} _START_ {% trans 'to' %} _END_ {% trans 'of' %} _TOTAL_ {% trans 'clients' %}",
-                "infoEmpty": "{% trans 'No clients to show' %}",
-                "zeroRecords": "{% trans 'No matching clients found' %}",
-                "paginate": {
-                    "first": "{% trans 'First' %}",
-                    "last": "{% trans 'Last' %}",
-                    "next": "{% trans 'Next' %}",
-                    "previous": "{% trans 'Previous' %}"
+    <script>
+        // Initialize DataTable
+        $(document).ready(function() {
+            $('#clientsTable').DataTable({
+                "order": [[ 1, "asc" ]], // Sort by name column ascending
+                "pageLength": 25,
+                "responsive": true,
+                "language": {
+                    "search": "{% trans 'Search' %}:",
+                    "lengthMenu": "{% trans 'Show' %} _MENU_ {% trans 'entries' %}",
+                    "info": "{% trans 'Showing' %} _START_ {% trans 'to' %} _END_ {% trans 'of' %} _TOTAL_ {% trans 'clients' %}",
+                    "infoEmpty": "{% trans 'No clients to show' %}",
+                    "zeroRecords": "{% trans 'No matching clients found' %}",
+                    "paginate": {
+                        "first": "{% trans 'First' %}",
+                        "last": "{% trans 'Last' %}",
+                        "next": "{% trans 'Next' %}",
+                        "previous": "{% trans 'Previous' %}"
+                    }
                 }
-            }
+            });
+
+            // Initialize tooltips
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
         });
 
-        // Initialize tooltips
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl);
+        // Check all functionality
+        document.getElementById('checkAll').addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('tbody input[type="checkbox"]');
+            checkboxes.forEach(checkbox => checkbox.checked = this.checked);
         });
-    });
-
-    // Check all functionality
-    document.getElementById('checkAll').addEventListener('change', function() {
-        const checkboxes = document.querySelectorAll('tbody input[type="checkbox"]');
-        checkboxes.forEach(checkbox => checkbox.checked = this.checked);
-    });
-</script>
-{% endblock %}
+    </script>
+    {% endblock %}

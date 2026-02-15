@@ -73,7 +73,61 @@
                         <span data-key="t-visits">{% trans "Visits" %}</span>
                     </a>
                 </li>
+                <li class="menu-title mt-2" data-key="t-communications">{% trans "COMMUNICATIONS" %}</li>
 
+                <li>
+                    <a href="javascript: void(0);" class="has-arrow">
+                        <i data-feather="bell"></i>
+                        <span data-key="t-notifications">{% trans "Notifications" %}</span>
+                    </a>
+                    <ul class="sub-menu" aria-expanded="false">
+                        <li>
+                            <a href="{% url 'notifications:bulk-send' %}" data-key="t-bulk-send">
+                                <i data-feather="send"></i>
+                                {% trans "Send Bulk Notifications" %}
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'notifications:logs' %}" data-key="t-notification-logs">
+                                <i data-feather="list"></i>
+                                {% trans "Notification Logs" %}
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'notifications:scheduled' %}" data-key="t-scheduled-notifications">
+                                <i data-feather="clock"></i>
+                                {% trans "Scheduled Notifications" %}
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'notifications:templates' %}" data-key="t-notification-templates">
+                                <i data-feather="file-text"></i>
+                                {% trans "Message Templates" %}
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                <!-- STAFF SECTION -->
+                <li class="menu-title mt-2" data-key="t-staff">{% trans "STAFF" %}</li>
+
+                <li>
+                    <a href="javascript: void(0);" class="has-arrow">
+                        <i data-feather="users"></i>
+                        <span data-key="t-staff">{% trans "Staff" %}</span>
+                    </a>
+                    <ul class="sub-menu" aria-expanded="false">
+                        <li>
+                            <a href="{% url 'staff:list' %}">
+                                <span data-key="t-staff-list">{% trans "Staff Members" %}</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'staff:all-leaves' %}">
+                                <span data-key="t-all-leaves">{% trans "All Leaves" %}</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
                 <!-- ====== CATALOG Section ====== -->
                 <li class="menu-title mt-2" data-key="t-catalog">{% trans "CATALOG" %}</li>
 
