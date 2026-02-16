@@ -1,0 +1,164 @@
+[
+    {
+      "model": "resources.machine",
+      "pk": 1,
+      "fields": {
+        "name": "Alexandrite Laser 755nm - Κύριο",
+        "notes": "Κύριο μηχάνημα αποτρίχωσης laser για ανοιχτά δέρματα (Fitzpatrick I-IV). Υψηλή ταχύτητα θεραπείας.",
+        "is_active": true
+      }
+    },
+    {
+      "model": "resources.machine",
+      "pk": 2,
+      "fields": {
+        "name": "Diode Laser 810nm",
+        "notes": "Πολυχρηστικό λέιζερ αποτρίχωσης για όλους τους τύπους δέρματος. Backup μηχάνημα.",
+        "is_active": true
+      }
+    },
+    {
+      "model": "resources.machine",
+      "pk": 3,
+      "fields": {
+        "name": "Nd:YAG Laser 1064nm",
+        "notes": "Για σκούρα δέρματα (Fitzpatrick V-VI) και βαθιές τρίχες. Ασφαλές για όλους τους τύπους δέρματος.",
+        "is_active": true
+      }
+    },
+    {
+      "model": "resources.machine",
+      "pk": 4,
+      "fields": {
+        "name": "UV/LED Lamp 48W - Manicure Station 1",
+        "notes": "Λάμπα πολυμερισμού gel για manicure και pedicure. Θέση 1.",
+        "is_active": true
+      }
+    },
+    {
+      "model": "resources.machine",
+      "pk": 5,
+      "fields": {
+        "name": "UV/LED Lamp 48W - Manicure Station 2",
+        "notes": "Λάμπα πολυμερισμού gel για manicure και pedicure. Θέση 2.",
+        "is_active": true
+      }
+    },
+    {
+      "model": "resources.machine",
+      "pk": 6,
+      "fields": {
+        "name": "Electric Nail File/Drill",
+        "notes": "Ηλεκτρικό φρεζάκι για manicure/pedicure. Για κατεργασία και χτίσιμο νυχιών.",
+        "is_active": true
+      }
+    },
+    {
+      "model": "resources.machine",
+      "pk": 7,
+      "fields": {
+        "name": "Facial Steamer",
+        "notes": "Ατμομηχανή προσώπου για άνοιγμα πόρων κατά τον καθαρισμό προσώπου.",
+        "is_active": true
+      }
+    },
+    {
+      "model": "resources.machine",
+      "pk": 8,
+      "fields": {
+        "name": "Microdermabrasion με Κρύσταλλους",
+        "notes": "Συσκευή microdermabrasion με κρύσταλλους για βαθύ καθαρισμό και απολέπιση προσώπου.",
+        "is_active": true
+      }
+    },
+    {
+      "model": "resources.machine",
+      "pk": 9,
+      "fields": {
+        "name": "High Frequency Machine",
+        "notes": "Συσκευή υψηλής συχνότητας για θεραπεία ακμής και απολύμανση κατά τον καθαρισμό.",
+        "is_active": true
+      }
+    },
+    {
+      "model": "resources.machine",
+      "pk": 10,
+      "fields": {
+        "name": "Ultrasonic Skin Scrubber",
+        "notes": "Υπερηχητικός καθαρισμός για βαθιά απολέπιση και καθαρισμό πόρων.",
+        "is_active": true
+      }
+    },
+    {
+      "model": "resources.machine",
+      "pk": 11,
+      "fields": {
+        "name": "Vacuum Suction Machine",
+        "notes": "Συσκευή αναρρόφησης για εξαγωγή μαύρων στιγμάτων και καθαρισμό πόρων.",
+        "is_active": true
+      }
+    },
+    {
+      "model": "resources.machine",
+      "pk": 12,
+      "fields": {
+        "name": "Hot Towel Warmer",
+        "notes": "Θερμαντήρας πετσετών για manicure, pedicure και καθαρισμούς προσώπου.",
+        "is_active": true
+      }
+    },
+    {
+      "model": "resources.machine",
+      "pk": 13,
+      "fields": {
+        "name": "Pedicure Spa Chair",
+        "notes": "Πολυθρόνα spa για pedicure με jacuzzi και μασάζ.",
+        "is_active": true
+      }
+    },
+    {
+      "model": "resources.machine",
+      "pk": 14,
+      "fields": {
+        "name": "Magnifying Lamp",
+        "notes": "Λάμπα μεγέθυνσης για λεπτομερή καθαρισμό και εξαγωγές.",
+        "is_active": true
+      }
+    },
+    {
+      "model": "resources.machine",
+      "pk": 15,
+      "fields": {
+        "name": "Autoclave Sterilizer",
+        "notes": "Αποστειρωτής για εργαλεία manicure/pedicure και καθαρισμού προσώπου.",
+        "is_active": true
+      }
+    },
+    {
+      "model": "resources.machine",
+      "pk": 16,
+      "fields": {
+        "name": "Paraffin Wax Heater",
+        "notes": "Θερμαντήρας παραφίνης για θεραπεία χεριών και ποδιών.",
+        "is_active": true
+      }
+    },
+    {
+      "model": "resources.machine",
+      "pk": 17,
+      "fields": {
+        "name": "Cooling System - Laser 1",
+        "notes": "Σύστημα ψύξης για άνεση κατά την αποτρίχωση laser.",
+        "is_active": true
+      }
+    },
+    {
+      "model": "resources.machine",
+      "pk": 18,
+      "fields": {
+        "name": "IPL (Intense Pulsed Light)",
+        "notes": "Φωτοαποτρίχωση - εναλλακτική μέθοδος για ευαίσθητα δέρματα.",
+        "is_active": false
+      }
+    }
+  ]

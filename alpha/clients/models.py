@@ -9,15 +9,20 @@ class Client(models.Model):
     notes      = models.TextField("Σημειώσεις", blank=True)
 
     SKIN_TYPE_CHOICES = [
-        ("I", "Fitzpatrick I"), ("II", "Fitzpatrick II"), ("III", "Fitzpatrick III"),
-        ("IV", "Fitzpatrick IV"), ("V", "Fitzpatrick V"), ("VI", "Fitzpatrick VI"),
+        ("light", "Ανοιχτό"), 
+        ("medium", "Μεσαίο"), 
+        ("medium_dark", "Μεσαίο-Σκούρο"),
+        ("dark", "Σκούρο"), 
+        ("black", "Μαύρο"), 
+        ("sensitive", "Ευαίσθητο"), 
+        ("other", "Άλλο"),
     ]
     HAIR_COLOR_CHOICES = [
         ("black","Μαύρο"), ("dark_brown","Σκούρο καστανό"), ("brown","Καστανό"),
         ("light_brown","Ανοιχτό καστανό"), ("blonde","Ξανθό"), ("red","Κόκκινο"),
         ("grey","Γκρι"), ("white","Άσπρο"), ("other","Άλλο"), ("unknown","Άγνωστο"),
     ]
-    skin_type  = models.CharField("Τύπος δέρματος", max_length=3, choices=SKIN_TYPE_CHOICES, blank=True, null=True)
+    skin_type  = models.CharField("Τύπος δέρματος", max_length=15, choices=SKIN_TYPE_CHOICES, blank=True, null=True)
     hair_color = models.CharField("Χρώμα τριχών", max_length=12, choices=HAIR_COLOR_CHOICES, blank=True, null=True)
 
     # ✨✨✨ NEW: Notification Preferences ✨✨✨

@@ -1,0 +1,541 @@
+[
+    {
+      "model": "catalog.servicecategory",
+      "pk": 1,
+      "fields": {
+        "name": "Αποτρίχωση Laser - Γυναίκες"
+      }
+    },
+    {
+      "model": "catalog.servicecategory",
+      "pk": 2,
+      "fields": {
+        "name": "Αποτρίχωση Laser - Άνδρες"
+      }
+    },
+    {
+      "model": "catalog.servicecategory",
+      "pk": 3,
+      "fields": {
+        "name": "Manicure"
+      }
+    },
+    {
+      "model": "catalog.servicecategory",
+      "pk": 4,
+      "fields": {
+        "name": "Pedicure"
+      }
+    },
+    {
+      "model": "catalog.servicecategory",
+      "pk": 5,
+      "fields": {
+        "name": "Καθαρισμός Προσώπου"
+      }
+    },
+    {
+      "model": "catalog.service",
+      "pk": 1,
+      "fields": {
+        "category": 1,
+        "name": "Μπικίνι",
+        "gender": "female",
+        "default_price": "35.00",
+        "duration_min": 20,
+        "notes": "Βασικό bikini line"
+      }
+    },
+    {
+      "model": "catalog.service",
+      "pk": 2,
+      "fields": {
+        "category": 1,
+        "name": "Μπικίνι Max",
+        "gender": "female",
+        "default_price": "40.00",
+        "duration_min": 25,
+        "notes": "Εκτεταμένο bikini"
+      }
+    },
+    {
+      "model": "catalog.service",
+      "pk": 3,
+      "fields": {
+        "category": 1,
+        "name": "Μπικίνι Max Μονζτ",
+        "gender": "female",
+        "default_price": "50.00",
+        "duration_min": 30,
+        "notes": "Πλήρης αποτρίχωση bikini"
+      }
+    },
+    {
+      "model": "catalog.service",
+      "pk": 4,
+      "fields": {
+        "category": 1,
+        "name": "Μουστάκι",
+        "gender": "female",
+        "default_price": "15.00",
+        "duration_min": 10,
+        "notes": "Άνω χείλος"
+      }
+    },
+    {
+      "model": "catalog.service",
+      "pk": 5,
+      "fields": {
+        "category": 1,
+        "name": "Μασχάλες",
+        "gender": "female",
+        "default_price": "20.00",
+        "duration_min": 15,
+        "notes": "Αμφίπλευρη αποτρίχωση μασχαλών"
+      }
+    },
+    {
+      "model": "catalog.service",
+      "pk": 6,
+      "fields": {
+        "category": 1,
+        "name": "Μασχά Μουστ",
+        "gender": "female",
+        "default_price": "30.00",
+        "duration_min": 20,
+        "notes": "Μασχάλες και μουστάκι"
+      }
+    },
+    {
+      "model": "catalog.service",
+      "pk": 7,
+      "fields": {
+        "category": 1,
+        "name": "Χέρια",
+        "gender": "female",
+        "default_price": "45.00",
+        "duration_min": 30,
+        "notes": "Χέρια μέχρι αγκώνα"
+      }
+    },
+    {
+      "model": "catalog.service",
+      "pk": 8,
+      "fields": {
+        "category": 1,
+        "name": "Χέρια Max",
+        "gender": "female",
+        "default_price": "60.00",
+        "duration_min": 40,
+        "notes": "Πλήρη χέρια από ώμο"
+      }
+    },
+    {
+      "model": "catalog.service",
+      "pk": 9,
+      "fields": {
+        "category": 1,
+        "name": "Κοιλιά",
+        "gender": "female",
+        "default_price": "20.00",
+        "duration_min": 15,
+        "notes": "Περιοχή κοιλιάς"
+      }
+    },
+    {
+      "model": "catalog.service",
+      "pk": 10,
+      "fields": {
+        "category": 1,
+        "name": "Γλουτοί",
+        "gender": "female",
+        "default_price": "40.00",
+        "duration_min": 25,
+        "notes": "Περιοχή γλουτών"
+      }
+    },
+    {
+      "model": "catalog.service",
+      "pk": 11,
+      "fields": {
+        "category": 1,
+        "name": "Πλάτη",
+        "gender": "female",
+        "default_price": "35.00",
+        "duration_min": 25,
+        "notes": "Πλάτη"
+      }
+    },
+    {
+      "model": "catalog.service",
+      "pk": 12,
+      "fields": {
+        "category": 1,
+        "name": "Πόδια Όλα",
+        "gender": "female",
+        "default_price": "100.00",
+        "duration_min": 50,
+        "notes": "Πλήρη πόδια"
+      }
+    },
+    {
+      "model": "catalog.service",
+      "pk": 13,
+      "fields": {
+        "category": 1,
+        "name": "½ Πόδια",
+        "gender": "female",
+        "default_price": "70.00",
+        "duration_min": 35,
+        "notes": "Μισά πόδια (από γόνατο)"
+      }
+    },
+    {
+      "model": "catalog.service",
+      "pk": 14,
+      "fields": {
+        "category": 1,
+        "name": "½ Πόδια Μπικίνι",
+        "gender": "female",
+        "default_price": "100.00",
+        "duration_min": 50,
+        "notes": "Μισά πόδια και μπικίνι"
+      }
+    },
+    {
+      "model": "catalog.service",
+      "pk": 15,
+      "fields": {
+        "category": 1,
+        "name": "Πόδια Όλα Μπικίνι",
+        "gender": "female",
+        "default_price": "140.00",
+        "duration_min": 70,
+        "notes": "Πλήρη πόδια και μπικίνι"
+      }
+    },
+    {
+      "model": "catalog.service",
+      "pk": 16,
+      "fields": {
+        "category": 1,
+        "name": "Πόδια Όλα Μπικίνι Χέρια Max",
+        "gender": "female",
+        "default_price": "165.00",
+        "duration_min": 90,
+        "notes": "Πλήρη πόδια, μπικίνι και χέρια max"
+      }
+    },
+    {
+      "model": "catalog.service",
+      "pk": 17,
+      "fields": {
+        "category": 1,
+        "name": "½ Πόδια Μπικίνι Χέρια Max",
+        "gender": "female",
+        "default_price": "140.00",
+        "duration_min": 75,
+        "notes": "Μισά πόδια, μπικίνι και χέρια max"
+      }
+    },
+    {
+      "model": "catalog.service",
+      "pk": 20,
+      "fields": {
+        "category": 2,
+        "name": "Πόδια Όλα",
+        "gender": "male",
+        "default_price": "120.00",
+        "duration_min": 60,
+        "notes": "Πλήρη πόδια άνδρα"
+      }
+    },
+    {
+      "model": "catalog.service",
+      "pk": 21,
+      "fields": {
+        "category": 2,
+        "name": "Χέρια",
+        "gender": "male",
+        "default_price": "80.00",
+        "duration_min": 40,
+        "notes": "Χέρια άνδρα"
+      }
+    },
+    {
+      "model": "catalog.service",
+      "pk": 22,
+      "fields": {
+        "category": 2,
+        "name": "Στήθος",
+        "gender": "male",
+        "default_price": "90.00",
+        "duration_min": 40,
+        "notes": "Περιοχή στήθους"
+      }
+    },
+    {
+      "model": "catalog.service",
+      "pk": 23,
+      "fields": {
+        "category": 2,
+        "name": "Στήθος & Πλάτη",
+        "gender": "male",
+        "default_price": "165.00",
+        "duration_min": 70,
+        "notes": "Στήθος και πλάτη"
+      }
+    },
+    {
+      "model": "catalog.service",
+      "pk": 24,
+      "fields": {
+        "category": 2,
+        "name": "Πλάτη",
+        "gender": "male",
+        "default_price": "90.00",
+        "duration_min": 40,
+        "notes": "Πλάτη άνδρα"
+      }
+    },
+    {
+      "model": "catalog.service",
+      "pk": 25,
+      "fields": {
+        "category": 2,
+        "name": "Μασχάλες",
+        "gender": "male",
+        "default_price": "25.00",
+        "duration_min": 15,
+        "notes": "Μασχάλες άνδρα"
+      }
+    },
+    {
+      "model": "catalog.service",
+      "pk": 26,
+      "fields": {
+        "category": 2,
+        "name": "Ζυγ Λαιμό",
+        "gender": "male",
+        "default_price": "30.00",
+        "duration_min": 15,
+        "notes": "Ζυγωματικά και λαιμός"
+      }
+    },
+    {
+      "model": "catalog.service",
+      "pk": 27,
+      "fields": {
+        "category": 2,
+        "name": "Ζυγ Λαιμό Σβέρκο",
+        "gender": "male",
+        "default_price": "40.00",
+        "duration_min": 20,
+        "notes": "Ζυγωματικά, λαιμός και σβέρκος"
+      }
+    },
+    {
+      "model": "catalog.service",
+      "pk": 28,
+      "fields": {
+        "category": 2,
+        "name": "Σβέρκο",
+        "gender": "male",
+        "default_price": "25.00",
+        "duration_min": 15,
+        "notes": "Σβέρκος"
+      }
+    },
+    {
+      "model": "catalog.service",
+      "pk": 29,
+      "fields": {
+        "category": 2,
+        "name": "Μπικίνι",
+        "gender": "male",
+        "default_price": "40.00",
+        "duration_min": 20,
+        "notes": "Περιοχή μπικίνι άνδρα"
+      }
+    },
+    {
+      "model": "catalog.service",
+      "pk": 30,
+      "fields": {
+        "category": 2,
+        "name": "Γλουτοί",
+        "gender": "male",
+        "default_price": "50.00",
+        "duration_min": 25,
+        "notes": "Γλουτοί άνδρα"
+      }
+    },
+    {
+      "model": "catalog.service",
+      "pk": 31,
+      "fields": {
+        "category": 2,
+        "name": "Κόκκυγας",
+        "gender": "male",
+        "default_price": "40.00",
+        "duration_min": 20,
+        "notes": "Περιοχή κόκκυγα"
+      }
+    },
+    {
+      "model": "catalog.service",
+      "pk": 40,
+      "fields": {
+        "category": 3,
+        "name": "Manicure Απλό",
+        "gender": "any",
+        "default_price": "10.00",
+        "duration_min": 30,
+        "notes": "Βασικό manicure"
+      }
+    },
+    {
+      "model": "catalog.service",
+      "pk": 41,
+      "fields": {
+        "category": 3,
+        "name": "Manicure με Μαλακό Gel - Ημιμόνιμο",
+        "gender": "any",
+        "default_price": "20.00",
+        "duration_min": 45,
+        "notes": "Manicure με ημιμόνιμο gel"
+      }
+    },
+    {
+      "model": "catalog.service",
+      "pk": 42,
+      "fields": {
+        "category": 3,
+        "name": "Manicure με Σκληρό Gel",
+        "gender": "any",
+        "default_price": "25.00",
+        "duration_min": 60,
+        "notes": "Manicure με σκληρό gel"
+      }
+    },
+    {
+      "model": "catalog.service",
+      "pk": 43,
+      "fields": {
+        "category": 3,
+        "name": "Manicure με Σκληρό Gel - Πρώτη Εφαρμογή",
+        "gender": "any",
+        "default_price": "30.00",
+        "duration_min": 75,
+        "notes": "Πρώτη φορά σκληρό gel"
+      }
+    },
+    {
+      "model": "catalog.service",
+      "pk": 44,
+      "fields": {
+        "category": 3,
+        "name": "Manicure με Χτίσιμο Όλων των Νυχιών",
+        "gender": "any",
+        "default_price": "35.00",
+        "duration_min": 90,
+        "notes": "Πλήρες χτίσιμο νυχιών"
+      }
+    },
+    {
+      "model": "catalog.service",
+      "pk": 50,
+      "fields": {
+        "category": 4,
+        "name": "Pedicure Full Περιποίηση",
+        "gender": "any",
+        "default_price": "25.00",
+        "duration_min": 45,
+        "notes": "Πλήρες pedicure"
+      }
+    },
+    {
+      "model": "catalog.service",
+      "pk": 51,
+      "fields": {
+        "category": 4,
+        "name": "Pedicure Full Περιποίηση με Απλή Βαφή",
+        "gender": "any",
+        "default_price": "30.00",
+        "duration_min": 50,
+        "notes": "Pedicure με απλή βαφή"
+      }
+    },
+    {
+      "model": "catalog.service",
+      "pk": 52,
+      "fields": {
+        "category": 4,
+        "name": "Pedicure Full Περιποίηση με Gel",
+        "gender": "any",
+        "default_price": "35.00",
+        "duration_min": 60,
+        "notes": "Pedicure με gel"
+      }
+    },
+    {
+      "model": "catalog.service",
+      "pk": 53,
+      "fields": {
+        "category": 4,
+        "name": "Απλό Βάψιμο Νυχιών με Απλή Βαφή",
+        "gender": "any",
+        "default_price": "10.00",
+        "duration_min": 20,
+        "notes": "Μόνο βάψιμο"
+      }
+    },
+    {
+      "model": "catalog.service",
+      "pk": 54,
+      "fields": {
+        "category": 4,
+        "name": "Απλό Βάψιμο Νυχιών Ημιμόνιμο Gel",
+        "gender": "any",
+        "default_price": "20.00",
+        "duration_min": 30,
+        "notes": "Μόνο βάψιμο με ημιμόνιμο"
+      }
+    },
+    {
+      "model": "catalog.service",
+      "pk": 60,
+      "fields": {
+        "category": 5,
+        "name": "Βαθύς Καθαρισμός Προσώπου Full Περιποίηση",
+        "gender": "any",
+        "default_price": "45.00",
+        "duration_min": 60,
+        "notes": "Πλήρης καθαρισμός προσώπου"
+      }
+    },
+    {
+      "model": "catalog.service",
+      "pk": 61,
+      "fields": {
+        "category": 5,
+        "name": "Βαθύς Καθαρισμός Προσώπου με Χρήση Κρυστάλλων",
+        "gender": "any",
+        "default_price": "50.00",
+        "duration_min": 70,
+        "notes": "Καθαρισμός με microdermabrasion κρύσταλλοι"
+      }
+    },
+    {
+      "model": "catalog.service",
+      "pk": 62,
+      "fields": {
+        "category": 5,
+        "name": "Βαθύς Καθαρισμός Πλάτης",
+        "gender": "any",
+        "default_price": "40.00",
+        "duration_min": 50,
+        "notes": "Καθαρισμός πλάτης"
+      }
+    }
+  ]
