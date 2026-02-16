@@ -1,8 +1,5 @@
-from django.shortcuts import render
-
-# Create your views here.
 """
-Clients Views
+Clients Views - Updated with custom form for date formatting
 Place this at: alpha/clients/views.py
 """
 from django.shortcuts import render
@@ -12,7 +9,45 @@ from django.urls import reverse_lazy
 from django.db.models import Q, Count, Sum
 from django.contrib import messages
 from django.utils.translation import gettext as _
+from django import forms
 from .models import Client
+
+
+# Custom Form with date widget
+class ClientForm(forms.ModelForm):
+    birth_date = forms.DateField(
+        label="Ημ/νία γέννησης",
+        required=False,
+        input_formats=['%d/%m/%Y', '%d-%m-%Y', '%Y-%m-%d'],
+        widget=forms.DateInput(
+            attrs={
+                'type': 'text',
+                'class': 'form-control',
+                'placeholder': 'ΗΗ/ΜΜ/ΕΕΕΕ',
+            }
+        )
+    )
+    
+    class Meta:
+        model = Client
+        fields = [
+            'full_name', 'phone', 'email', 'birth_date', 
+            'skin_type', 'hair_color', 'notes',
+            'receive_booking_sms', 'receive_booking_email',
+            'receive_reminder_sms', 'receive_reminder_email'
+        ]
+        widgets = {
+            'full_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'skin_type': forms.Select(attrs={'class': 'form-control'}),
+            'hair_color': forms.Select(attrs={'class': 'form-control'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'receive_booking_sms': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'receive_booking_email': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'receive_reminder_sms': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'receive_reminder_email': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
 
 
 class ClientListView(LoginRequiredMixin, ListView):
@@ -60,13 +95,8 @@ class ClientListView(LoginRequiredMixin, ListView):
 
 class ClientCreateView(LoginRequiredMixin, CreateView):
     model = Client
+    form_class = ClientForm  # Use custom form
     template_name = 'clients/client_form.html'
-    fields = [
-        'full_name', 'phone', 'email', 'birth_date', 
-        'skin_type', 'hair_color', 'notes',
-        'receive_booking_sms', 'receive_booking_email',
-        'receive_reminder_sms', 'receive_reminder_email'
-    ]
     success_url = reverse_lazy('clients:list')
     
     def form_valid(self, form):
@@ -118,13 +148,8 @@ class ClientDetailView(LoginRequiredMixin, DetailView):
 
 class ClientUpdateView(LoginRequiredMixin, UpdateView):
     model = Client
+    form_class = ClientForm  # Use custom form
     template_name = 'clients/client_form.html'
-    fields = [
-        'full_name', 'phone', 'email', 'birth_date', 
-        'skin_type', 'hair_color', 'notes',
-        'receive_booking_sms', 'receive_booking_email',
-        'receive_reminder_sms', 'receive_reminder_email'
-    ]
     
     def get_success_url(self):
         messages.success(self.request, _('Client updated successfully!'))
@@ -139,6 +164,7 @@ class ClientDeleteView(LoginRequiredMixin, DeleteView):
     def delete(self, request, *args, **kwargs):
         messages.success(request, _('Client deleted successfully.'))
         return super().delete(request, *args, **kwargs)
+
 
 from django.http import HttpResponse
 from openpyxl import Workbook

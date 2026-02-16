@@ -25,6 +25,32 @@ DEBUG = env.bool("DJANGO_DEBUG", False)
 # though not all of them may be available with every OS.
 # In Windows, this must be set to your system time zone.
 TIME_ZONE = "Europe/Nicosia"
+
+# ============================================================================
+# DATE & TIME FORMATS (Greek DD/MM/YYYY format)
+# ============================================================================
+
+# Display formats
+DATE_FORMAT = "d/m/Y"  # 25/11/1995
+SHORT_DATE_FORMAT = "d/m/Y"  # 25/11/1995
+DATETIME_FORMAT = "d/m/Y H:i"  # 25/11/1995 14:30
+SHORT_DATETIME_FORMAT = "d/m/Y H:i"
+
+# Input formats (what Django will accept)
+DATE_INPUT_FORMATS = [
+    "%d/%m/%Y",  # 25/11/1995 (primary)
+    "%d-%m-%Y",  # 25-11-1995 (alternative)
+    "%d.%m.%Y",  # 25.11.1995 (alternative)
+    "%Y-%m-%d",  # 2025-11-25 (ISO format fallback)
+]
+
+DATETIME_INPUT_FORMATS = [
+    "%d/%m/%Y %H:%M",     # 25/11/1995 14:30
+    "%d/%m/%Y %H:%M:%S",  # 25/11/1995 14:30:00
+    "%d-%m-%Y %H:%M",     # 25-11-1995 14:30
+    "%Y-%m-%d %H:%M:%S",  # ISO format fallback
+    "%Y-%m-%d %H:%M",
+]
 # https://docs.djangoproject.com/en/dev/ref/settings/#language-code
 LANGUAGE_CODE = "en-us"
 # https://docs.djangoproject.com/en/dev/ref/settings/#languages
