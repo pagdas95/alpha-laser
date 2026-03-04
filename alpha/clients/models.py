@@ -25,6 +25,21 @@ class Client(models.Model):
     skin_type  = models.CharField("Τύπος δέρματος", max_length=15, choices=SKIN_TYPE_CHOICES, blank=True, null=True)
     hair_color = models.CharField("Χρώμα τριχών", max_length=12, choices=HAIR_COLOR_CHOICES, blank=True, null=True)
 
+    # Consent Form
+    consent_form_signed = models.BooleanField(
+        "Φόρμα Συγκατάθεσης Υπογεγραμμένη",
+        default=False,
+        help_text="Ο πελάτης έχει υπογράψει τη φόρμα συγκατάθεσης"
+    )
+    consent_form_url = models.URLField(
+        "URL Φόρμας Συγκατάθεσης",
+        blank=True,
+        help_text="Σύνδεσμος προς το υπογεγραμμένο έγγραφο (π.χ. Google Drive, Dropbox)"
+    )
+
+    consent_form_signed = models.BooleanField("Φόρμα Συγκατάθεσης", default=False)
+    consent_form_url = models.URLField("URL Φόρμας Συγκατάθεσης", blank=True)
+
     # ✨✨✨ NEW: Notification Preferences ✨✨✨
     receive_booking_sms = models.BooleanField(
         "Λήψη SMS κράτησης",

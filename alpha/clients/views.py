@@ -33,6 +33,7 @@ class ClientForm(forms.ModelForm):
         fields = [
             'full_name', 'phone', 'email', 'birth_date', 
             'skin_type', 'hair_color', 'notes',
+            'consent_form_signed', 'consent_form_url',
             'receive_booking_sms', 'receive_booking_email',
             'receive_reminder_sms', 'receive_reminder_email'
         ]
@@ -43,6 +44,11 @@ class ClientForm(forms.ModelForm):
             'skin_type': forms.Select(attrs={'class': 'form-control'}),
             'hair_color': forms.Select(attrs={'class': 'form-control'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'consent_form_signed': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'consent_form_url': forms.URLInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'https://drive.google.com/...',
+            }),
             'receive_booking_sms': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'receive_booking_email': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'receive_reminder_sms': forms.CheckboxInput(attrs={'class': 'form-check-input'}),

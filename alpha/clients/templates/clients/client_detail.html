@@ -78,6 +78,39 @@
                             </tr>
                             {% endif %}
                             
+                            <!-- Consent Form -->
+                            <tr>
+                                <td colspan="2" class="pt-3">
+                                    <h6 class="font-size-13 text-muted mb-2">
+                                        <i class="bx bx-file"></i> {% trans "Consent Form" %}
+                                    </h6>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>{% trans "Signed" %}:</th>
+                                <td>
+                                    {% if client.consent_form_signed %}
+                                        <span class="badge bg-success-subtle text-success">
+                                            <i class="bx bx-check"></i> {% trans "Yes" %}
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-warning-subtle text-warning">
+                                            <i class="bx bx-time"></i> {% trans "Pending" %}
+                                        </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% if client.consent_form_url %}
+                            <tr>
+                                <th>{% trans "Document" %}:</th>
+                                <td>
+                                    <a href="{{ client.consent_form_url }}" target="_blank" rel="noopener noreferrer" class="text-primary">
+                                        <i class="bx bx-link-external me-1"></i>{% trans "View" %}
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endif %}
+
                             <!-- Notification Preferences -->
                             <tr>
                                 <td colspan="2" class="pt-3">

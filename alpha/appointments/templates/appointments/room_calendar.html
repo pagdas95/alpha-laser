@@ -6,6 +6,8 @@
 {% block extra_css %}
 <!-- FullCalendar CSS from CDN -->
 <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/index.global.min.css' rel='stylesheet' />
+<!-- Flatpickr CSS -->
+<link href="{% static 'libs/flatpickr/flatpickr.min.css' %}" rel="stylesheet" type="text/css" />
 <style>
     /* Status button styling */
     .btn-status {
@@ -140,6 +142,12 @@
                                     </div>
                                     <div class="text-center">
                                         <h6 id="current-date-display" class="mb-0 text-primary"></h6>
+                                    </div>
+                                    <div class="mt-2">
+                                        <input type="text" id="calendar-date-picker"
+                                               class="form-control form-control-sm text-center"
+                                               placeholder="Επιλογή ημερομηνίας..."
+                                               readonly>
                                     </div>
                                 </div>
 
@@ -278,6 +286,8 @@
 {% endblock %}
 
 {% block extra_js %}
+<!-- Flatpickr JS -->
+<script src="{% static 'libs/flatpickr/flatpickr.min.js' %}"></script>
 <!-- FullCalendar JS from CDN -->
 <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/index.global.min.js'></script>
 
@@ -514,7 +524,7 @@ document.addEventListener("DOMContentLoaded", function() {
                         
                         var editLink = document.getElementById('edit-appointment-link');
                         if (editLink) {
-                            editLink.href = '/appointments/' + currentEvent.id + '/update/';
+                            editLink.href = '/appointments/' + currentEvent.id + '/edit/';
                         }
                         
                         eventModal.show();
@@ -595,8 +605,31 @@ document.addEventListener("DOMContentLoaded", function() {
             var options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
             dateDisplay.textContent = currentDate.toLocaleDateString('el-GR', options);
         }
+        // Keep flatpickr in sync
+        if (window.calendarDatePicker) {
+            window.calendarDatePicker.setDate(currentDate, false);
+        }
     }
     updateDateDisplay();
+
+    // Initialize flatpickr date picker
+    window.calendarDatePicker = flatpickr('#calendar-date-picker', {
+        dateFormat: 'd/m/Y',
+        defaultDate: currentDate,
+        disableMobile: true,
+        onChange: function(selectedDates) {
+            if (selectedDates.length > 0) {
+                currentDate = selectedDates[0];
+                Object.values(calendars).forEach(cal => cal.gotoDate(currentDate));
+                // Update text display without re-syncing picker (avoid loop)
+                var dateDisplay = document.getElementById('current-date-display');
+                if (dateDisplay) {
+                    var options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                    dateDisplay.textContent = currentDate.toLocaleDateString('el-GR', options);
+                }
+            }
+        }
+    });
     
     // Refresh
     document.getElementById('refresh-all')?.addEventListener('click', function() {
