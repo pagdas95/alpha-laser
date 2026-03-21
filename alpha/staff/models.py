@@ -38,6 +38,19 @@ class StaffProfile(models.Model):
     hire_date = models.DateField(_("Hire Date"), null=True, blank=True)
     employee_id = models.CharField(_("Employee ID"), max_length=20, blank=True)
     
+    # ✨✨✨ NEW: WORKING SCHEDULE FOR PART-TIME STAFF ✨✨✨
+    working_schedule = models.JSONField(
+        _("Working Schedule"),
+        default=dict,
+        blank=True,
+        help_text=_("Weekly working schedule with days and hours")
+    )
+    # Format: {
+    #     "monday": {"working": true, "start": "09:00", "end": "17:00"},
+    #     "tuesday": {"working": true, "start": "09:00", "end": "17:00"},
+    #     ...
+    # }
+    
     # Contact Information
     phone = models.CharField(_("Phone"), max_length=20, blank=True)
     emergency_contact = models.CharField(_("Emergency Contact"), max_length=100, blank=True)
@@ -105,17 +118,76 @@ class StaffProfile(models.Model):
             return delta.days // 365
         return 0
     
+    # ✨✨✨ NEW: WORKING SCHEDULE HELPER METHODS ✨✨✨
+    
+    def get_working_schedule(self):
+        """Get working schedule with default structure"""
+        default_schedule = {
+            'monday': {'working': False, 'start': '09:00', 'end': '17:00'},
+            'tuesday': {'working': False, 'start': '09:00', 'end': '17:00'},
+            'wednesday': {'working': False, 'start': '09:00', 'end': '17:00'},
+            'thursday': {'working': False, 'start': '09:00', 'end': '17:00'},
+            'friday': {'working': False, 'start': '09:00', 'end': '17:00'},
+            'saturday': {'working': False, 'start': '09:00', 'end': '17:00'},
+            'sunday': {'working': False, 'start': '09:00', 'end': '17:00'},
+        }
+        
+        # Merge with saved schedule
+        if self.working_schedule:
+            for day, data in self.working_schedule.items():
+                if day in default_schedule:
+                    default_schedule[day].update(data)
+        
+        return default_schedule
+    
+    def get_working_days(self):
+        """Get list of days the staff member works"""
+        schedule = self.get_working_schedule()
+        working_days = [
+            day.capitalize() for day, data in schedule.items()
+            if data.get('working', False)
+        ]
+        return working_days
+    
+    def get_total_weekly_hours(self):
+        """Calculate total working hours per week"""
+        schedule = self.get_working_schedule()
+        total_hours = 0
+        
+        for day, data in schedule.items():
+            if data.get('working', False):
+                try:
+                    start = datetime.strptime(data['start'], '%H:%M')
+                    end = datetime.strptime(data['end'], '%H:%M')
+                    hours = (end - start).seconds / 3600
+                    total_hours += hours
+                except (ValueError, KeyError):
+                    pass
+        
+        return round(total_hours, 1)
+    
+    def is_working_on(self, day_name):
+        """Check if staff is working on a specific day (e.g., 'monday')"""
+        schedule = self.get_working_schedule()
+        day_data = schedule.get(day_name.lower(), {})
+        return day_data.get('working', False)
+    
+    def get_working_hours_for_day(self, day_name):
+        """Get working hours for a specific day"""
+        schedule = self.get_working_schedule()
+        day_data = schedule.get(day_name.lower(), {})
+        
+        if day_data.get('working', False):
+            return {
+                'start': day_data.get('start', '09:00'),
+                'end': day_data.get('end', '17:00')
+            }
+        return None
+    
+    # ... (keep all the existing leave balance methods) ...
+    
     def get_leave_balance(self, year=None, leave_type='leave'):
-        """
-        Calculate remaining leave balance for the year by type
-        
-        Args:
-            year: Year to calculate for (default: current year)
-            leave_type: 'leave', 'sick', or 'other'
-        
-        Returns:
-            Remaining balance for that leave type
-        """
+        """Calculate remaining leave balance for the year by type"""
         if year is None:
             year = timezone.now().year
         
@@ -128,7 +200,7 @@ class StaffProfile(models.Model):
             status='approved',
             start_date__gte=year_start,
             start_date__lte=year_end,
-            type=leave_type if leave_type != 'leave' else 'leave'  # leave includes half_day
+            type=leave_type if leave_type != 'leave' else 'leave'
         )
         
         # For "leave" type, also include half_day
@@ -138,7 +210,7 @@ class StaffProfile(models.Model):
                 status='approved',
                 start_date__gte=year_start,
                 start_date__lte=year_end,
-                type__in=['leave', 'half_day']  # Both count against annual leave
+                type__in=['leave', 'half_day']
             )
         
         # Calculate total used
@@ -148,7 +220,6 @@ class StaffProfile(models.Model):
         if leave_type == 'sick':
             allowance = float(self.sick_leave_allowance)
         elif leave_type == 'other':
-            # For "other", we ADD to balance, so calculate total added
             total_added = sum(dayoff.leave_deduction for dayoff in dayoffs)
             return float(self.other_balance) + total_added
         else:  # leave (includes half_day)
@@ -159,13 +230,7 @@ class StaffProfile(models.Model):
         return round(remaining, 1)
     
     def get_leave_used(self, year=None, leave_type='leave'):
-        """
-        Calculate total leave used for the year by type
-        
-        Args:
-            year: Year to calculate for (default: current year)
-            leave_type: 'leave', 'sick', or 'other'
-        """
+        """Calculate total leave used for the year by type"""
         if year is None:
             year = timezone.now().year
         

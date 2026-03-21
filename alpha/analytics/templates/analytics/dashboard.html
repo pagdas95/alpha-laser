@@ -23,6 +23,29 @@
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         margin-bottom: 20px;
     }
+    
+    /* ✨ View mode toggle styles */
+    .view-mode-toggle {
+        display: inline-flex;
+        border: 2px solid #556ee6;
+        border-radius: 6px;
+        overflow: hidden;
+    }
+    .view-mode-btn {
+        padding: 8px 20px;
+        background: white;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-weight: 500;
+    }
+    .view-mode-btn.active {
+        background: #556ee6;
+        color: white;
+    }
+    .view-mode-btn:hover:not(.active) {
+        background: #f8f9fa;
+    }
 </style>
 {% endblock %}
 
@@ -33,27 +56,62 @@
 
 {% block content %}
 
-<!-- Month Selector -->
+<!-- Month/Date Selector with View Mode Toggle -->
 <div class="row">
     <div class="col-12">
         <div class="month-selector">
             <div class="row align-items-center">
-                <div class="col-md-6">
+                <div class="col-md-3">
+                    <!-- ✨ View Mode Toggle -->
+                    <div class="view-mode-toggle">
+                        <button type="button" class="view-mode-btn {% if mode == 'daily' %}active{% endif %}" 
+                                onclick="switchToDaily()">
+                            <i class="bx bx-calendar-alt me-1"></i>{% trans "Daily" %}
+                        </button>
+                        <button type="button" class="view-mode-btn {% if mode != 'daily' %}active{% endif %}" 
+                                onclick="switchToMonthly()">
+                            <i class="bx bx-calendar me-1"></i>{% trans "Monthly" %}
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="col-md-3">
                     <h5 class="mb-0">
                         <i class="bx bx-calendar me-2"></i>
-                        {% trans "Viewing:" %} <strong>{{ month_name }}</strong>
+                        {% trans "Viewing:" %} <strong>{{ date_display }}</strong>
                     </h5>
                 </div>
+                
                 <div class="col-md-6 text-end">
                     <div class="d-flex justify-content-end gap-2">
-                        <select id="monthSelector" class="form-select" style="width: 200px;">
+                        <!-- ✨ Daily Date Picker (shown when mode=daily) -->
+                        <div id="dailyControls" style="display: {% if mode == 'daily' %}flex{% else %}none{% endif %}; gap: 0.5rem;">
+                            <input type="date" 
+                                   id="selectedDate" 
+                                   class="form-control" 
+                                   style="width: 180px;" 
+                                   value="{{ selected_date_str }}"
+                                   max="{{ today_str }}"
+                                   onchange="loadDate()">
+                            <button class="btn btn-primary" onclick="loadToday()">
+                                <i class="bx bx-calendar-check"></i> {% trans "Today" %}
+                            </button>
+                        </div>
+                        
+                        <!-- ✨ Monthly Selector (shown when mode=monthly) -->
+                        <select id="monthSelector" 
+                                class="form-select" 
+                                style="width: 200px; display: {% if mode != 'daily' %}block{% else %}none{% endif %};"
+                                onchange="loadMonth()">
                             {% for month in available_months %}
                             <option value="{{ month.value }}" {% if month.value == selected_month %}selected{% endif %}>
                                 {{ month.label }}
                             </option>
                             {% endfor %}
                         </select>
-                        <button class="btn btn-success" id="exportExcel">
+                        
+                        <!-- ✨ Export Button with Modal -->
+                        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#exportModal">
                             <i class="bx bx-download me-1"></i>
                             {% trans "Export Excel" %}
                         </button>
@@ -75,7 +133,7 @@
                         <h4 class="mb-0">{{ stats.total_visits }}</h4>
                         <small class="text-muted">
                             <i class="bx bx-check-circle text-success"></i> 
-                            {{ stats.fully_paid }} {% trans "paid" %}
+                            {{ stats.fully_paid|default:0 }} {% trans "paid" %}
                         </small>
                     </div>
                     <div class="avatar-sm rounded-circle bg-primary align-self-center mini-stat-icon">
@@ -97,7 +155,7 @@
                         <h4 class="mb-0">€{{ stats.revenue|floatformat:2 }}</h4>
                         <small class="text-muted">
                             <i class="bx bx-trending-up text-success"></i> 
-                            {% trans "Charged this month" %}
+                            {% if mode == 'daily' %}{% trans "Today" %}{% else %}{% trans "Charged this month" %}{% endif %}
                         </small>
                     </div>
                     <div class="avatar-sm rounded-circle bg-success align-self-center mini-stat-icon">
@@ -118,7 +176,11 @@
                         <p class="text-muted fw-medium">{% trans "Collected" %}</p>
                         <h4 class="mb-0">€{{ stats.paid|floatformat:2 }}</h4>
                         <small class="text-muted">
-                            {% widthratio stats.paid stats.revenue 100 %}% {% trans "of revenue" %}
+                            {% if stats.revenue > 0 %}
+                                {% widthratio stats.paid stats.revenue 100 %}% {% trans "of revenue" %}
+                            {% else %}
+                                0% {% trans "of revenue" %}
+                            {% endif %}
                         </small>
                     </div>
                     <div class="avatar-sm rounded-circle bg-info align-self-center mini-stat-icon">
@@ -140,7 +202,7 @@
                         <h4 class="mb-0">€{{ stats.pending|floatformat:2 }}</h4>
                         <small class="text-muted">
                             <i class="bx bx-time text-warning"></i> 
-                            {{ stats.unpaid }} {% trans "unpaid" %}
+                            {{ stats.unpaid|default:0 }} {% trans "unpaid" %}
                         </small>
                     </div>
                     <div class="avatar-sm rounded-circle bg-warning align-self-center mini-stat-icon">
@@ -161,7 +223,11 @@
             <div class="card-header">
                 <h4 class="card-title mb-0">
                     <i class="bx bx-line-chart me-2"></i>
-                    {% trans "Daily Revenue Trend" %}
+                    {% if mode == 'daily' %}
+                        {% trans "Hourly Revenue Trend" %}
+                    {% else %}
+                        {% trans "Daily Revenue Trend" %}
+                    {% endif %}
                 </h4>
             </div>
             <div class="card-body">
@@ -277,19 +343,19 @@
                             <table class="table table-sm">
                                 <tr>
                                     <td><i class="bx bx-check-circle text-success"></i> {% trans "Completed" %}</td>
-                                    <td class="text-end"><strong>{{ stats.completed }}</strong></td>
+                                    <td class="text-end"><strong>{{ stats.completed|default:0 }}</strong></td>
                                 </tr>
                                 <tr>
                                     <td><i class="bx bx-calendar text-primary"></i> {% trans "Booked" %}</td>
-                                    <td class="text-end"><strong>{{ stats.booked }}</strong></td>
+                                    <td class="text-end"><strong>{{ stats.booked|default:0 }}</strong></td>
                                 </tr>
                                 <tr>
                                     <td><i class="bx bx-x-circle text-danger"></i> {% trans "Cancelled" %}</td>
-                                    <td class="text-end"><strong>{{ stats.cancelled }}</strong></td>
+                                    <td class="text-end"><strong>{{ stats.cancelled|default:0 }}</strong></td>
                                 </tr>
                                 <tr>
                                     <td><i class="bx bx-user-x text-warning"></i> {% trans "No Show" %}</td>
-                                    <td class="text-end"><strong>{{ stats.no_show }}</strong></td>
+                                    <td class="text-end"><strong>{{ stats.no_show|default:0 }}</strong></td>
                                 </tr>
                                 <tr class="border-top">
                                     <td><strong>{% trans "Total Appointments" %}</strong></td>
@@ -305,15 +371,15 @@
                             <table class="table table-sm">
                                 <tr>
                                     <td><i class="bx bx-check-circle text-success"></i> {% trans "Fully Paid" %}</td>
-                                    <td class="text-end"><strong>{{ stats.fully_paid }}</strong></td>
+                                    <td class="text-end"><strong>{{ stats.fully_paid|default:0 }}</strong></td>
                                 </tr>
                                 <tr>
                                     <td><i class="bx bx-time text-warning"></i> {% trans "Partially Paid" %}</td>
-                                    <td class="text-end"><strong>{{ stats.partially_paid }}</strong></td>
+                                    <td class="text-end"><strong>{{ stats.partially_paid|default:0 }}</strong></td>
                                 </tr>
                                 <tr>
                                     <td><i class="bx bx-x-circle text-danger"></i> {% trans "Unpaid" %}</td>
-                                    <td class="text-end"><strong>{{ stats.unpaid }}</strong></td>
+                                    <td class="text-end"><strong>{{ stats.unpaid|default:0 }}</strong></td>
                                 </tr>
                                 <tr class="border-top">
                                     <td><strong>{% trans "Total Visits" %}</strong></td>
@@ -328,6 +394,98 @@
     </div>
 </div>
 
+<!-- ✨ Export Modal -->
+<div class="modal fade" id="exportModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bx bx-download me-2"></i>{% trans "Export Analytics Data" %}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">{% trans "Export Type" %}</label>
+                    <div class="btn-group w-100" role="group">
+                        <input type="radio" class="btn-check" name="exportType" id="exportDaily" value="daily" 
+                               {% if mode == 'daily' %}checked{% endif %}>
+                        <label class="btn btn-outline-primary" for="exportDaily">
+                            <i class="bx bx-calendar-alt"></i> {% trans "Daily" %}
+                        </label>
+                        
+                        <input type="radio" class="btn-check" name="exportType" id="exportMonthly" value="monthly"
+                               {% if mode != 'daily' %}checked{% endif %}>
+                        <label class="btn btn-outline-primary" for="exportMonthly">
+                            <i class="bx bx-calendar"></i> {% trans "Monthly" %}
+                        </label>
+                        
+                        <input type="radio" class="btn-check" name="exportType" id="exportRange" value="range">
+                        <label class="btn btn-outline-primary" for="exportRange">
+                            <i class="bx bx-calendar-week"></i> {% trans "Date Range" %}
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Daily Export Options -->
+                <div id="exportDailyOptions" style="display: {% if mode == 'daily' %}block{% else %}none{% endif %};">
+                    <div class="mb-3">
+                        <label class="form-label">{% trans "Select Date" %}</label>
+                        <input type="date" class="form-control" id="exportDailyDate" 
+                               value="{{ selected_date_str }}" max="{{ today_str }}">
+                        <small class="text-muted">{% trans "Export data for a single day" %}</small>
+                    </div>
+                </div>
+
+                <!-- Monthly Export Options -->
+                <div id="exportMonthlyOptions" style="display: {% if mode != 'daily' %}block{% else %}none{% endif %};">
+                    <div class="mb-3">
+                        <label class="form-label">{% trans "Select Month" %}</label>
+                        <input type="month" class="form-control" id="exportMonthValue" 
+                               value="{{ selected_month }}">
+                        <small class="text-muted">{% trans "Export data for entire month" %}</small>
+                    </div>
+                </div>
+
+                <!-- Date Range Export Options -->
+                <div id="exportRangeOptions" style="display: none;">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{% trans "Start Date" %}</label>
+                            <input type="date" class="form-control" id="exportStartDate" 
+                                   value="{{ selected_date_str }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{% trans "End Date" %}</label>
+                            <input type="date" class="form-control" id="exportEndDate" 
+                                   value="{{ today_str }}" max="{{ today_str }}">
+                        </div>
+                    </div>
+                    <small class="text-muted">
+                        <i class="bx bx-info-circle"></i> 
+                        {% trans "Export data between two dates (inclusive)" %}
+                    </small>
+                </div>
+
+                <!-- Preview -->
+                <div class="alert alert-info mt-3" id="exportPreview">
+                    <i class="bx bx-info-circle"></i>
+                    <strong>{% trans "Export will include:" %}</strong>
+                    <span id="exportPreviewText"></span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    {% trans "Cancel" %}
+                </button>
+                <button type="button" class="btn btn-success" onclick="doExport()">
+                    <i class="bx bx-download me-1"></i>{% trans "Export Excel" %}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock content %}
 
 {% block extra_js %}
@@ -335,10 +493,110 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const selectedMonth = '{{ selected_month }}';
+// Global variables
+const currentMode = '{{ mode }}';
+const selectedMonth = '{{ selected_month }}';
+const selectedDate = '{{ selected_date_str }}';
+
+// ✨ View Mode Switching Functions
+function switchToDaily() {
+    window.location.href = '?mode=daily&date={{ today_str }}';
+}
+
+function switchToMonthly() {
+    window.location.href = '?mode=monthly&month=' + selectedMonth;
+}
+
+function loadDate() {
+    const date = document.getElementById('selectedDate').value;
+    window.location.href = '?mode=daily&date=' + date;
+}
+
+function loadMonth() {
+    const month = document.getElementById('monthSelector').value;
+    window.location.href = '?mode=monthly&month=' + month;
+}
+
+function loadToday() {
+    window.location.href = '?mode=daily&date={{ today_str }}';
+}
+
+// ✨ EXPORT MODAL FUNCTIONS - GLOBAL SCOPE
+function updateExportPreview() {
+    const type = document.querySelector('input[name="exportType"]:checked').value;
+    const previewText = document.getElementById('exportPreviewText');
     
-    // Initialize all charts
+    if (type === 'daily') {
+        const date = document.getElementById('exportDailyDate').value;
+        const dateObj = new Date(date);
+        previewText.textContent = `Data for ${dateObj.toLocaleDateString('en-US', { 
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+        })}`;
+    } else if (type === 'monthly') {
+        const month = document.getElementById('exportMonthValue').value;
+        const dateObj = new Date(month + '-01');
+        previewText.textContent = `Data for ${dateObj.toLocaleDateString('en-US', { 
+            year: 'numeric', month: 'long' 
+        })}`;
+    } else {
+        const start = document.getElementById('exportStartDate').value;
+        const end = document.getElementById('exportEndDate').value;
+        previewText.textContent = `Data from ${start} to ${end}`;
+    }
+}
+
+function doExport() {
+    const type = document.querySelector('input[name="exportType"]:checked').value;
+    let url = '{% url "analytics:export-monthly" %}?';
+    
+    if (type === 'daily') {
+        const date = document.getElementById('exportDailyDate').value;
+        if (!date) {
+            alert('Please select a date');
+            return;
+        }
+        url += 'date=' + date;
+    } else if (type === 'monthly') {
+        const month = document.getElementById('exportMonthValue').value;
+        if (!month) {
+            alert('Please select a month');
+            return;
+        }
+        url += 'month=' + month;
+    } else {
+        const start = document.getElementById('exportStartDate').value;
+        const end = document.getElementById('exportEndDate').value;
+        
+        if (!start || !end) {
+            alert('Please select both start and end dates');
+            return;
+        }
+        
+        if (start > end) {
+            alert('Start date must be before end date');
+            return;
+        }
+        
+        url += 'start_date=' + start + '&end_date=' + end;
+    }
+    
+    console.log('Export URL:', url); // Debug log
+    
+    // Trigger download
+    window.location.href = url;
+    
+    // Close modal after a short delay to allow download to start
+    setTimeout(function() {
+        const modalElement = document.getElementById('exportModal');
+        const modal = bootstrap.Modal.getInstance(modalElement);
+        if (modal) {
+            modal.hide();
+        }
+    }, 500);
+}
+
+// ✨ Initialize Charts
+document.addEventListener('DOMContentLoaded', function() {
     initializeDailyRevenueChart();
     initializeVisitsChart();
     initializeServicesChart();
@@ -346,19 +604,36 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeRoomsChart();
     initializeMachinesChart();
     
-    // Month selector change handler
-    document.getElementById('monthSelector').addEventListener('change', function() {
-        window.location.href = '?month=' + this.value;
+    // ✨ EXPORT MODAL HANDLERS
+    // Handle export type changes
+    document.querySelectorAll('input[name="exportType"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            document.getElementById('exportDailyOptions').style.display = 
+                this.value === 'daily' ? 'block' : 'none';
+            document.getElementById('exportMonthlyOptions').style.display = 
+                this.value === 'monthly' ? 'block' : 'none';
+            document.getElementById('exportRangeOptions').style.display = 
+                this.value === 'range' ? 'block' : 'none';
+            updateExportPreview();
+        });
     });
     
-    // Export Excel handler
-    document.getElementById('exportExcel').addEventListener('click', function() {
-        window.location.href = '{% url "analytics:export-monthly" %}?month=' + selectedMonth;
-    });
+    // Update preview when dates change
+    document.getElementById('exportDailyDate')?.addEventListener('change', updateExportPreview);
+    document.getElementById('exportMonthValue')?.addEventListener('change', updateExportPreview);
+    document.getElementById('exportStartDate')?.addEventListener('change', updateExportPreview);
+    document.getElementById('exportEndDate')?.addEventListener('change', updateExportPreview);
+    
+    // Initialize preview
+    updateExportPreview();
     
     // Chart initialization functions
     function initializeDailyRevenueChart() {
-        fetch(`{% url 'analytics:chart-data' %}?type=daily_revenue&month=${selectedMonth}`)
+        // ✨ Different chart type based on mode
+        const chartType = currentMode === 'daily' ? 'hourly_revenue' : 'daily_revenue';
+        const dateParam = currentMode === 'daily' ? `date=${selectedDate}` : `month=${selectedMonth}`;
+        
+        fetch(`{% url 'analytics:chart-data' %}?type=${chartType}&${dateParam}`)
             .then(response => response.json())
             .then(data => {
                 const ctx = document.getElementById('dailyRevenueChart').getContext('2d');
@@ -369,12 +644,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         responsive: true,
                         maintainAspectRatio: false,
                         plugins: {
-                            legend: {
-                                position: 'top',
-                            },
-                            title: {
-                                display: false
-                            }
+                            legend: { position: 'top' },
+                            title: { display: false }
                         },
                         scales: {
                             y: {
@@ -392,7 +663,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function initializeVisitsChart() {
-        fetch(`{% url 'analytics:chart-data' %}?type=visits&month=${selectedMonth}`)
+        const dateParam = currentMode === 'daily' ? `date=${selectedDate}` : `month=${selectedMonth}`;
+        fetch(`{% url 'analytics:chart-data' %}?type=visits&${dateParam}`)
             .then(response => response.json())
             .then(data => {
                 const ctx = document.getElementById('visitsChart').getContext('2d');
@@ -402,18 +674,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'bottom',
-                            }
-                        }
+                        plugins: { legend: { position: 'bottom' } }
                     }
                 });
             });
     }
     
     function initializeServicesChart() {
-        fetch(`{% url 'analytics:chart-data' %}?type=services&month=${selectedMonth}`)
+        const dateParam = currentMode === 'daily' ? `date=${selectedDate}` : `month=${selectedMonth}`;
+        fetch(`{% url 'analytics:chart-data' %}?type=services&${dateParam}`)
             .then(response => response.json())
             .then(data => {
                 const ctx = document.getElementById('servicesChart').getContext('2d');
@@ -424,11 +693,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         responsive: true,
                         maintainAspectRatio: false,
                         indexAxis: 'y',
-                        plugins: {
-                            legend: {
-                                display: false
-                            }
-                        },
+                        plugins: { legend: { display: false } },
                         scales: {
                             x: {
                                 beginAtZero: true,
@@ -445,7 +710,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function initializeStaffChart() {
-        fetch(`{% url 'analytics:chart-data' %}?type=staff&month=${selectedMonth}`)
+        const dateParam = currentMode === 'daily' ? `date=${selectedDate}` : `month=${selectedMonth}`;
+        fetch(`{% url 'analytics:chart-data' %}?type=staff&${dateParam}`)
             .then(response => response.json())
             .then(data => {
                 const ctx = document.getElementById('staffChart').getContext('2d');
@@ -455,37 +721,22 @@ document.addEventListener('DOMContentLoaded', function() {
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'top',
-                            },
-                            title: {
-                                display: false
-                            }
-                        },
+                        plugins: { legend: { position: 'top' }, title: { display: false } },
                         scales: {
                             y: {
                                 type: 'linear',
                                 display: true,
                                 position: 'left',
                                 beginAtZero: true,
-                                title: {
-                                    display: true,
-                                    text: 'Visits'
-                                }
+                                title: { display: true, text: 'Visits' }
                             },
                             y1: {
                                 type: 'linear',
                                 display: true,
                                 position: 'right',
                                 beginAtZero: true,
-                                grid: {
-                                    drawOnChartArea: false,
-                                },
-                                title: {
-                                    display: true,
-                                    text: 'Revenue (€)'
-                                },
+                                grid: { drawOnChartArea: false },
+                                title: { display: true, text: 'Revenue (€)' },
                                 ticks: {
                                     callback: function(value) {
                                         return '€' + value.toFixed(0);
@@ -499,7 +750,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function initializeRoomsChart() {
-        fetch(`{% url 'analytics:chart-data' %}?type=rooms&month=${selectedMonth}`)
+        const dateParam = currentMode === 'daily' ? `date=${selectedDate}` : `month=${selectedMonth}`;
+        fetch(`{% url 'analytics:chart-data' %}?type=rooms&${dateParam}`)
             .then(response => response.json())
             .then(data => {
                 const ctx = document.getElementById('roomsChart').getContext('2d');
@@ -509,21 +761,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'bottom',
-                            },
-                            title: {
-                                display: false
-                            }
-                        }
+                        plugins: { legend: { position: 'bottom' }, title: { display: false } }
                     }
                 });
             });
     }
     
     function initializeMachinesChart() {
-        fetch(`{% url 'analytics:chart-data' %}?type=machines&month=${selectedMonth}`)
+        const dateParam = currentMode === 'daily' ? `date=${selectedDate}` : `month=${selectedMonth}`;
+        fetch(`{% url 'analytics:chart-data' %}?type=machines&${dateParam}`)
             .then(response => response.json())
             .then(data => {
                 const ctx = document.getElementById('machinesChart').getContext('2d');
@@ -533,19 +779,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'top',
-                            },
-                            title: {
-                                display: false
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true
-                            }
-                        }
+                        plugins: { legend: { position: 'top' }, title: { display: false } },
+                        scales: { y: { beginAtZero: true } }
                     }
                 });
             });

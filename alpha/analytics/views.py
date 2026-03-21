@@ -1,9 +1,9 @@
 """
-Analytics Views
-Place this at: alpha/analytics/views.py (or in your visits app if you prefer)
+Analytics Views - COMPLETE VERSION WITH DAILY AND MONTHLY SUPPORT
+Place this at: alpha/analytics/views.py
 """
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic import TemplateView
+from django.views.generic import TemplateView, View
 from django.http import JsonResponse, HttpResponse
 from django.db.models import Count, Sum, Q, F, Avg
 from django.db.models.functions import TruncMonth, TruncDay
@@ -26,38 +26,88 @@ except ImportError:
     EXCEL_AVAILABLE = False
 
 
+# ═══════════════════════════════════════════════════════════════
+# MAIN DASHBOARD VIEW - SUPPORTS DAILY AND MONTHLY
+# ═══════════════════════════════════════════════════════════════
+
 class AnalyticsDashboardView(LoginRequiredMixin, TemplateView):
-    """Main analytics dashboard with charts and statistics"""
+    """Main analytics dashboard with charts and statistics - SUPPORTS DAILY AND MONTHLY"""
     template_name = 'analytics/dashboard.html'
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
-        # Get selected month from query params or default to current month
-        selected_month = self.request.GET.get('month')
-        if selected_month:
-            try:
-                selected_date = datetime.strptime(selected_month, '%Y-%m')
-            except ValueError:
+        # Get view mode (daily or monthly) from URL
+        mode = self.request.GET.get('mode', 'monthly')  # Default to monthly
+        context['mode'] = mode
+        
+        # Get today's date
+        today = timezone.now().date()
+        context['today_str'] = today.strftime('%Y-%m-%d')
+        
+        if mode == 'daily':
+            # ═══════════════════════════════════════════════════════
+            # DAILY MODE
+            # ═══════════════════════════════════════════════════════
+            selected_date_str = self.request.GET.get('date')
+            if selected_date_str:
+                try:
+                    selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date()
+                except ValueError:
+                    selected_date = today
+            else:
+                selected_date = today
+            
+            context['selected_date'] = selected_date
+            context['selected_date_str'] = selected_date.strftime('%Y-%m-%d')
+            context['date_display'] = selected_date.strftime('%A, %B %d, %Y')
+            context['is_today'] = selected_date == today
+            
+            # Date range for the selected day
+            start_date = datetime.combine(selected_date, datetime.min.time())
+            end_date = datetime.combine(selected_date, datetime.max.time())
+            start_date = timezone.make_aware(start_date)
+            end_date = timezone.make_aware(end_date)
+            
+            # Get daily statistics
+            context['stats'] = self._get_daily_stats(start_date, end_date)
+            
+            # Pass available_months for template compatibility
+            context['available_months'] = self._get_available_months()
+            context['selected_month'] = today.strftime('%Y-%m')
+            
+        else:
+            # ═══════════════════════════════════════════════════════
+            # MONTHLY MODE (Your original logic)
+            # ═══════════════════════════════════════════════════════
+            selected_month = self.request.GET.get('month')
+            if selected_month:
+                try:
+                    selected_date = datetime.strptime(selected_month, '%Y-%m')
+                except ValueError:
+                    selected_date = timezone.now()
+            else:
                 selected_date = timezone.now()
-        else:
-            selected_date = timezone.now()
-        
-        # Calculate date range for the selected month
-        start_date = selected_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        if start_date.month == 12:
-            end_date = start_date.replace(year=start_date.year + 1, month=1)
-        else:
-            end_date = start_date.replace(month=start_date.month + 1)
-        
-        context['selected_month'] = selected_date.strftime('%Y-%m')
-        context['month_name'] = selected_date.strftime('%B %Y')
-        
-        # Get available months (last 12 months)
-        context['available_months'] = self._get_available_months()
-        
-        # Basic statistics for the selected month
-        context['stats'] = self._get_monthly_stats(start_date, end_date)
+            
+            # Calculate date range for the selected month
+            start_date = selected_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            if start_date.month == 12:
+                end_date = start_date.replace(year=start_date.year + 1, month=1)
+            else:
+                end_date = start_date.replace(month=start_date.month + 1)
+            
+            context['selected_month'] = selected_date.strftime('%Y-%m')
+            context['month_name'] = selected_date.strftime('%B %Y')
+            context['date_display'] = selected_date.strftime('%B %Y')
+            
+            # Get available months (last 12 months)
+            context['available_months'] = self._get_available_months()
+            
+            # Get monthly statistics
+            context['stats'] = self._get_monthly_stats(start_date, end_date)
+            
+            # Pass selected_date_str for template compatibility
+            context['selected_date_str'] = today.strftime('%Y-%m-%d')
         
         return context
     
@@ -75,6 +125,54 @@ class AnalyticsDashboardView(LoginRequiredMixin, TemplateView):
             else:
                 current = current.replace(month=current.month - 1)
         return months
+    
+    def _get_daily_stats(self, start_date, end_date):
+        """Calculate key statistics for a single day"""
+        
+        # Filter visits and appointments for the day
+        visits = Visit.objects.filter(
+            appointment__start__gte=start_date,
+            appointment__start__lt=end_date
+        )
+        
+        appointments = Appointment.objects.filter(
+            start__gte=start_date,
+            start__lt=end_date
+        )
+        
+        # Calculate statistics (SAME FORMAT as monthly)
+        stats = {
+            'total_visits': visits.count(),
+            'total_appointments': appointments.count(),
+            'new_clients': appointments.values('client').distinct().count(),  # Unique clients that day
+            
+            # Revenue calculations
+            'revenue': visits.aggregate(total=Sum('charge_amount'))['total'] or Decimal('0.00'),
+            'paid': visits.aggregate(total=Sum('paid_amount'))['total'] or Decimal('0.00'),
+            'pending': (visits.aggregate(total=Sum('charge_amount'))['total'] or Decimal('0.00')) - 
+                      (visits.aggregate(total=Sum('paid_amount'))['total'] or Decimal('0.00')),
+            
+            # Payment status counts
+            'fully_paid': visits.filter(
+                paid_amount__gte=F('charge_amount'),
+                charge_amount__gt=0
+            ).count(),
+            'partially_paid': visits.filter(
+                paid_amount__gt=0,
+                paid_amount__lt=F('charge_amount')
+            ).count(),
+            'unpaid': visits.filter(
+                Q(paid_amount=0) | Q(paid_amount__isnull=True)
+            ).count(),
+            
+            # Appointment status counts
+            'completed': appointments.filter(status='completed').count(),
+            'booked': appointments.filter(status='booked').count(),
+            'cancelled': appointments.filter(status='cancelled').count(),
+            'no_show': appointments.filter(status='no_show').count(),
+        }
+        
+        return stats
     
     def _get_monthly_stats(self, start_date, end_date):
         """Calculate key statistics for the month"""
@@ -94,135 +192,258 @@ class AnalyticsDashboardView(LoginRequiredMixin, TemplateView):
         stats = {
             'total_visits': visits.count(),
             'total_appointments': appointments.count(),
-            'new_clients': Client.objects.filter(
-                appointments__start__gte=start_date,
-                appointments__start__lt=end_date
-            ).distinct().count(),
-            'revenue': visits.aggregate(
-                total=Sum('charge_amount')
-            )['total'] or Decimal('0.00'),
-            'paid': visits.aggregate(
-                total=Sum('paid_amount')
-            )['total'] or Decimal('0.00'),
-            'pending': Decimal('0.00'),
+            'new_clients': appointments.values('client').distinct().count(),  # Unique clients that month
+            
+            # Revenue calculations
+            'revenue': visits.aggregate(total=Sum('charge_amount'))['total'] or Decimal('0.00'),
+            'paid': visits.aggregate(total=Sum('paid_amount'))['total'] or Decimal('0.00'),
+            'pending': (visits.aggregate(total=Sum('charge_amount'))['total'] or Decimal('0.00')) - 
+                      (visits.aggregate(total=Sum('paid_amount'))['total'] or Decimal('0.00')),
+            
+            # Payment status counts
+            'fully_paid': visits.filter(
+                paid_amount__gte=F('charge_amount'),
+                charge_amount__gt=0
+            ).count(),
+            'partially_paid': visits.filter(
+                paid_amount__gt=0,
+                paid_amount__lt=F('charge_amount')
+            ).count(),
+            'unpaid': visits.filter(
+                Q(paid_amount=0) | Q(paid_amount__isnull=True)
+            ).count(),
+            
+            # Appointment status counts
+            'completed': appointments.filter(status='completed').count(),
+            'booked': appointments.filter(status='booked').count(),
+            'cancelled': appointments.filter(status='cancelled').count(),
+            'no_show': appointments.filter(status='no_show').count(),
         }
-        
-        stats['pending'] = stats['revenue'] - stats['paid']
-        
-        # Payment status breakdown
-        stats['fully_paid'] = visits.filter(
-            paid_amount__gte=F('charge_amount')
-        ).count()
-        stats['partially_paid'] = visits.filter(
-            paid_amount__gt=0,
-            paid_amount__lt=F('charge_amount')
-        ).count()
-        stats['unpaid'] = visits.filter(paid_amount=0).count()
-        
-        # Appointment status breakdown
-        stats['completed'] = appointments.filter(status='completed').count()
-        stats['booked'] = appointments.filter(status='booked').count()
-        stats['cancelled'] = appointments.filter(status='cancelled').count()
-        stats['no_show'] = appointments.filter(status='no_show').count()
         
         return stats
 
 
-class AnalyticsDataAPIView(LoginRequiredMixin, TemplateView):
-    """API endpoint for chart data"""
+# ═══════════════════════════════════════════════════════════════
+# CHART DATA API - SUPPORTS DAILY AND MONTHLY
+# ═══════════════════════════════════════════════════════════════
+
+class AnalyticsDataAPIView(LoginRequiredMixin, View):
+    """API view for chart data - UPDATED TO SUPPORT DAILY AND MONTHLY"""
     
-    def get(self, request, *args, **kwargs):
-        chart_type = request.GET.get('type', 'revenue')
-        selected_month = request.GET.get('month')
+    def get(self, request):
+        chart_type = request.GET.get('type')
+        month = request.GET.get('month')
+        date_str = request.GET.get('date')  # For daily mode
         
-        if selected_month:
+        # Determine if this is daily or monthly request
+        if date_str:
+            # DAILY MODE - use single date
             try:
-                selected_date = datetime.strptime(selected_month, '%Y-%m')
+                selected_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+            except ValueError:
+                selected_date = timezone.now().date()
+            
+            start_datetime = timezone.make_aware(datetime.combine(selected_date, datetime.min.time()))
+            end_datetime = timezone.make_aware(datetime.combine(selected_date, datetime.max.time()))
+            
+            # Route to daily chart methods
+            if chart_type == 'hourly_revenue':
+                return self._get_hourly_revenue_data(start_datetime, end_datetime)
+            elif chart_type == 'visits':
+                return self._get_visits_data(start_datetime, end_datetime)
+            elif chart_type == 'services':
+                return self._get_services_data(start_datetime, end_datetime)
+            elif chart_type == 'staff':
+                return self._get_staff_data(start_datetime, end_datetime)
+            elif chart_type == 'rooms':
+                return self._get_rooms_data(start_datetime, end_datetime)
+            elif chart_type == 'machines':
+                return self._get_machines_data(start_datetime, end_datetime)
+        
+        else:
+            # MONTHLY MODE - use month
+            if not month:
+                month = timezone.now().strftime('%Y-%m')
+            
+            try:
+                selected_date = datetime.strptime(month, '%Y-%m')
             except ValueError:
                 selected_date = timezone.now()
-        else:
-            selected_date = timezone.now()
+            
+            start_date = selected_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            if start_date.month == 12:
+                end_date = start_date.replace(year=start_date.year + 1, month=1)
+            else:
+                end_date = start_date.replace(month=start_date.month + 1)
+            
+            # Route to monthly chart methods
+            if chart_type == 'daily_revenue':
+                return self._get_daily_revenue_data(start_date, end_date)
+            elif chart_type == 'visits':
+                return self._get_visits_data(start_date, end_date)
+            elif chart_type == 'services':
+                return self._get_services_data(start_date, end_date)
+            elif chart_type == 'staff':
+                return self._get_staff_data(start_date, end_date)
+            elif chart_type == 'rooms':
+                return self._get_rooms_data(start_date, end_date)
+            elif chart_type == 'machines':
+                return self._get_machines_data(start_date, end_date)
         
-        start_date = selected_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        if start_date.month == 12:
-            end_date = start_date.replace(year=start_date.year + 1, month=1)
-        else:
-            end_date = start_date.replace(month=start_date.month + 1)
-        
-        if chart_type == 'revenue':
-            data = self._get_revenue_chart_data(start_date, end_date)
-        elif chart_type == 'visits':
-            data = self._get_visits_chart_data(start_date, end_date)
-        elif chart_type == 'services':
-            data = self._get_services_chart_data(start_date, end_date)
-        elif chart_type == 'staff':
-            data = self._get_staff_performance_data(start_date, end_date)
-        elif chart_type == 'rooms':
-            data = self._get_room_utilization_data(start_date, end_date)
-        elif chart_type == 'machines':
-            data = self._get_machine_utilization_data(start_date, end_date)
-        elif chart_type == 'daily_revenue':
-            data = self._get_daily_revenue_data(start_date, end_date)
-        else:
-            data = {'error': 'Invalid chart type'}
-        
-        return JsonResponse(data)
+        return JsonResponse({'error': 'Invalid chart type'}, status=400)
     
-    def _get_revenue_chart_data(self, start_date, end_date):
-        """Revenue vs Paid comparison"""
+    # ═══════════════════════════════════════════════════════════════
+    # DAILY CHART - Hourly Revenue
+    # ═══════════════════════════════════════════════════════════════
+    
+    def _get_hourly_revenue_data(self, start_datetime, end_datetime):
+        """Get hourly revenue breakdown for a single day"""
+        labels = []
+        revenue_data = []
+        appointments_data = []
+        
+        # Loop through hours 7 AM to 10 PM
+        for hour in range(7, 23):
+            hour_start = start_datetime.replace(hour=hour, minute=0, second=0)
+            hour_end = start_datetime.replace(hour=hour, minute=59, second=59)
+            
+            # Get revenue for this hour
+            visits = Visit.objects.filter(
+                appointment__start__gte=hour_start,
+                appointment__start__lte=hour_end
+            )
+            
+            hour_revenue = visits.aggregate(
+                total=Sum('paid_amount')
+            )['total'] or Decimal('0.00')
+            
+            # Get appointments for this hour
+            hour_appointments = Appointment.objects.filter(
+                start__gte=hour_start,
+                start__lte=hour_end
+            ).count()
+            
+            labels.append(f'{hour:02d}:00')
+            revenue_data.append(float(hour_revenue))
+            appointments_data.append(hour_appointments)
+        
+        return JsonResponse({
+            'labels': labels,
+            'datasets': [
+                {
+                    'label': 'Revenue (€)',
+                    'data': revenue_data,
+                    'borderColor': 'rgb(75, 192, 192)',
+                    'backgroundColor': 'rgba(75, 192, 192, 0.2)',
+                    'tension': 0.4
+                },
+                {
+                    'label': 'Appointments',
+                    'data': appointments_data,
+                    'borderColor': 'rgb(54, 162, 235)',
+                    'backgroundColor': 'rgba(54, 162, 235, 0.2)',
+                    'tension': 0.4
+                }
+            ]
+        })
+    
+    # ═══════════════════════════════════════════════════════════════
+    # MONTHLY CHART - Daily Revenue
+    # ═══════════════════════════════════════════════════════════════
+    
+    def _get_daily_revenue_data(self, start_date, end_date):
+        """Daily revenue trend for the month"""
+        visits_by_day = Visit.objects.filter(
+            appointment__start__gte=start_date,
+            appointment__start__lt=end_date
+        ).annotate(
+            day=TruncDay('appointment__start')
+        ).values('day').annotate(
+            total_revenue=Sum('paid_amount'),
+            total_charged=Sum('charge_amount')
+        ).order_by('day')
+        
+        labels = []
+        revenue_data = []
+        charged_data = []
+        
+        current_date = start_date.date()
+        end_date_only = end_date.date()
+        
+        data_dict = {item['day'].date(): item for item in visits_by_day}
+        
+        while current_date < end_date_only:
+            labels.append(current_date.strftime('%-d'))
+            
+            if current_date in data_dict:
+                revenue_data.append(float(data_dict[current_date]['total_revenue'] or 0))
+                charged_data.append(float(data_dict[current_date]['total_charged'] or 0))
+            else:
+                revenue_data.append(0)
+                charged_data.append(0)
+            
+            current_date += timedelta(days=1)
+        
+        return JsonResponse({
+            'labels': labels,
+            'datasets': [
+                {
+                    'label': 'Paid Revenue (€)',
+                    'data': revenue_data,
+                    'borderColor': 'rgb(75, 192, 192)',
+                    'backgroundColor': 'rgba(75, 192, 192, 0.2)',
+                    'tension': 0.4
+                },
+                {
+                    'label': 'Charged (€)',
+                    'data': charged_data,
+                    'borderColor': 'rgb(255, 206, 86)',
+                    'backgroundColor': 'rgba(255, 206, 86, 0.2)',
+                    'tension': 0.4,
+                    'borderDash': [5, 5]
+                }
+            ]
+        })
+    
+    # ═══════════════════════════════════════════════════════════════
+    # SHARED CHARTS - Work for both daily and monthly
+    # ═══════════════════════════════════════════════════════════════
+    
+    def _get_visits_data(self, start_date, end_date):
+        """Payment status breakdown"""
         visits = Visit.objects.filter(
             appointment__start__gte=start_date,
             appointment__start__lt=end_date
-        ).aggregate(
-            revenue=Sum('charge_amount'),
-            paid=Sum('paid_amount')
         )
         
-        revenue = float(visits['revenue'] or 0)
-        paid = float(visits['paid'] or 0)
-        pending = revenue - paid
+        fully_paid = visits.filter(
+            paid_amount__gte=F('charge_amount'),
+            charge_amount__gt=0
+        ).count()
         
-        return {
-            'labels': ['Total Revenue', 'Paid', 'Pending'],
-            'datasets': [{
-                'label': 'Amount (€)',
-                'data': [revenue, paid, pending],
-                'backgroundColor': [
-                    'rgba(81, 86, 190, 0.8)',
-                    'rgba(42, 181, 125, 0.8)',
-                    'rgba(255, 191, 83, 0.8)'
-                ]
-            }]
-        }
-    
-    def _get_visits_chart_data(self, start_date, end_date):
-        """Visits by payment status"""
-        visits = Visit.objects.filter(
-            appointment__start__gte=start_date,
-            appointment__start__lt=end_date
-        )
-        
-        fully_paid = visits.filter(paid_amount__gte=F('charge_amount')).count()
         partially_paid = visits.filter(
             paid_amount__gt=0,
             paid_amount__lt=F('charge_amount')
         ).count()
-        unpaid = visits.filter(paid_amount=0).count()
         
-        return {
+        unpaid = visits.filter(
+            Q(paid_amount=0) | Q(paid_amount__isnull=True)
+        ).count()
+        
+        return JsonResponse({
             'labels': ['Fully Paid', 'Partially Paid', 'Unpaid'],
             'datasets': [{
-                'label': 'Number of Visits',
                 'data': [fully_paid, partially_paid, unpaid],
                 'backgroundColor': [
-                    'rgba(42, 181, 125, 0.8)',
-                    'rgba(255, 191, 83, 0.8)',
-                    'rgba(253, 98, 94, 0.8)'
-                ]
+                    'rgba(75, 192, 192, 0.8)',
+                    'rgba(255, 206, 86, 0.8)',
+                    'rgba(255, 99, 132, 0.8)'
+                ],
+                'borderWidth': 2
             }]
-        }
+        })
     
-    def _get_services_chart_data(self, start_date, end_date):
+    def _get_services_data(self, start_date, end_date):
         """Top services by revenue"""
         services = Visit.objects.filter(
             appointment__start__gte=start_date,
@@ -230,201 +451,185 @@ class AnalyticsDataAPIView(LoginRequiredMixin, TemplateView):
         ).values(
             'appointment__service__name'
         ).annotate(
-            revenue=Sum('charge_amount'),
-            count=Count('id')
-        ).order_by('-revenue')[:10]
+            total_revenue=Sum('paid_amount')
+        ).order_by('-total_revenue')[:10]
         
-        return {
-            'labels': [s['appointment__service__name'] for s in services],
+        labels = [s['appointment__service__name'] for s in services]
+        data = [float(s['total_revenue'] or 0) for s in services]
+        
+        return JsonResponse({
+            'labels': labels,
             'datasets': [{
                 'label': 'Revenue (€)',
-                'data': [float(s['revenue']) for s in services],
-                'backgroundColor': 'rgba(81, 86, 190, 0.8)',
+                'data': data,
+                'backgroundColor': 'rgba(54, 162, 235, 0.8)',
+                'borderColor': 'rgba(54, 162, 235, 1)',
+                'borderWidth': 1
             }]
-        }
+        })
     
-    def _get_staff_performance_data(self, start_date, end_date):
-        """Staff performance - visits and revenue by staff member"""
-        from django.contrib.auth import get_user_model
-        from django.db.models import CharField, Value
-        from django.db.models.functions import Coalesce, Concat
-        
-        User = get_user_model()
-        
-        # Build a flexible name field that works with different User models
-        # Try to handle: name field, first_name/last_name, or just username
+    def _get_staff_data(self, start_date, end_date):
+        """Staff performance"""
         staff_data = Visit.objects.filter(
             appointment__start__gte=start_date,
             appointment__start__lt=end_date
-        ).values('staff__id').annotate(
+        ).values(
+            'staff__name',
+            'staff__username'
+        ).annotate(
             visit_count=Count('id'),
-            revenue=Sum('charge_amount')
-        ).order_by('-visit_count')[:10]
+            total_revenue=Sum('paid_amount')
+        ).order_by('-total_revenue')[:10]
         
-        # Get staff names separately to handle different User model structures
-        labels = []
-        visit_counts = []
-        revenues = []
+        labels = [s['staff__name'] or s['staff__username'] for s in staff_data]
+        visits = [s['visit_count'] for s in staff_data]
+        revenue = [float(s['total_revenue'] or 0) for s in staff_data]
         
-        for s in staff_data:
-            try:
-                staff = User.objects.get(id=s['staff__id'])
-                
-                # Try different methods to get staff name
-                if hasattr(staff, 'name') and staff.name:
-                    name = staff.name
-                elif hasattr(staff, 'get_full_name'):
-                    full_name = staff.get_full_name()
-                    name = full_name if full_name.strip() else str(staff)
-                elif hasattr(staff, 'first_name') and hasattr(staff, 'last_name'):
-                    if staff.first_name and staff.last_name:
-                        name = f"{staff.first_name} {staff.last_name}"
-                    elif staff.first_name:
-                        name = staff.first_name
-                    else:
-                        name = staff.username
-                else:
-                    name = str(staff)
-                
-                labels.append(name)
-                visit_counts.append(s['visit_count'])
-                revenues.append(float(s['revenue']))
-            except User.DoesNotExist:
-                continue
-        
-        return {
+        return JsonResponse({
             'labels': labels,
             'datasets': [
                 {
                     'label': 'Visits',
-                    'data': visit_counts,
-                    'backgroundColor': 'rgba(81, 86, 190, 0.8)',
-                    'yAxisID': 'y',
+                    'data': visits,
+                    'backgroundColor': 'rgba(54, 162, 235, 0.8)',
+                    'borderColor': 'rgba(54, 162, 235, 1)',
+                    'borderWidth': 1,
+                    'yAxisID': 'y'
                 },
                 {
                     'label': 'Revenue (€)',
-                    'data': revenues,
-                    'backgroundColor': 'rgba(42, 181, 125, 0.8)',
-                    'yAxisID': 'y1',
+                    'data': revenue,
+                    'backgroundColor': 'rgba(75, 192, 192, 0.8)',
+                    'borderColor': 'rgba(75, 192, 192, 1)',
+                    'borderWidth': 1,
+                    'yAxisID': 'y1'
                 }
             ]
-        }
+        })
     
-    def _get_room_utilization_data(self, start_date, end_date):
-        """Room utilization - appointments by room"""
+    def _get_rooms_data(self, start_date, end_date):
+        """Room utilization"""
         rooms = Appointment.objects.filter(
             start__gte=start_date,
-            start__lt=end_date
+            start__lt=end_date,
+            room__isnull=False
         ).values(
             'room__name'
         ).annotate(
             count=Count('id')
         ).order_by('-count')
         
-        return {
-            'labels': [r['room__name'] for r in rooms],
+        labels = [r['room__name'] for r in rooms]
+        data = [r['count'] for r in rooms]
+        
+        return JsonResponse({
+            'labels': labels,
             'datasets': [{
-                'label': 'Appointments',
-                'data': [r['count'] for r in rooms],
+                'data': data,
                 'backgroundColor': [
-                    'rgba(81, 86, 190, 0.8)',
-                    'rgba(42, 181, 125, 0.8)',
-                    'rgba(255, 191, 83, 0.8)',
-                    'rgba(253, 98, 94, 0.8)',
-                    'rgba(156, 39, 176, 0.8)',
-                ]
+                    'rgba(255, 99, 132, 0.8)',
+                    'rgba(54, 162, 235, 0.8)',
+                    'rgba(255, 206, 86, 0.8)',
+                    'rgba(75, 192, 192, 0.8)',
+                    'rgba(153, 102, 255, 0.8)',
+                ],
+                'borderWidth': 2
             }]
-        }
+        })
     
-    def _get_machine_utilization_data(self, start_date, end_date):
-        """Machine utilization - visits by machine"""
-        machines = Visit.objects.filter(
-            appointment__start__gte=start_date,
-            appointment__start__lt=end_date,
+    def _get_machines_data(self, start_date, end_date):
+        """Machine utilization"""
+        machines = Appointment.objects.filter(
+            start__gte=start_date,
+            start__lt=end_date,
             machine__isnull=False
         ).values(
             'machine__name'
         ).annotate(
-            count=Count('id'),
-            revenue=Sum('charge_amount')
+            count=Count('id')
         ).order_by('-count')
         
-        return {
-            'labels': [m['machine__name'] for m in machines],
-            'datasets': [
-                {
-                    'label': 'Visits',
-                    'data': [m['count'] for m in machines],
-                    'backgroundColor': 'rgba(81, 86, 190, 0.8)',
-                },
-                {
-                    'label': 'Revenue (€)',
-                    'data': [float(m['revenue']) for m in machines],
-                    'backgroundColor': 'rgba(42, 181, 125, 0.8)',
-                }
-            ]
-        }
-    
-    def _get_daily_revenue_data(self, start_date, end_date):
-        """Daily revenue trend"""
-        daily_data = Visit.objects.filter(
-            appointment__start__gte=start_date,
-            appointment__start__lt=end_date
-        ).annotate(
-            day=TruncDay('appointment__start')
-        ).values('day').annotate(
-            revenue=Sum('charge_amount'),
-            paid=Sum('paid_amount')
-        ).order_by('day')
+        labels = [m['machine__name'] for m in machines]
+        data = [m['count'] for m in machines]
         
-        return {
-            'labels': [d['day'].strftime('%d %b') for d in daily_data],
-            'datasets': [
-                {
-                    'label': 'Revenue',
-                    'data': [float(d['revenue']) for d in daily_data],
-                    'borderColor': 'rgba(81, 86, 190, 1)',
-                    'backgroundColor': 'rgba(81, 86, 190, 0.1)',
-                    'tension': 0.4
-                },
-                {
-                    'label': 'Paid',
-                    'data': [float(d['paid']) for d in daily_data],
-                    'borderColor': 'rgba(42, 181, 125, 1)',
-                    'backgroundColor': 'rgba(42, 181, 125, 0.1)',
-                    'tension': 0.4
-                }
-            ]
-        }
+        return JsonResponse({
+            'labels': labels,
+            'datasets': [{
+                'label': 'Usage Count',
+                'data': data,
+                'backgroundColor': 'rgba(153, 102, 255, 0.8)',
+                'borderColor': 'rgba(153, 102, 255, 1)',
+                'borderWidth': 1
+            }]
+        })
 
+
+# ═══════════════════════════════════════════════════════════════
+# EXCEL EXPORT VIEW - YOUR ORIGINAL ONE
+# ═══════════════════════════════════════════════════════════════
 
 class ExportMonthlyReportView(LoginRequiredMixin, TemplateView):
-    """Export monthly report to Excel"""
+    """Export monthly report to Excel - SUPPORTS DAILY, MONTHLY, AND DATE RANGE EXPORT"""
     
     def get(self, request, *args, **kwargs):
         if not EXCEL_AVAILABLE:
             return HttpResponse("Excel export not available. Install openpyxl.", status=500)
         
+        # Check export type based on parameters
+        selected_date_str = request.GET.get('date')
         selected_month = request.GET.get('month')
-        if selected_month:
-            try:
-                selected_date = datetime.strptime(selected_month, '%Y-%m')
-            except ValueError:
-                selected_date = timezone.now()
-        else:
-            selected_date = timezone.now()
+        start_date_str = request.GET.get('start_date')
+        end_date_str = request.GET.get('end_date')
         
-        start_date = selected_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        if start_date.month == 12:
-            end_date = start_date.replace(year=start_date.year + 1, month=1)
+        if start_date_str and end_date_str:
+            # DATE RANGE EXPORT
+            try:
+                start_date_only = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+                end_date_only = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                return HttpResponse("Invalid date format", status=400)
+            
+            start_date = timezone.make_aware(datetime.combine(start_date_only, datetime.min.time()))
+            end_date = timezone.make_aware(datetime.combine(end_date_only, datetime.max.time()))
+            filename_date = f"{start_date_only.strftime('%Y_%m_%d')}_to_{end_date_only.strftime('%Y_%m_%d')}"
+            report_title = f"{start_date_only.strftime('%d %b %Y')} to {end_date_only.strftime('%d %b %Y')}"
+            
+        elif selected_date_str:
+            # DAILY EXPORT
+            try:
+                selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                selected_date = timezone.now().date()
+            
+            start_date = timezone.make_aware(datetime.combine(selected_date, datetime.min.time()))
+            end_date = timezone.make_aware(datetime.combine(selected_date, datetime.max.time()))
+            filename_date = selected_date.strftime('%Y_%m_%d')
+            report_title = selected_date.strftime('%d %B %Y')
+            
         else:
-            end_date = start_date.replace(month=start_date.month + 1)
+            # MONTHLY EXPORT (original logic)
+            if selected_month:
+                try:
+                    selected_date = datetime.strptime(selected_month, '%Y-%m')
+                except ValueError:
+                    selected_date = timezone.now()
+            else:
+                selected_date = timezone.now()
+            
+            start_date = selected_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            if start_date.month == 12:
+                end_date = start_date.replace(year=start_date.year + 1, month=1)
+            else:
+                end_date = start_date.replace(month=start_date.month + 1)
+            
+            filename_date = selected_date.strftime('%Y_%m')
+            report_title = selected_date.strftime('%B %Y')
         
         # Create workbook
         wb = Workbook()
         
-        # Create existing sheets
-        self._create_summary_sheet(wb, start_date, end_date)
+        # Create existing sheets (pass report_title for proper labeling)
+        self._create_summary_sheet(wb, start_date, end_date, report_title)
         self._create_visits_sheet(wb, start_date, end_date)
         self._create_services_sheet(wb, start_date, end_date)
         self._create_staff_sheet(wb, start_date, end_date)
@@ -444,13 +649,13 @@ class ExportMonthlyReportView(LoginRequiredMixin, TemplateView):
         response = HttpResponse(
             content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
-        filename = f"Monthly_Report_{selected_date.strftime('%Y_%m')}.xlsx"
+        filename = f"Report_{filename_date}.xlsx"
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
         
         wb.save(response)
         return response
     
-    def _create_summary_sheet(self, wb, start_date, end_date):
+    def _create_summary_sheet(self, wb, start_date, end_date, report_title):
         """Create summary statistics sheet"""
         ws = wb.active
         ws.title = "Summary"
@@ -460,7 +665,7 @@ class ExportMonthlyReportView(LoginRequiredMixin, TemplateView):
         header_font = Font(bold=True, color="FFFFFF", size=12)
         
         # Title
-        ws['A1'] = f"Monthly Report - {start_date.strftime('%B %Y')}"
+        ws['A1'] = f"Report - {report_title}"
         ws['A1'].font = Font(bold=True, size=16)
         ws.merge_cells('A1:B1')
         

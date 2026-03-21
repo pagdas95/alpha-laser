@@ -47,7 +47,7 @@
 
     .fc .fc-timegrid-slot {
         border-bottom: 0px;
-        height: 3.5em !important;
+        height: 5.5em !important;  /* ✨ INCREASED: Taller boxes for 15-min slots */
     }
     
     /* Enhanced calendar event styling */
@@ -260,6 +260,16 @@
                                         </div>
                                     </div>
                                 </div>
+                                
+                                <!-- ✨ NEW: Complete & Go to Visit Button -->
+                                <div class="row mt-3">
+                                    <div class="col-12">
+                                        <button type="button" class="btn btn-success w-100" id="btn-complete-and-visit">
+                                            <i class="bx bx-check-double"></i> Ολοκληρώθηκε και Πήγαινε στο Visit
+                                        </button>
+                                    </div>
+                                </div>
+                                
                                 <div class="row mt-2">
                                     <div class="col-6">
                                         <button type="button" class="btn btn-danger" id="btn-delete-event">
@@ -428,7 +438,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 height: 800,
                 slotMinTime: '07:00:00',
                 slotMaxTime: '22:00:00',
-                slotDuration: '00:30:00',
+                slotDuration: '00:15:00',  // ✨ CHANGED: 15-minute slots instead of 30-minute
                 scrollTime: scrollTime,  // Auto-scroll to current time
                 scrollTimeReset: false,  // Don't reset scroll position
                 nowIndicator: true,  // Show red line at current time
@@ -440,14 +450,11 @@ document.addEventListener("DOMContentLoaded", function() {
                     
                     let html = `
                         <div class="fc-event-main-frame" style="padding: 2px 4px;">
-                            <div class="fc-event-time" style="font-weight: bold; font-size: 0.75rem;">
-                                ${arg.timeText}
-                            </div>
                             <div class="fc-event-title-container">
-                                <div class="fc-event-title" style="font-size: 0.8rem; font-weight: 600;">
+                                <div class="fc-event-title" style="font-size: 0.65rem; font-weight: 600;">
                                     ${props.clientName || 'N/A'}
                                 </div>
-                                <div style="font-size: 0.7rem; color: rgba(255,255,255,0.9); margin-top: 2px;">
+                                <div style="font-size: 0.6rem; color: rgba(255,255,255,0.9); margin-top: 1px;">
                                     ${props.serviceName || 'N/A'}
                                 </div>
                             </div>
@@ -674,6 +681,54 @@ document.addEventListener("DOMContentLoaded", function() {
                 alert('Σφάλμα κατά τη διαγραφή');
             });
         }
+    });
+    
+    // ✨ NEW: Complete & Go to Visit
+    document.getElementById("btn-complete-and-visit")?.addEventListener("click", function() {
+        const appointmentId = document.getElementById('eventid').value;
+        
+        if (!appointmentId || !currentEvent) {
+            console.error('No appointment selected');
+            return;
+        }
+        
+        console.log('🔄 Marking appointment as completed and redirecting to visit...');
+        
+        // First, mark appointment as completed
+        fetch(`/appointments/api/appointments/${appointmentId}/update/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify({
+                status: 'completed'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log('✅ Appointment marked as completed');
+                
+                // Get visit ID from the response or current event
+                const visitId = data.visit_id || currentEvent.extendedProps.visitId;
+                
+                if (visitId) {
+                    // Redirect to visit edit page
+                    window.location.href = `/visits/${visitId}/edit/`;
+                } else {
+                    // If no visit ID, try to get it from the appointment detail page
+                    // Or redirect to create a new visit for this appointment
+                    window.location.href = `/appointments/${appointmentId}/`;
+                }
+            } else {
+                alert('Σφάλμα: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('❌ Error:', error);
+            alert('Σφάλμα κατά την ενημέρωση');
+        });
     });
     
     // Status change buttons

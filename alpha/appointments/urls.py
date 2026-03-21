@@ -45,7 +45,7 @@ urlpatterns = [
     path('api/service/<int:service_id>/', views.get_service_details, name='service_details'),
 
     path('api/check-availability/', views.check_room_availability, name='check_availability'),
-
+    path('api/check-staff-working-day/', views.check_staff_working_day, name='api-check-staff-working-day'),
         # Staff availability checking
     path('api/check-staff-availability/', views.check_staff_availability, name='check-staff-availability'),
     path('api/get-available-staff/', views.get_available_staff, name='get-available-staff'),

@@ -162,6 +162,152 @@
                     
                     <hr class="my-4">
                     
+                    <!-- ✨✨✨ NEW: WORKING SCHEDULE ✨✨✨ -->
+                    <h6 class="mb-3 text-primary">
+                        <i class="bx bx-time me-2"></i>{% trans "Working Schedule" %} 
+                        <small class="text-muted">({% trans "for Part-Time Staff" %})</small>
+                    </h6>
+                    
+                    <div class="alert alert-info mb-3">
+                        <i class="bx bx-info-circle me-2"></i>
+                        {% trans "Set which days and hours this staff member works. Useful for part-time employees." %}
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th width="15%">{% trans "Day" %}</th>
+                                    <th width="15%" class="text-center">{% trans "Working" %}</th>
+                                    <th width="35%">{% trans "Start Time" %}</th>
+                                    <th width="35%">{% trans "End Time" %}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Monday -->
+                                <tr>
+                                    <td><strong>{% trans "Monday" %}</strong></td>
+                                    <td class="text-center">
+                                        <div class="form-check d-inline-block">
+                                            {{ form.monday_working }}
+                                        </div>
+                                    </td>
+                                    <td>{{ form.monday_start }}</td>
+                                    <td>{{ form.monday_end }}</td>
+                                </tr>
+                                
+                                <!-- Tuesday -->
+                                <tr>
+                                    <td><strong>{% trans "Tuesday" %}</strong></td>
+                                    <td class="text-center">
+                                        <div class="form-check d-inline-block">
+                                            {{ form.tuesday_working }}
+                                        </div>
+                                    </td>
+                                    <td>{{ form.tuesday_start }}</td>
+                                    <td>{{ form.tuesday_end }}</td>
+                                </tr>
+                                
+                                <!-- Wednesday -->
+                                <tr>
+                                    <td><strong>{% trans "Wednesday" %}</strong></td>
+                                    <td class="text-center">
+                                        <div class="form-check d-inline-block">
+                                            {{ form.wednesday_working }}
+                                        </div>
+                                    </td>
+                                    <td>{{ form.wednesday_start }}</td>
+                                    <td>{{ form.wednesday_end }}</td>
+                                </tr>
+                                
+                                <!-- Thursday -->
+                                <tr>
+                                    <td><strong>{% trans "Thursday" %}</strong></td>
+                                    <td class="text-center">
+                                        <div class="form-check d-inline-block">
+                                            {{ form.thursday_working }}
+                                        </div>
+                                    </td>
+                                    <td>{{ form.thursday_start }}</td>
+                                    <td>{{ form.thursday_end }}</td>
+                                </tr>
+                                
+                                <!-- Friday -->
+                                <tr>
+                                    <td><strong>{% trans "Friday" %}</strong></td>
+                                    <td class="text-center">
+                                        <div class="form-check d-inline-block">
+                                            {{ form.friday_working }}
+                                        </div>
+                                    </td>
+                                    <td>{{ form.friday_start }}</td>
+                                    <td>{{ form.friday_end }}</td>
+                                </tr>
+                                
+                                <!-- Saturday -->
+                                <tr>
+                                    <td><strong>{% trans "Saturday" %}</strong></td>
+                                    <td class="text-center">
+                                        <div class="form-check d-inline-block">
+                                            {{ form.saturday_working }}
+                                        </div>
+                                    </td>
+                                    <td>{{ form.saturday_start }}</td>
+                                    <td>{{ form.saturday_end }}</td>
+                                </tr>
+                                
+                                <!-- Sunday -->
+                                <tr>
+                                    <td><strong>{% trans "Sunday" %}</strong></td>
+                                    <td class="text-center">
+                                        <div class="form-check d-inline-block">
+                                            {{ form.sunday_working }}
+                                        </div>
+                                    </td>
+                                    <td>{{ form.sunday_start }}</td>
+                                    <td>{{ form.sunday_end }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="alert alert-secondary">
+                        <i class="bx bx-calculator me-2"></i>
+                        <strong>{% trans "Quick Fill:" %}</strong>
+                        <button type="button" class="btn btn-sm btn-outline-primary ms-2" onclick="setAllDays('09:00', '17:00')">
+                            {% trans "Mon-Fri 9-5" %}
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-primary ms-1" onclick="setAllDays('08:00', '16:00')">
+                            {% trans "Mon-Fri 8-4" %}
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary ms-1" onclick="clearAllDays()">
+                            {% trans "Clear All" %}
+                        </button>
+                    </div>
+                    
+                    <script>
+                    function setAllDays(start, end) {
+                        const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+                        days.forEach(day => {
+                            document.getElementById(`id_${day}_working`).checked = true;
+                            document.getElementById(`id_${day}_start`).value = start;
+                            document.getElementById(`id_${day}_end`).value = end;
+                        });
+                        // Clear weekend
+                        document.getElementById('id_saturday_working').checked = false;
+                        document.getElementById('id_sunday_working').checked = false;
+                    }
+                    
+                    function clearAllDays() {
+                        const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+                        days.forEach(day => {
+                            document.getElementById(`id_${day}_working`).checked = false;
+                        });
+                    }
+                    </script>
+                    
+                    <hr class="my-4">
+                    
                     <!-- Professional Details -->
                     <h6 class="mb-3 text-primary">
                         <i class="bx bx-book-alt me-2"></i>{% trans "Professional Details" %}

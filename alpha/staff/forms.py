@@ -1,4 +1,4 @@
-# alpha/staff/forms.py
+# alpha/staff/forms.py - COMPLETE WITH WORKING SCHEDULE
 from django import forms
 from .models import DayOff, StaffProfile
 from alpha.users.models import User
@@ -65,7 +65,128 @@ class DayOffForm(forms.ModelForm):
 
 
 class StaffProfileForm(forms.ModelForm):
-    """Form for editing staff profile"""
+    """Form for editing staff profile - WITH WORKING SCHEDULE"""
+    
+    # ✨✨✨ WORKING SCHEDULE FIELDS - 7 DAYS × 3 FIELDS = 21 FIELDS ✨✨✨
+    
+    # Monday
+    monday_working = forms.BooleanField(
+        required=False, 
+        label='Monday',
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+    )
+    monday_start = forms.TimeField(
+        required=False, 
+        initial='09:00',
+        widget=forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'})
+    )
+    monday_end = forms.TimeField(
+        required=False, 
+        initial='17:00',
+        widget=forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'})
+    )
+    
+    # Tuesday
+    tuesday_working = forms.BooleanField(
+        required=False, 
+        label='Tuesday',
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+    )
+    tuesday_start = forms.TimeField(
+        required=False, 
+        initial='09:00',
+        widget=forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'})
+    )
+    tuesday_end = forms.TimeField(
+        required=False, 
+        initial='17:00',
+        widget=forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'})
+    )
+    
+    # Wednesday
+    wednesday_working = forms.BooleanField(
+        required=False, 
+        label='Wednesday',
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+    )
+    wednesday_start = forms.TimeField(
+        required=False, 
+        initial='09:00',
+        widget=forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'})
+    )
+    wednesday_end = forms.TimeField(
+        required=False, 
+        initial='17:00',
+        widget=forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'})
+    )
+    
+    # Thursday
+    thursday_working = forms.BooleanField(
+        required=False, 
+        label='Thursday',
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+    )
+    thursday_start = forms.TimeField(
+        required=False, 
+        initial='09:00',
+        widget=forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'})
+    )
+    thursday_end = forms.TimeField(
+        required=False, 
+        initial='17:00',
+        widget=forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'})
+    )
+    
+    # Friday
+    friday_working = forms.BooleanField(
+        required=False, 
+        label='Friday',
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+    )
+    friday_start = forms.TimeField(
+        required=False, 
+        initial='09:00',
+        widget=forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'})
+    )
+    friday_end = forms.TimeField(
+        required=False, 
+        initial='17:00',
+        widget=forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'})
+    )
+    
+    # Saturday
+    saturday_working = forms.BooleanField(
+        required=False, 
+        label='Saturday',
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+    )
+    saturday_start = forms.TimeField(
+        required=False, 
+        initial='09:00',
+        widget=forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'})
+    )
+    saturday_end = forms.TimeField(
+        required=False, 
+        initial='17:00',
+        widget=forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'})
+    )
+    
+    # Sunday
+    sunday_working = forms.BooleanField(
+        required=False, 
+        label='Sunday',
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+    )
+    sunday_start = forms.TimeField(
+        required=False, 
+        initial='09:00',
+        widget=forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'})
+    )
+    sunday_end = forms.TimeField(
+        required=False, 
+        initial='17:00',
+        widget=forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'})
+    )
     
     class Meta:
         model = StaffProfile
@@ -116,3 +237,47 @@ class StaffProfileForm(forms.ModelForm):
             'sick_leave_allowance': 'Sick leave days allowed per year',
             'other_balance': 'Current balance of compensation/bonus days',
         }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # ✨ Load existing working schedule into form fields
+        if self.instance and self.instance.pk:
+            schedule = self.instance.get_working_schedule()
+            
+            # Load schedule for each day
+            for day in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']:
+                day_data = schedule.get(day, {})
+                
+                # Set checkbox value
+                self.initial[f'{day}_working'] = day_data.get('working', False)
+                
+                # Set time values
+                self.initial[f'{day}_start'] = day_data.get('start', '09:00')
+                self.initial[f'{day}_end'] = day_data.get('end', '17:00')
+    
+    def save(self, commit=True):
+        """Save the form and update working_schedule JSON field"""
+        instance = super().save(commit=False)
+        
+        # ✨ Build working_schedule dictionary from form data
+        working_schedule = {}
+        
+        for day in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']:
+            working = self.cleaned_data.get(f'{day}_working', False)
+            start = self.cleaned_data.get(f'{day}_start')
+            end = self.cleaned_data.get(f'{day}_end')
+            
+            working_schedule[day] = {
+                'working': working,
+                'start': start.strftime('%H:%M') if start else '09:00',
+                'end': end.strftime('%H:%M') if end else '17:00',
+            }
+        
+        # Save schedule to instance
+        instance.working_schedule = working_schedule
+        
+        if commit:
+            instance.save()
+        
+        return instance

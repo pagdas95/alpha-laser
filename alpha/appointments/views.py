@@ -323,6 +323,7 @@ def get_room_appointments_json(request):
 def update_appointment_ajax(request, appointment_id):
     """
     Update appointment via AJAX from calendar (drag & drop or status change)
+    ✨ NOW RETURNS visit_id when marking as completed
     """
     try:
         appointment = Appointment.objects.get(id=appointment_id)
@@ -340,12 +341,48 @@ def update_appointment_ajax(request, appointment_id):
         if 'room_id' in data:
             appointment.room_id = data['room_id']
         
+        # ✨ Track visit_id to return
+        visit_id = None
+        
         # Update status if changed
         if 'status' in data:
             new_status = data['status']
             valid_statuses = [choice[0] for choice in Appointment.STATUS_CHOICES]
             if new_status in valid_statuses:
+                old_status = appointment.status
                 appointment.status = new_status
+                
+                # ✨✨✨ Get or create Visit when marking as completed ✨✨✨
+                if new_status == 'completed':
+                    try:
+                        from alpha.visits.models import Visit
+                        
+                        # Try to find existing visit
+                        visit = Visit.objects.filter(appointment=appointment).first()
+                        
+                        if visit:
+                            visit_id = visit.id
+                            print(f"✅ Found existing visit {visit_id} for appointment {appointment_id}")
+                        else:
+                            # Create new visit for this appointment
+                            visit = Visit.objects.create(
+                                appointment=appointment,
+                                staff=appointment.staff,
+                                machine=appointment.machine if appointment.machine else None,
+                                # Default values - user will fill in details
+                                
+                                area='',
+                                charge_amount=appointment.price_override if appointment.price_override else appointment.service.default_price, 
+                                paid_amount=0,
+                            )
+                            visit_id = visit.id
+                            print(f"✅ Created new visit {visit_id} for appointment {appointment_id}")
+                    
+                    except Exception as e:
+                        print(f"⚠️ Error creating/getting visit: {e}")
+                        import traceback
+                        traceback.print_exc()
+                        # Continue anyway - at least status is updated
             else:
                 return JsonResponse({
                     'success': False,
@@ -354,9 +391,11 @@ def update_appointment_ajax(request, appointment_id):
         
         appointment.save()
         
+        # ✨✨✨ Return visit_id in response ✨✨✨
         return JsonResponse({
             'success': True,
-            'message': 'Appointment updated successfully'
+            'message': 'Appointment updated successfully',
+            'visit_id': visit_id  # ✨ THIS IS THE KEY - FRONTEND NEEDS THIS!
         })
         
     except Appointment.DoesNotExist:
@@ -635,3 +674,114 @@ def get_available_staff(request):
             'success': False,
             'message': str(e)
         }, status=400)
+
+@require_http_methods(["GET"])
+def check_staff_working_day(request):
+    """
+    Check if a staff member is working on a specific day based on their working schedule
+    
+    Parameters:
+        - staff_id: ID of the staff member
+        - date: Date in YYYY-MM-DD format
+    
+    Returns:
+        - working: True/False
+        - message: Info message
+        - working_hours: {start, end} if working
+        - day_name: Name of the day
+    """
+    try:
+        staff_id = request.GET.get('staff_id')
+        date_str = request.GET.get('date')
+        
+        if not all([staff_id, date_str]):
+            return JsonResponse({
+                'success': False,
+                'message': 'Missing required parameters (staff_id, date)'
+            }, status=400)
+        
+        # Parse the date
+        try:
+            from django.utils.dateparse import parse_date
+            date_obj = parse_date(date_str)
+            if not date_obj:
+                raise ValueError("Invalid date format")
+        except ValueError as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Invalid date format. Use YYYY-MM-DD: {str(e)}'
+            }, status=400)
+        
+        # Get staff member
+        from alpha.users.models import User
+        try:
+            staff = User.objects.get(id=staff_id)
+        except User.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'message': 'Staff member not found'
+            }, status=404)
+        
+        # Get staff profile with working schedule
+        try:
+            staff_profile = staff.staff_profile
+        except Exception:
+            # No profile or no working schedule - assume full-time (always working)
+            return JsonResponse({
+                'success': True,
+                'working': True,
+                'message': f'{staff.name or staff.username} is available (no schedule restrictions)',
+                'day_name': date_obj.strftime('%A'),
+                'staff_type': 'full_time'
+            })
+        
+        # Get day name (monday, tuesday, etc.)
+        day_name = date_obj.strftime('%A').lower()
+        
+        # Check if part-time and has schedule
+        if staff_profile.employment_type == 'part_time':
+            # Get working schedule
+            schedule = staff_profile.get_working_schedule()
+            day_data = schedule.get(day_name, {})
+            
+            is_working = day_data.get('working', False)
+            
+            if is_working:
+                working_hours = {
+                    'start': day_data.get('start', '09:00'),
+                    'end': day_data.get('end', '17:00')
+                }
+                return JsonResponse({
+                    'success': True,
+                    'working': True,
+                    'message': f'✓ {staff.name or staff.username} is working on {day_name.capitalize()}',
+                    'working_hours': working_hours,
+                    'day_name': day_name.capitalize(),
+                    'staff_type': 'part_time'
+                })
+            else:
+                return JsonResponse({
+                    'success': True,
+                    'working': False,
+                    'message': f'⚠️ {staff.name or staff.username} is NOT working on {day_name.capitalize()}s',
+                    'day_name': day_name.capitalize(),
+                    'staff_type': 'part_time',
+                    'working_days': staff_profile.get_working_days()
+                })
+        else:
+            # Full-time or contract - assume always working
+            return JsonResponse({
+                'success': True,
+                'working': True,
+                'message': f'✓ {staff.name or staff.username} is available',
+                'day_name': day_name.capitalize(),
+                'staff_type': staff_profile.employment_type
+            })
+            
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({
+            'success': False,
+            'message': f'Error: {str(e)}'
+        }, status=500)

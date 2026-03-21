@@ -1,4 +1,5 @@
 import logging
+import time  # ✅ NEW: For retry delays
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 
@@ -9,6 +10,7 @@ from django.utils.html import strip_tags
 from django.utils import timezone
 
 from twilio.rest import Client as TwilioClient
+from twilio.http.http_client import TwilioHttpClient  # ✅ NEW: For timeout
 from twilio.base.exceptions import TwilioRestException
 
 from .models import NotificationLog
@@ -103,6 +105,12 @@ class NotificationService:
         """
         Send SMS via Twilio
         
+        ✅ NEW FEATURES:
+        - 30-second timeout (prevents hanging)
+        - 3 retry attempts with exponential backoff (2s, 4s, 8s)
+        - AlphaLaser sender name support (for paid accounts)
+        - Better error logging
+        
         Args:
             phone: Phone number to send to
             message: Message body
@@ -131,57 +139,107 @@ class NotificationService:
             logger.error(error_msg)
             return {'success': False, 'error': error_msg, 'log_id': log.id}
         
-        if not hasattr(settings, 'TWILIO_PHONE_NUMBER'):
-            error_msg = "TWILIO_PHONE_NUMBER not configured"
+        if not hasattr(settings, 'TWILIO_PHONE_NUMBER') and not hasattr(settings, 'TWILIO_SENDER_NAME'):
+            error_msg = "TWILIO_PHONE_NUMBER or TWILIO_SENDER_NAME not configured"
             log.status = 'failed'
             log.error_message = error_msg
             log.save()
             logger.error(error_msg)
             return {'success': False, 'error': error_msg, 'log_id': log.id}
         
-        try:
-            # Format phone number (ensure it has + and country code)
-            if not phone.startswith('+'):
-                # Assuming Cyprus (+357) - adjust as needed
-                phone = f"+357{phone.lstrip('0')}"
-            
-            # Send via Twilio
-            message_obj = self.twilio_client.messages.create(
-                body=message,
-                from_=settings.TWILIO_PHONE_NUMBER,
-                to=phone
-            )
-            
-            # Update log
-            log.status = 'sent'
-            log.sent_at = timezone.now()
-            log.external_id = message_obj.sid
-            log.save()
-            
-            logger.info(f"SMS sent successfully to {phone}. SID: {message_obj.sid}")
-            
-            return {
-                'success': True,
-                'message_sid': message_obj.sid,
-                'log_id': log.id,
-                'status': message_obj.status
-            }
-            
-        except TwilioRestException as e:
-            error_msg = f"Twilio error: {e.msg}"
-            log.status = 'failed'
-            log.error_message = error_msg
-            log.save()
-            logger.error(f"Failed to send SMS to {phone}: {error_msg}")
-            return {'success': False, 'error': error_msg, 'log_id': log.id}
-            
-        except Exception as e:
-            error_msg = f"Unexpected error: {str(e)}"
-            log.status = 'failed'
-            log.error_message = error_msg
-            log.save()
-            logger.error(f"Failed to send SMS to {phone}: {error_msg}")
-            return {'success': False, 'error': error_msg, 'log_id': log.id}
+        # ✅ NEW: Retry configuration
+        max_retries = 3
+        retry_delay = 2  # seconds
+        
+        # ✅ NEW: Determine sender (AlphaLaser or phone number)
+        # Priority: TWILIO_SENDER_NAME (for alphanumeric) > TWILIO_PHONE_NUMBER
+        if hasattr(settings, 'TWILIO_SENDER_NAME') and settings.TWILIO_SENDER_NAME:
+            from_identifier = settings.TWILIO_SENDER_NAME  # "AlphaLaser"
+            logger.info(f"Using alphanumeric sender: {from_identifier}")
+        else:
+            from_identifier = settings.TWILIO_PHONE_NUMBER  # "+12766001098"
+            logger.info(f"Using phone number sender: {from_identifier}")
+        
+        # ✅ NEW: Retry loop
+        for attempt in range(max_retries):
+            try:
+                logger.info(f"SMS attempt {attempt + 1}/{max_retries} to {phone}")
+                
+                # Format phone number (ensure it has + and country code)
+                if not phone.startswith('+'):
+                    # Assuming Cyprus (+357) - adjust as needed
+                    phone = f"+357{phone.lstrip('0')}"
+                
+                # ✅ NEW: Create HTTP client with 30-second timeout
+                http_client = TwilioHttpClient(timeout=30)
+                
+                # ✅ NEW: Create Twilio client with custom HTTP client for this request
+                client_with_timeout = TwilioClient(
+                    settings.TWILIO_ACCOUNT_SID,
+                    settings.TWILIO_AUTH_TOKEN,
+                    http_client=http_client
+                )
+                
+                # Send via Twilio with AlphaLaser or phone number
+                message_obj = client_with_timeout.messages.create(
+                    body=message,
+                    from_=from_identifier,  # ✅ NEW: Will be "AlphaLaser" or phone number
+                    to=phone
+                )
+                
+                # Update log - SUCCESS!
+                log.status = 'sent'
+                log.sent_at = timezone.now()
+                log.external_id = message_obj.sid
+                log.save()
+                
+                logger.info(f"✅ SMS sent successfully to {phone} on attempt {attempt + 1}. SID: {message_obj.sid}, From: {from_identifier}")
+                
+                return {
+                    'success': True,
+                    'message_sid': message_obj.sid,
+                    'log_id': log.id,
+                    'status': message_obj.status
+                }
+                
+            except TwilioRestException as e:
+                error_msg = f"Twilio error: {e.msg}"
+                logger.warning(f"⚠️  SMS attempt {attempt + 1}/{max_retries} failed to {phone}: {error_msg}")
+                
+                # If this is not the last attempt, wait and retry
+                if attempt < max_retries - 1:
+                    # Exponential backoff: 2s, 4s, 8s
+                    wait_time = retry_delay * (2 ** attempt)
+                    logger.info(f"Retrying in {wait_time} seconds...")
+                    time.sleep(wait_time)
+                else:
+                    # Final attempt failed
+                    log.status = 'failed'
+                    log.error_message = error_msg
+                    log.save()
+                    logger.error(f"❌ Failed to send SMS to {phone} after {max_retries} attempts: {error_msg}")
+                    return {'success': False, 'error': error_msg, 'log_id': log.id}
+                
+            except Exception as e:
+                error_msg = f"Unexpected error: {str(e)}"
+                logger.warning(f"⚠️  SMS attempt {attempt + 1}/{max_retries} failed to {phone}: {error_msg}")
+                
+                # If this is not the last attempt, wait and retry
+                if attempt < max_retries - 1:
+                    # Exponential backoff: 2s, 4s, 8s
+                    wait_time = retry_delay * (2 ** attempt)
+                    logger.info(f"Retrying in {wait_time} seconds...")
+                    time.sleep(wait_time)
+                else:
+                    # Final attempt failed
+                    log.status = 'failed'
+                    log.error_message = error_msg
+                    log.save()
+                    logger.error(f"❌ Failed to send SMS to {phone} after {max_retries} attempts: {error_msg}")
+                    return {'success': False, 'error': error_msg, 'log_id': log.id}
+        
+        # Should never reach here, but just in case
+        return {'success': False, 'error': 'Unknown error after retries', 'log_id': log.id}
     
     def send_email(
         self,

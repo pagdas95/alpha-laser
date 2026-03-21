@@ -329,10 +329,10 @@ CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#task-time-limit
 # TODO: set to whatever value is adequate in your circumstances
-CELERY_TASK_TIME_LIMIT = 5 * 60
+CELERY_TASK_TIME_LIMIT = 10 * 60
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#task-soft-time-limit
 # TODO: set to whatever value is adequate in your circumstances
-CELERY_TASK_SOFT_TIME_LIMIT = 60
+CELERY_TASK_SOFT_TIME_LIMIT = 120
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#beat-scheduler
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#worker-send-task-events
@@ -414,10 +414,13 @@ CELERY_BEAT_SCHEDULE = {
     },
 }
 
+# Twilio Settings - Read from environment
 TWILIO_ACCOUNT_SID = env("TWILIO_ACCOUNT_SID", default="")
 TWILIO_AUTH_TOKEN = env("TWILIO_AUTH_TOKEN", default="")
 TWILIO_PHONE_NUMBER = env("TWILIO_PHONE_NUMBER", default="")
+TWILIO_SENDER_NAME = env("TWILIO_SENDER_NAME", default="")
 
-NOTIFICATIONS_ENABLED = True
-SEND_SMS_ON_BOOKING = True
-SEND_EMAIL_ON_BOOKING = True
+# Notification Flags - Read from environment ✅ FIXED
+NOTIFICATIONS_ENABLED = env.bool("NOTIFICATIONS_ENABLED", default=True)
+SEND_SMS_ON_BOOKING = env.bool("SEND_SMS_ON_BOOKING", default=True)
+SEND_EMAIL_ON_BOOKING = env.bool("SEND_EMAIL_ON_BOOKING", default=True)

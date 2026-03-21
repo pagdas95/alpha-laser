@@ -245,6 +245,240 @@
     </div>
 </div>
 
+<!-- ✨✨✨ NEW: WORKING SCHEDULE SECTION ✨✨✨ -->
+{% if staff_profile.employment_type == 'part_time' or staff_profile.get_working_days %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bx bx-time me-2"></i>{% trans "Working Schedule" %}
+                    {% if staff_profile.employment_type == 'part_time' %}
+                        <span class="badge badge-soft-info ms-2">{% trans "Part-Time" %}</span>
+                    {% endif %}
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-nowrap table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>{% trans "Day" %}</th>
+                                <th>{% trans "Status" %}</th>
+                                <th>{% trans "Working Hours" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% with schedule=staff_profile.get_working_schedule %}
+                                <tr>
+                                    <td><strong>{% trans "Monday" %}</strong></td>
+                                    <td>
+                                        {% if schedule.monday.working %}
+                                            <span class="badge badge-soft-success">
+                                                <i class="bx bx-check"></i> {% trans "Working" %}
+                                            </span>
+                                        {% else %}
+                                            <span class="badge badge-soft-secondary">
+                                                <i class="bx bx-x"></i> {% trans "Off" %}
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if schedule.monday.working %}
+                                            <span class="text-primary">
+                                                <i class="bx bx-time-five me-1"></i>
+                                                {{ schedule.monday.start }} - {{ schedule.monday.end }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                
+                                <tr>
+                                    <td><strong>{% trans "Tuesday" %}</strong></td>
+                                    <td>
+                                        {% if schedule.tuesday.working %}
+                                            <span class="badge badge-soft-success">
+                                                <i class="bx bx-check"></i> {% trans "Working" %}
+                                            </span>
+                                        {% else %}
+                                            <span class="badge badge-soft-secondary">
+                                                <i class="bx bx-x"></i> {% trans "Off" %}
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if schedule.tuesday.working %}
+                                            <span class="text-primary">
+                                                <i class="bx bx-time-five me-1"></i>
+                                                {{ schedule.tuesday.start }} - {{ schedule.tuesday.end }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                
+                                <tr>
+                                    <td><strong>{% trans "Wednesday" %}</strong></td>
+                                    <td>
+                                        {% if schedule.wednesday.working %}
+                                            <span class="badge badge-soft-success">
+                                                <i class="bx bx-check"></i> {% trans "Working" %}
+                                            </span>
+                                        {% else %}
+                                            <span class="badge badge-soft-secondary">
+                                                <i class="bx bx-x"></i> {% trans "Off" %}
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if schedule.wednesday.working %}
+                                            <span class="text-primary">
+                                                <i class="bx bx-time-five me-1"></i>
+                                                {{ schedule.wednesday.start }} - {{ schedule.wednesday.end }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                
+                                <tr>
+                                    <td><strong>{% trans "Thursday" %}</strong></td>
+                                    <td>
+                                        {% if schedule.thursday.working %}
+                                            <span class="badge badge-soft-success">
+                                                <i class="bx bx-check"></i> {% trans "Working" %}
+                                            </span>
+                                        {% else %}
+                                            <span class="badge badge-soft-secondary">
+                                                <i class="bx bx-x"></i> {% trans "Off" %}
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if schedule.thursday.working %}
+                                            <span class="text-primary">
+                                                <i class="bx bx-time-five me-1"></i>
+                                                {{ schedule.thursday.start }} - {{ schedule.thursday.end }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                
+                                <tr>
+                                    <td><strong>{% trans "Friday" %}</strong></td>
+                                    <td>
+                                        {% if schedule.friday.working %}
+                                            <span class="badge badge-soft-success">
+                                                <i class="bx bx-check"></i> {% trans "Working" %}
+                                            </span>
+                                        {% else %}
+                                            <span class="badge badge-soft-secondary">
+                                                <i class="bx bx-x"></i> {% trans "Off" %}
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if schedule.friday.working %}
+                                            <span class="text-primary">
+                                                <i class="bx bx-time-five me-1"></i>
+                                                {{ schedule.friday.start }} - {{ schedule.friday.end }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                
+                                <tr>
+                                    <td><strong>{% trans "Saturday" %}</strong></td>
+                                    <td>
+                                        {% if schedule.saturday.working %}
+                                            <span class="badge badge-soft-success">
+                                                <i class="bx bx-check"></i> {% trans "Working" %}
+                                            </span>
+                                        {% else %}
+                                            <span class="badge badge-soft-secondary">
+                                                <i class="bx bx-x"></i> {% trans "Off" %}
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if schedule.saturday.working %}
+                                            <span class="text-primary">
+                                                <i class="bx bx-time-five me-1"></i>
+                                                {{ schedule.saturday.start }} - {{ schedule.saturday.end }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                
+                                <tr>
+                                    <td><strong>{% trans "Sunday" %}</strong></td>
+                                    <td>
+                                        {% if schedule.sunday.working %}
+                                            <span class="badge badge-soft-success">
+                                                <i class="bx bx-check"></i> {% trans "Working" %}
+                                            </span>
+                                        {% else %}
+                                            <span class="badge badge-soft-secondary">
+                                                <i class="bx bx-x"></i> {% trans "Off" %}
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if schedule.sunday.working %}
+                                            <span class="text-primary">
+                                                <i class="bx bx-time-five me-1"></i>
+                                                {{ schedule.sunday.start }} - {{ schedule.sunday.end }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endwith %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Summary -->
+                <div class="mt-3 pt-3 border-top">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="text-muted mb-2">
+                                <i class="bx bx-calendar-check me-2"></i><strong>{% trans "Working Days:" %}</strong>
+                                {% with working_days=staff_profile.get_working_days %}
+                                    {% if working_days %}
+                                        {{ working_days|join:", " }}
+                                    {% else %}
+                                        <span class="text-muted">{% trans "No working days set" %}</span>
+                                    {% endif %}
+                                {% endwith %}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="text-muted mb-0">
+                                <i class="bx bx-time me-2"></i><strong>{% trans "Total Weekly Hours:" %}</strong>
+                                {{ staff_profile.get_total_weekly_hours }} {% trans "hours" %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+<!-- ✨✨✨ END WORKING SCHEDULE SECTION ✨✨✨ -->
+
 <!-- Current Day Off Alert -->
 {% if current_dayoff %}
 <div class="row">
