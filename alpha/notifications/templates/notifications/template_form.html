@@ -66,10 +66,19 @@
                         {% if form.sms_body.errors %}
                             <div class="invalid-feedback d-block">{{ form.sms_body.errors.0 }}</div>
                         {% endif %}
+                        <!-- ✅ UPDATED: Added cost display -->
                         <div class="d-flex justify-content-between mt-1">
                             <small class="text-muted">{{ form.sms_body.help_text }}</small>
                             <small class="text-muted">
-                                <span id="smsCharCount">0</span>/160 {% trans "characters" %}
+                                <span id="smsCharCount">0</span> {% trans "characters" %} 
+                                | <span id="smsSegments">1</span> SMS 
+                                | €<span id="smsCost">0.05</span>
+                            </small>
+                        </div>
+                        <!-- ✅ NEW: Encoding info -->
+                        <div class="mt-1">
+                            <small class="text-muted">
+                                <i class="bx bx-info-circle"></i> <span id="encodingType">Latin</span>
                             </small>
                         </div>
                     </div>
@@ -129,18 +138,48 @@
 {% block extra_js %}
 <script>
 $(document).ready(function() {
-    // Character counter for SMS
+    // Character counter for SMS with cost calculation
     const smsBody = document.getElementById('{{ form.sms_body.id_for_label }}');
     const smsCharCount = document.getElementById('smsCharCount');
     
     if (smsBody && smsCharCount) {
         function updateSmsCount() {
-            const count = smsBody.value.length;
-            smsCharCount.textContent = count;
+            const text = smsBody.value;
+            const count = text.length;
             
-            if (count > 160) {
+            // Detect Greek characters (UCS-2 encoding)
+            const hasGreek = /[\u0370-\u03FF\u1F00-\u1FFF]/.test(text);
+            const hasSpecialChars = /[€£¥¢ñáéíóúàèìòùâêîôûäëïöü]/.test(text);
+            const needsUCS2 = hasGreek || hasSpecialChars;
+            
+            let segments, encoding;
+            
+            if (needsUCS2) {
+                encoding = 'Greek/UCS-2';
+                if (count === 0) segments = 1;
+                else if (count <= 70) segments = 1;
+                else segments = 1 + Math.ceil((count - 70) / 67);
+            } else {
+                encoding = 'Latin/English';
+                if (count === 0) segments = 1;
+                else if (count <= 160) segments = 1;
+                else segments = 1 + Math.ceil((count - 160) / 153);
+            }
+            
+            // ✅ NEW: Calculate cost
+            const cost = (segments * 0.05).toFixed(2);
+            
+            // Update display
+            smsCharCount.textContent = count;
+            document.getElementById('smsSegments').textContent = segments;
+            document.getElementById('encodingType').textContent = encoding;
+            document.getElementById('smsCost').textContent = cost;  // ✅ NEW
+            
+            // Color coding
+            if (segments > 3) {
                 smsCharCount.classList.add('text-danger');
-            } else if (count > 140) {
+                smsCharCount.classList.remove('text-warning');
+            } else if (segments > 1) {
                 smsCharCount.classList.add('text-warning');
                 smsCharCount.classList.remove('text-danger');
             } else {

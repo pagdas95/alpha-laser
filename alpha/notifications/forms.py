@@ -56,14 +56,12 @@ class BulkNotificationForm(forms.Form):
     sms_message = forms.CharField(
         label=_("SMS Message"),
         required=False,
-        max_length=160,
         widget=forms.Textarea(attrs={
             'class': 'form-control',
             'rows': 4,
-            'placeholder': _('Enter SMS message (max 160 characters)...'),
-            'maxlength': 160
+            'placeholder': _('Enter SMS message...')
         }),
-        help_text=_("Keep SMS messages short and concise (max 160 characters)")
+        help_text=_("SMS will be split into segments (70 chars for Greek, 160 for Latin)")
     )
     
     # Client selection
@@ -149,7 +147,6 @@ class NotificationTemplateForm(forms.ModelForm):
             'sms_body': forms.Textarea(attrs={
                 'class': 'form-control',
                 'rows': 4,
-                'maxlength': 160,
                 'placeholder': _('e.g., Happy Birthday {client_name}! Get 20% off this month!')
             }),
             'email_subject': forms.TextInput(attrs={

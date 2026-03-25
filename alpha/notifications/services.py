@@ -324,12 +324,12 @@ class NotificationService:
         ✨ NOW RESPECTS CLIENT NOTIFICATION PREFERENCES ✨
         """
         client = appointment.client
-        
+        local_time = timezone.localtime(appointment.start)
         # Format message
         context = {
             'client_name': client.full_name,
-            'date': appointment.start.strftime('%d/%m/%Y'),
-            'time': appointment.start.strftime('%H:%M'),
+            'date': local_time.strftime('%d/%m/%Y'),
+            'time': local_time.strftime('%H:%M'),
             'service': appointment.service.name,
             'staff': self._get_staff_name(appointment.staff),  # ✨ FIXED: Uses StaffProfile.full_name
         }
@@ -341,7 +341,6 @@ class NotificationService:
             sms_message = (
                 f"Γεια σας {context['client_name']}! "
                 f"Το ραντεβού σας επιβεβαιώθηκε για {context['date']} στις {context['time']}. "
-                f"Υπηρεσία: {context['service']}. "
                 f"Θα σας εξυπηρετήσει: {context['staff']}."
             )
             results['sms'] = self.send_sms(
@@ -366,7 +365,6 @@ class NotificationService:
                 f"Λεπτομέρειες:\n"
                 f"📅 Ημερομηνία: {context['date']}\n"
                 f"🕐 Ώρα: {context['time']}\n"
-                f"💆 Υπηρεσία: {context['service']}\n"
                 f"👤 Θεραπευτής: {context['staff']}\n\n"
                 f"Σας περιμένουμε!\n"
             )
@@ -383,7 +381,6 @@ class NotificationService:
                     <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
                         <p style="margin: 5px 0;"><strong>📅 Ημερομηνία:</strong> {context['date']}</p>
                         <p style="margin: 5px 0;"><strong>🕐 Ώρα:</strong> {context['time']}</p>
-                        <p style="margin: 5px 0;"><strong>💆 Υπηρεσία:</strong> {context['service']}</p>
                         <p style="margin: 5px 0;"><strong>👤 Θεραπευτής:</strong> {context['staff']}</p>
                     </div>
                     
@@ -417,11 +414,11 @@ class NotificationService:
         ✨ NOW RESPECTS CLIENT NOTIFICATION PREFERENCES ✨
         """
         client = appointment.client
-        
+        local_time = timezone.localtime(appointment.start)
         context = {
             'client_name': client.full_name,
-            'date': appointment.start.strftime('%d/%m/%Y'),
-            'time': appointment.start.strftime('%H:%M'),
+            'date': local_time.strftime('%d/%m/%Y'),  # was: appointment.start
+            'time': local_time.strftime('%H:%M'),  
             'service': appointment.service.name,
             'staff': self._get_staff_name(appointment.staff),  # ✨ FIXED: Uses StaffProfile.full_name
         }
@@ -433,7 +430,7 @@ class NotificationService:
             sms_message = (
                 f"Υπενθύμιση! {context['client_name']}, "
                 f"έχετε ραντεβού αύριο {context['date']} στις {context['time']}. "
-                f"Υπηρεσία: {context['service']}. Σας περιμένουμε!"
+                f"Σας περιμένουμε!"
             )
             results['sms'] = self.send_sms(
                 phone=client.phone,
@@ -454,7 +451,6 @@ class NotificationService:
                 f"Θέλουμε να σας υπενθυμίσουμε το ραντεβού σας:\n\n"
                 f"📅 Ημερομηνία: {context['date']}\n"
                 f"🕐 Ώρα: {context['time']}\n"
-                f"💆 Υπηρεσία: {context['service']}\n"
                 f"👤 Θεραπευτής: {context['staff']}\n\n"
                 f"Σας περιμένουμε!\n"
             )
@@ -470,7 +466,6 @@ class NotificationService:
                     <div style="background-color: #fff3e0; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #FF9800;">
                         <p style="margin: 5px 0;"><strong>📅 Ημερομηνία:</strong> {context['date']}</p>
                         <p style="margin: 5px 0;"><strong>🕐 Ώρα:</strong> {context['time']}</p>
-                        <p style="margin: 5px 0;"><strong>💆 Υπηρεσία:</strong> {context['service']}</p>
                         <p style="margin: 5px 0;"><strong>👤 Θεραπευτής:</strong> {context['staff']}</p>
                     </div>
                     
