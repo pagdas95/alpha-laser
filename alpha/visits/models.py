@@ -47,34 +47,20 @@ class Visit(models.Model):
             # decrement exactly once on first save
             self.client_package_item.redeem_one()
     
-    # ✅ NEW: Check if visit record is complete
     @property
     def is_complete(self):
         """
-        A visit is complete if:
-        - Has treatment area
-        - Has at least one treatment parameter
-        - Has been fully paid (paid_amount >= grand_total)
+        A visit is complete when it has been fully paid (grand_total).
+        Treatment parameters are optional — staff may not always fill them.
         """
-        has_area = bool(self.area and self.area.strip())
-        has_treatment_params = any([
-            self.spot_size_mm is not None,
-            self.fluence_j_cm2 is not None,
-            self.pulse_count is not None,
-        ])
-        is_fully_paid = self.paid_amount >= self.grand_total
-
-        return has_area and has_treatment_params and is_fully_paid
+        return self.paid_amount >= self.grand_total
 
     def get_missing_fields(self):
-        """Return list of missing/incomplete fields for the notification bell"""
+        """
+        Return list of issues shown in the notification bell.
+        Only flags unpaid/partially paid visits — treatment fields are optional.
+        """
         missing = []
-
-        if not (self.area and self.area.strip()):
-            missing.append("Treatment Area")
-
-        if not any([self.spot_size_mm, self.fluence_j_cm2, self.pulse_count]):
-            missing.append("Treatment Parameters")
 
         if self.paid_amount < self.grand_total:
             outstanding = self.grand_total - self.paid_amount

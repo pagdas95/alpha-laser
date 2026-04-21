@@ -32,7 +32,21 @@
                             <h5 class="alert-heading font-size-16 mb-2">{% trans "Visit Information" %}</h5>
                             <p class="mb-1"><strong>{% trans "Client" %}:</strong> {{ object.appointment.client.full_name }}</p>
                             <p class="mb-1"><strong>{% trans "Service" %}:</strong> {{ object.appointment.service.name }}</p>
-                            <p class="mb-0"><strong>{% trans "Date" %}:</strong> {{ object.appointment.start|date:"d/m/Y H:i" }}</p>
+                            <p class="mb-1"><strong>{% trans "Date" %}:</strong> {{ object.appointment.start|date:"d/m/Y H:i" }}</p>
+                            {% if object.appointment.room %}
+                            <p class="mb-1">
+                                <strong>{% trans "Room" %}:</strong>
+                                <span class="badge bg-info-subtle text-info ms-1">{{ object.appointment.room.name }}</span>
+                            </p>
+                            {% endif %}
+                            {% if object.appointment.machine %}
+                            <p class="mb-0">
+                                <strong>{% trans "Machine" %}:</strong>
+                                <span class="badge bg-primary-subtle text-primary ms-1">{{ object.appointment.machine.name }}</span>
+                            </p>
+                            {% else %}
+                            <p class="mb-0 text-muted small">{% trans "No machine assigned" %}</p>
+                            {% endif %}
                         </div>
                     </div>
                 </div>

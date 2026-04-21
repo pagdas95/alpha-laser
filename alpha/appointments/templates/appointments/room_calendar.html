@@ -9,7 +9,12 @@
 <!-- Flatpickr CSS -->
 <link href="{% static 'libs/flatpickr/flatpickr.min.css' %}" rel="stylesheet" type="text/css" />
 <style>
-    /* Status button styling */
+    /* Each room calendar has a fixed width — stays same size when sidebar collapses */
+    .room-col {
+        flex: 0 0 230px;
+        width: 230px;
+        min-width: 0;
+    }
     .btn-status {
         font-size: 0.85rem;
         padding: 0.5rem 0.75rem;
@@ -43,6 +48,53 @@
     .btn-status:hover {
         transform: translateY(-1px);
         transition: transform 0.2s;
+    }
+
+    /* ── Collapsible sidebar ── */
+    #sidebar-col {
+        transition: all 0.3s ease;
+        flex: 0 0 auto;
+    }
+
+    /* Expanded: normal width */
+    #sidebar-col.sidebar-expanded {
+        width: 25%;   /* col-xl-3 equivalent */
+        max-width: 25%;
+    }
+
+    /* Collapsed: just a thin strip for the toggle button */
+    #sidebar-col.sidebar-collapsed {
+        width: 42px;
+        max-width: 42px;
+        min-width: 42px;
+        overflow: hidden;
+    }
+
+    #sidebar-col.sidebar-collapsed .sidebar-content {
+        display: none;
+    }
+
+    /* The rooms column fills remaining space */
+    #rooms-col {
+        transition: all 0.3s ease;
+        flex: 1 1 0;
+        min-width: 0;
+    }
+
+    /* Toggle button — always visible */
+    #sidebar-toggle {
+        width: 34px;
+        height: 34px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    @media (max-width: 991px) {
+        #sidebar-col.sidebar-expanded  { width: 100%; max-width: 100%; }
+        #sidebar-col.sidebar-collapsed { width: 42px; max-width: 42px; }
     }
 
     .fc .fc-timegrid-slot {
@@ -116,8 +168,20 @@
             <div class="col-12">
                
                 <div class="row">
+                    <div class="col-12">
+                        <div class="d-flex gap-3 align-items-start">
+
                     <!-- Sidebar with Controls -->
-                    <div class="col-xl-3 col-lg-4">
+                    <div id="sidebar-col" class="sidebar-expanded">
+                        <!-- Toggle button — always visible at top of sidebar strip -->
+                        <div class="d-flex justify-content-end mb-2">
+                            <button id="sidebar-toggle" class="btn btn-sm btn-outline-secondary"
+                                    title="Απόκρυψη / Εμφάνιση πλαϊνής μπάρας">
+                                <i class="bx bx-chevron-left" id="sidebar-toggle-icon"></i>
+                            </button>
+                        </div>
+
+                        <div class="sidebar-content">
                         <div class="card">
                             <div class="card-body">
                                 <div class="d-grid mb-3">
@@ -183,16 +247,17 @@
                                 </div>
                             </div>
                         </div>
-                    </div> <!-- end col-->
+                        </div><!-- end sidebar-content -->
+                    </div> <!-- end sidebar-col -->
 
-                    <!-- Room Calendars - DYNAMIC FROM DATABASE -->
-                    <div class="col-xl-9 col-lg-8">
+                    <!-- Room Calendars -->
+                    <div id="rooms-col">
                         <div class="card">
                             <div class="card-body">
                                 {% if rooms %}
-                                <div class="row">
+                                <div class="d-flex flex-wrap gap-3">
                                     {% for room in rooms %}
-                                    <div class="col-md-6 col-lg-3 mb-3">
+                                    <div class="room-col mb-2">
                                         <h5 class="mb-3">{{ room.name }}</h5>
                                         <div id="calendar-room-{{ room.id }}" 
                                              class="room-calendar"
@@ -213,10 +278,11 @@
                                 {% endif %}
                             </div>
                         </div>
-                    </div> <!-- end col -->
+                    </div> <!-- end rooms-col -->
 
-                </div>
-                <!-- end row -->
+                        </div><!-- end d-flex -->
+                    </div><!-- end col-12 -->
+                </div><!-- end row -->
 
                 <!-- Appointment Details Modal -->
                 <div class="modal fade" id="event-modal" tabindex="-1">
@@ -793,6 +859,32 @@ document.addEventListener("DOMContentLoaded", function() {
     });
     
     console.log('🎉 Calendar initialization complete! ' + Object.keys(calendars).length + ' calendars active.');
+
+    // ── Collapsible sidebar ───────────────────────────────────────────
+    var sidebarCol   = document.getElementById('sidebar-col');
+    var toggleBtn    = document.getElementById('sidebar-toggle');
+    var toggleIcon   = document.getElementById('sidebar-toggle-icon');
+    var sidebarOpen  = true;
+
+    // Restore state from localStorage
+    if (localStorage.getItem('calSidebarCollapsed') === '1') {
+        sidebarCol.classList.replace('sidebar-expanded', 'sidebar-collapsed');
+        toggleIcon.classList.replace('bx-chevron-left', 'bx-chevron-right');
+        sidebarOpen = false;
+    }
+
+    toggleBtn.addEventListener('click', function () {
+        if (sidebarOpen) {
+            sidebarCol.classList.replace('sidebar-expanded', 'sidebar-collapsed');
+            toggleIcon.classList.replace('bx-chevron-left', 'bx-chevron-right');
+            localStorage.setItem('calSidebarCollapsed', '1');
+        } else {
+            sidebarCol.classList.replace('sidebar-collapsed', 'sidebar-expanded');
+            toggleIcon.classList.replace('bx-chevron-right', 'bx-chevron-left');
+            localStorage.setItem('calSidebarCollapsed', '0');
+        }
+        sidebarOpen = !sidebarOpen;
+    });
 });
 </script>
 {% endblock %}

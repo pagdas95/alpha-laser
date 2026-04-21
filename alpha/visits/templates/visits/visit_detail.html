@@ -118,6 +118,16 @@
                                                     </span>
                                                 </td>
                                             </tr>
+                                            {% if visit.appointment.machine %}
+                                            <tr>
+                                                <th>{% trans "Machine" %}:</th>
+                                                <td>
+                                                    <span class="badge bg-primary-subtle text-primary">
+                                                        {{ visit.appointment.machine.name }}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                            {% endif %}
                                         </tbody>
                                     </table>
                                 </div>
