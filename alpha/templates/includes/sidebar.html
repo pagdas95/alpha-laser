@@ -163,6 +163,31 @@
                         </li>
                     </ul>
                 </li>
+
+                    <!-- Products -->
+                    <li>
+                        <a href="javascript: void(0);" class="has-arrow">
+                            <i data-feather="shopping-bag"></i>
+                            <span data-key="t-products">{% trans "Products" %}</span>
+                        </a>
+                        <ul class="sub-menu" aria-expanded="false">
+                            <li>
+                                <a href="{% url 'products:list' %}" data-key="t-products-list">
+                                    {% trans "All Products" %}
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{% url 'products:create' %}" data-key="t-products-add">
+                                    {% trans "Add Product" %}
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{% url 'products:categories' %}" data-key="t-products-categories">
+                                    {% trans "Categories" %}
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
                 
                 <!-- ====== RESOURCES Section ====== -->
                 <li class="menu-title mt-2" data-key="t-resources">{% trans "RESOURCES" %}</li>

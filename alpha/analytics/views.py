@@ -15,6 +15,7 @@ import json
 from alpha.visits.models import Visit
 from alpha.appointments.models import Appointment
 from alpha.clients.models import Client
+from alpha.products.models import VisitProduct
 
 # For Excel export
 try:
@@ -172,6 +173,33 @@ class AnalyticsDashboardView(LoginRequiredMixin, TemplateView):
             'no_show': appointments.filter(status='no_show').count(),
         }
         
+        # ── Product stats ──────────────────────────────────────────────
+        visit_ids = visits.values_list('id', flat=True)
+        vp_qs = VisitProduct.objects.filter(visit_id__in=visit_ids)
+        products_agg = vp_qs.aggregate(
+            total_revenue=Sum(F('price_at_time') * F('quantity')),
+            total_qty=Sum('quantity'),
+        )
+        stats['products_revenue'] = products_agg['total_revenue'] or Decimal('0.00')
+        stats['products_qty'] = products_agg['total_qty'] or 0
+        stats['top_products'] = list(
+            vp_qs.values('product__name')
+            .annotate(
+                qty=Sum('quantity'),
+                revenue=Sum(F('price_at_time') * F('quantity')),
+            )
+            .order_by('-revenue')[:5]
+        )
+        stats['top_product_sellers'] = list(
+            vp_qs.filter(sold_by__isnull=False)
+            .values('sold_by__name', 'sold_by__username')
+            .annotate(
+                qty=Sum('quantity'),
+                revenue=Sum(F('price_at_time') * F('quantity')),
+            )
+            .order_by('-revenue')[:5]
+        )
+        
         return stats
     
     def _get_monthly_stats(self, start_date, end_date):
@@ -220,6 +248,33 @@ class AnalyticsDashboardView(LoginRequiredMixin, TemplateView):
             'no_show': appointments.filter(status='no_show').count(),
         }
         
+        # ── Product stats ──────────────────────────────────────────────
+        visit_ids = visits.values_list('id', flat=True)
+        vp_qs = VisitProduct.objects.filter(visit_id__in=visit_ids)
+        products_agg = vp_qs.aggregate(
+            total_revenue=Sum(F('price_at_time') * F('quantity')),
+            total_qty=Sum('quantity'),
+        )
+        stats['products_revenue'] = products_agg['total_revenue'] or Decimal('0.00')
+        stats['products_qty'] = products_agg['total_qty'] or 0
+        stats['top_products'] = list(
+            vp_qs.values('product__name')
+            .annotate(
+                qty=Sum('quantity'),
+                revenue=Sum(F('price_at_time') * F('quantity')),
+            )
+            .order_by('-revenue')[:5]
+        )
+        stats['top_product_sellers'] = list(
+            vp_qs.filter(sold_by__isnull=False)
+            .values('sold_by__name', 'sold_by__username')
+            .annotate(
+                qty=Sum('quantity'),
+                revenue=Sum(F('price_at_time') * F('quantity')),
+            )
+            .order_by('-revenue')[:5]
+        )
+        
         return stats
 
 
@@ -259,7 +314,9 @@ class AnalyticsDataAPIView(LoginRequiredMixin, View):
                 return self._get_rooms_data(start_datetime, end_datetime)
             elif chart_type == 'machines':
                 return self._get_machines_data(start_datetime, end_datetime)
-        
+            elif chart_type == 'products':
+                return self._get_products_data(start_datetime, end_datetime)
+
         else:
             # MONTHLY MODE - use month
             if not month:
@@ -289,6 +346,8 @@ class AnalyticsDataAPIView(LoginRequiredMixin, View):
                 return self._get_rooms_data(start_date, end_date)
             elif chart_type == 'machines':
                 return self._get_machines_data(start_date, end_date)
+            elif chart_type == 'products':
+                return self._get_products_data(start_date, end_date)
         
         return JsonResponse({'error': 'Invalid chart type'}, status=400)
     
@@ -563,6 +622,73 @@ class AnalyticsDataAPIView(LoginRequiredMixin, View):
             }]
         })
 
+    def _get_products_data(self, start_date, end_date):
+        """Top products by revenue for the period"""
+        visit_ids = Visit.objects.filter(
+            appointment__start__gte=start_date,
+            appointment__start__lt=end_date
+        ).values_list('id', flat=True)
+
+        products = VisitProduct.objects.filter(
+            visit_id__in=visit_ids
+        ).values('product__name').annotate(
+            qty=Sum('quantity'),
+            revenue=Sum(F('price_at_time') * F('quantity')),
+        ).order_by('-revenue')[:10]
+
+        labels = [p['product__name'] for p in products]
+        revenue_data = [float(p['revenue'] or 0) for p in products]
+        qty_data = [p['qty'] or 0 for p in products]
+
+        # Products by staff (who sold the most)
+        seller_data = VisitProduct.objects.filter(
+            visit_id__in=visit_ids,
+            sold_by__isnull=False,
+        ).values('sold_by__name', 'sold_by__username').annotate(
+            qty=Sum('quantity'),
+            revenue=Sum(F('price_at_time') * F('quantity')),
+        ).order_by('-revenue')[:8]
+
+        seller_labels = [
+            s['sold_by__name'] or s['sold_by__username']
+            for s in seller_data
+        ]
+        seller_revenue = [float(s['revenue'] or 0) for s in seller_data]
+
+        return JsonResponse({
+            'top_products': {
+                'labels': labels,
+                'datasets': [
+                    {
+                        'label': 'Revenue (€)',
+                        'data': revenue_data,
+                        'backgroundColor': 'rgba(255, 159, 64, 0.8)',
+                        'borderColor': 'rgba(255, 159, 64, 1)',
+                        'borderWidth': 1,
+                        'yAxisID': 'y',
+                    },
+                    {
+                        'label': 'Units Sold',
+                        'data': qty_data,
+                        'backgroundColor': 'rgba(153, 102, 255, 0.8)',
+                        'borderColor': 'rgba(153, 102, 255, 1)',
+                        'borderWidth': 1,
+                        'yAxisID': 'y1',
+                    },
+                ]
+            },
+            'by_staff': {
+                'labels': seller_labels,
+                'datasets': [{
+                    'label': 'Product Revenue (€)',
+                    'data': seller_revenue,
+                    'backgroundColor': 'rgba(255, 99, 132, 0.8)',
+                    'borderColor': 'rgba(255, 99, 132, 1)',
+                    'borderWidth': 1,
+                }]
+            }
+        })
+
 
 # ═══════════════════════════════════════════════════════════════
 # EXCEL EXPORT VIEW - YOUR ORIGINAL ONE
@@ -640,6 +766,7 @@ class ExportMonthlyReportView(LoginRequiredMixin, TemplateView):
         self._create_cancelled_appointments_sheet(wb, start_date, end_date)
         self._create_no_show_appointments_sheet(wb, start_date, end_date)
         self._create_completed_appointments_sheet(wb, start_date, end_date)
+        self._create_products_sheet(wb, start_date, end_date)
         
         # Remove default sheet
         if 'Sheet' in wb.sheetnames:
@@ -676,10 +803,27 @@ class ExportMonthlyReportView(LoginRequiredMixin, TemplateView):
         )
         
         row = 3
+        
+        visit_ids = visits.values_list('id', flat=True)
+        products_agg = VisitProduct.objects.filter(
+            visit_id__in=visit_ids
+        ).aggregate(
+            total_revenue=Sum(F('price_at_time') * F('quantity')),
+            total_qty=Sum('quantity'),
+        )
+        products_revenue = products_agg['total_revenue'] or 0
+        products_qty = products_agg['total_qty'] or 0
+        service_revenue = visits.aggregate(Sum('charge_amount'))['charge_amount__sum'] or 0
+        paid_total = visits.aggregate(Sum('paid_amount'))['paid_amount__sum'] or 0
+
         stats = [
             ('Total Visits', visits.count()),
-            ('Total Revenue', f"€{visits.aggregate(Sum('charge_amount'))['charge_amount__sum'] or 0:.2f}"),
-            ('Total Paid', f"€{visits.aggregate(Sum('paid_amount'))['paid_amount__sum'] or 0:.2f}"),
+            ('Service Revenue', f"€{float(service_revenue):.2f}"),
+            ('Products Revenue', f"€{float(products_revenue):.2f}"),
+            ('Products Units Sold', products_qty),
+            ('Grand Total Charged', f"€{float(service_revenue + products_revenue):.2f}"),
+            ('Total Paid', f"€{float(paid_total):.2f}"),
+            ('Outstanding', f"€{float(service_revenue + products_revenue - paid_total):.2f}"),
             ('Fully Paid Visits', visits.filter(paid_amount__gte=F('charge_amount')).count()),
             ('Partially Paid', visits.filter(paid_amount__gt=0, paid_amount__lt=F('charge_amount')).count()),
             ('Unpaid Visits', visits.filter(paid_amount=0).count()),
@@ -699,8 +843,11 @@ class ExportMonthlyReportView(LoginRequiredMixin, TemplateView):
         """Create detailed visits sheet"""
         ws = wb.create_sheet("Visits Detail")
         
-        # Headers
-        headers = ['Date', 'Client', 'Service', 'Area', 'Staff', 'Charge', 'Paid', 'Balance', 'Payment Method']
+        headers = [
+            'Date', 'Client', 'Service', 'Area', 'Staff',
+            'Service Charge', 'Products Total', 'Grand Total',
+            'Paid', 'Balance', 'Payment Method', 'Products Purchased'
+        ]
         for col, header in enumerate(headers, 1):
             cell = ws.cell(row=1, column=col)
             cell.value = header
@@ -708,7 +855,6 @@ class ExportMonthlyReportView(LoginRequiredMixin, TemplateView):
             cell.fill = PatternFill(start_color="5156BE", end_color="5156BE", fill_type="solid")
             cell.alignment = Alignment(horizontal='center')
         
-        # Data
         visits = Visit.objects.filter(
             appointment__start__gte=start_date,
             appointment__start__lt=end_date
@@ -716,10 +862,9 @@ class ExportMonthlyReportView(LoginRequiredMixin, TemplateView):
             'appointment__client',
             'appointment__service',
             'staff'
-        ).order_by('appointment__start')
+        ).prefetch_related('visit_products__product').order_by('appointment__start')
         
         for row, visit in enumerate(visits, 2):
-            # Get staff name using flexible method
             staff = visit.staff
             if hasattr(staff, 'name') and staff.name:
                 staff_name = staff.name
@@ -728,20 +873,47 @@ class ExportMonthlyReportView(LoginRequiredMixin, TemplateView):
                 staff_name = full_name if full_name.strip() else staff.username
             else:
                 staff_name = staff.username
-            
+
+            service_charge = float(visit.charge_amount)
+            products_total = float(visit.products_total)
+            grand_total = service_charge + products_total
+            paid = float(visit.paid_amount)
+            balance = grand_total - paid
+
+            # Build comma-separated product list e.g. "Serum x2, Cream x1"
+            products_list = ', '.join(
+                f"{vp.product.name} ×{vp.quantity}"
+                for vp in visit.visit_products.all()
+            )
+
             ws.cell(row=row, column=1, value=visit.appointment.start.strftime('%d/%m/%Y'))
             ws.cell(row=row, column=2, value=visit.appointment.client.full_name)
             ws.cell(row=row, column=3, value=visit.appointment.service.name)
             ws.cell(row=row, column=4, value=visit.area or '')
             ws.cell(row=row, column=5, value=staff_name)
-            ws.cell(row=row, column=6, value=float(visit.charge_amount))
-            ws.cell(row=row, column=7, value=float(visit.paid_amount))
-            ws.cell(row=row, column=8, value=float(visit.charge_amount - visit.paid_amount))
-            ws.cell(row=row, column=9, value=visit.get_payment_method_display() if visit.payment_method else '')
+            ws.cell(row=row, column=6, value=service_charge)
+            ws.cell(row=row, column=7, value=products_total)
+            ws.cell(row=row, column=8, value=grand_total)
+            ws.cell(row=row, column=9, value=paid)
+            ws.cell(row=row, column=10, value=balance)
+            ws.cell(row=row, column=11, value=visit.get_payment_method_display() if visit.payment_method else '')
+            ws.cell(row=row, column=12, value=products_list)
+
+            for col in [6, 7, 8, 9, 10]:
+                ws.cell(row=row, column=col).number_format = '€#,##0.00'
+
+            # Highlight rows with products in light purple
+            if products_list:
+                for col in range(1, 13):
+                    ws.cell(row=row, column=col).fill = PatternFill(
+                        start_color="F3E5F5", end_color="F3E5F5", fill_type="solid"
+                    )
         
-        # Auto-size columns
-        for col in range(1, 10):
-            ws.column_dimensions[get_column_letter(col)].width = 15
+        col_widths = {1:12, 2:25, 3:25, 4:15, 5:20,
+                      6:14, 7:14, 8:14, 9:14, 10:14, 11:16, 12:40}
+        for col, width in col_widths.items():
+            ws.column_dimensions[get_column_letter(col)].width = width
+        ws.freeze_panes = 'A2'
     
     def _create_services_sheet(self, wb, start_date, end_date):
         """Create services breakdown sheet"""
@@ -1235,6 +1407,132 @@ class ExportMonthlyReportView(LoginRequiredMixin, TemplateView):
         
         # Freeze header row
         ws.freeze_panes = 'A2'
+
+
+
+    def _create_products_sheet(self, wb, start_date, end_date):
+        """Create products sold sheet with full detail per line item"""
+        ws = wb.create_sheet("Products Sold")
+
+        PURPLE = "7B2D8B"
+        headers = [
+            'Date', 'Client', 'Service', 'Product', 'Category',
+            'Qty', 'Unit Price', 'Line Total', 'Sold By', 'Notes'
+        ]
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col)
+            cell.value = header
+            cell.font = Font(bold=True, color="FFFFFF")
+            cell.fill = PatternFill(start_color=PURPLE, end_color=PURPLE, fill_type="solid")
+            cell.alignment = Alignment(horizontal="center")
+            cell.border = Border(
+                left=Side(style="thin"), right=Side(style="thin"),
+                top=Side(style="thin"), bottom=Side(style="thin"),
+            )
+
+        visit_ids = Visit.objects.filter(
+            appointment__start__gte=start_date,
+            appointment__start__lt=end_date
+        ).values_list("id", flat=True)
+
+        vp_qs = VisitProduct.objects.filter(
+            visit_id__in=visit_ids
+        ).select_related(
+            "product", "product__category",
+            "sold_by",
+            "visit__appointment__client",
+            "visit__appointment__service",
+        ).order_by("visit__appointment__start")
+
+        row = 2
+        total_revenue = 0.0
+        total_qty = 0
+
+        for vp in vp_qs:
+            apt = vp.visit.appointment
+            sold_by_name = ""
+            if vp.sold_by:
+                sold_by_name = getattr(vp.sold_by, "name", None) or vp.sold_by.username
+            line_total = float(vp.price_at_time * vp.quantity)
+            category = vp.product.category.name if vp.product.category else ""
+
+            ws.cell(row=row, column=1, value=apt.start.strftime("%d/%m/%Y"))
+            ws.cell(row=row, column=2, value=apt.client.full_name)
+            ws.cell(row=row, column=3, value=apt.service.name)
+            ws.cell(row=row, column=4, value=vp.product.name)
+            ws.cell(row=row, column=5, value=category)
+            ws.cell(row=row, column=6, value=vp.quantity)
+            ws.cell(row=row, column=7, value=float(vp.price_at_time))
+            ws.cell(row=row, column=8, value=line_total)
+            ws.cell(row=row, column=9, value=sold_by_name)
+            ws.cell(row=row, column=10, value=vp.notes or "")
+
+            ws.cell(row=row, column=7).number_format = "€#,##0.00"
+            ws.cell(row=row, column=8).number_format = "€#,##0.00"
+
+            total_revenue += line_total
+            total_qty += vp.quantity
+            row += 1
+
+        # Totals row
+        total_row = row + 1
+        ws.cell(row=total_row, column=1, value="TOTALS:").font = Font(bold=True)
+        ws.cell(row=total_row, column=6, value=total_qty).font = Font(bold=True)
+        ws.cell(row=total_row, column=8, value=total_revenue)
+        ws.cell(row=total_row, column=8).font = Font(bold=True, color=PURPLE)
+        ws.cell(row=total_row, column=8).number_format = "€#,##0.00"
+
+        # Summary by product
+        summary_start = total_row + 3
+        ws.cell(row=summary_start, column=1, value="SUMMARY BY PRODUCT").font = Font(bold=True, size=12)
+        ws.cell(row=summary_start + 1, column=1, value="Product").font = Font(bold=True)
+        ws.cell(row=summary_start + 1, column=2, value="Category").font = Font(bold=True)
+        ws.cell(row=summary_start + 1, column=3, value="Qty Sold").font = Font(bold=True)
+        ws.cell(row=summary_start + 1, column=4, value="Total Revenue").font = Font(bold=True)
+
+        product_summary = VisitProduct.objects.filter(
+            visit_id__in=visit_ids
+        ).values("product__name", "product__category__name").annotate(
+            qty=Sum("quantity"),
+            revenue=Sum(F("price_at_time") * F("quantity")),
+        ).order_by("-revenue")
+
+        for i, p in enumerate(product_summary, summary_start + 2):
+            ws.cell(row=i, column=1, value=p["product__name"])
+            ws.cell(row=i, column=2, value=p["product__category__name"] or "—")
+            ws.cell(row=i, column=3, value=p["qty"])
+            ws.cell(row=i, column=4, value=float(p["revenue"] or 0))
+            ws.cell(row=i, column=4).number_format = "€#,##0.00"
+
+        # Summary by staff seller
+        staff_start = summary_start + 2 + len(list(product_summary)) + 2
+        ws.cell(row=staff_start, column=1, value="SUMMARY BY SELLER").font = Font(bold=True, size=12)
+        ws.cell(row=staff_start + 1, column=1, value="Staff").font = Font(bold=True)
+        ws.cell(row=staff_start + 1, column=2, value="Qty Sold").font = Font(bold=True)
+        ws.cell(row=staff_start + 1, column=3, value="Total Revenue").font = Font(bold=True)
+
+        staff_summary = VisitProduct.objects.filter(
+            visit_id__in=visit_ids,
+            sold_by__isnull=False
+        ).values("sold_by__name", "sold_by__username").annotate(
+            qty=Sum("quantity"),
+            revenue=Sum(F("price_at_time") * F("quantity")),
+        ).order_by("-revenue")
+
+        for i, s in enumerate(staff_summary, staff_start + 2):
+            name = s["sold_by__name"] or s["sold_by__username"]
+            ws.cell(row=i, column=1, value=name)
+            ws.cell(row=i, column=2, value=s["qty"])
+            ws.cell(row=i, column=3, value=float(s["revenue"] or 0))
+            ws.cell(row=i, column=3).number_format = "€#,##0.00"
+
+        column_widths = {
+            "A": 12, "B": 25, "C": 25, "D": 25, "E": 18,
+            "F": 8,  "G": 12, "H": 14, "I": 20, "J": 30,
+        }
+        for col_letter, width in column_widths.items():
+            ws.column_dimensions[col_letter].width = width
+        ws.freeze_panes = "A2"
 
 
 class AnalyticsDebugView(LoginRequiredMixin, TemplateView):

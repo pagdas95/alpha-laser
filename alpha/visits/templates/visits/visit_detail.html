@@ -214,8 +214,26 @@
                                     <table class="table table-borderless mb-0">
                                         <tbody>
                                             <tr>
-                                                <th style="width: 50%;">{% trans "Charge" %}:</th>
+                                                <th style="width: 50%;">{% trans "Service Charge" %}:</th>
                                                 <td><strong class="text-primary">€{{ visit.charge_amount }}</strong></td>
+                                            </tr>
+                                            {% if products_total %}
+                                            <tr>
+                                                <th>{% trans "Products" %}:</th>
+                                                <td>
+                                                    <strong class="text-info">€{{ products_total }}</strong>
+                                                    <br>
+                                                    <small class="text-muted">
+                                                        <i class="bx bx-store me-1"></i>{% trans "incl." %} {{ visit_products.count }} {% trans "item(s)" %}
+                                                    </small>
+                                                </td>
+                                            </tr>
+                                            {% endif %}
+                                            <tr class="border-top">
+                                                <th><strong>{% trans "Grand Total" %}:</strong></th>
+                                                <td>
+                                                    <strong class="text-dark fs-6">€{{ grand_total }}</strong>
+                                                </td>
                                             </tr>
                                             <tr>
                                                 <th>{% trans "Paid" %}:</th>

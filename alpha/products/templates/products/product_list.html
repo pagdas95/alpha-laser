@@ -1,0 +1,302 @@
+{% extends "base.html" %}
+{% load static i18n %}
+
+{% block title %}{% trans "Products" %}{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'libs/datatables.net-bs4/css/dataTables.bootstrap4.min.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'libs/datatables.net-responsive-bs4/css/responsive.bootstrap4.min.css' %}" rel="stylesheet" type="text/css" />
+{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
+<li class="breadcrumb-item active">{% trans "Products" %}</li>
+{% endblock %}
+
+{% block content %}
+
+<div class="row align-items-center">
+    <div class="col-md-6">
+        <div class="mb-3">
+            <h5 class="card-title">
+                {% trans "Products" %}
+                <span class="text-muted fw-normal ms-2">({{ page_obj.paginator.count|default:0 }})</span>
+            </h5>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="d-flex flex-wrap align-items-center justify-content-end gap-2 mb-3">
+            {% if perms.products.add_category %}
+            <a href="{% url 'products:categories' %}" class="btn btn-sm btn-outline-secondary">
+                <i class="bx bx-tag me-1"></i>{% trans "Categories" %}
+            </a>
+            {% endif %}
+            {% if perms.products.add_product %}
+            <a href="{% url 'products:create' %}" class="btn btn-sm btn-primary">
+                <i class="bx bx-plus me-1"></i>{% trans "Add Product" %}
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row">
+    <div class="col-md-3">
+        <div class="card mini-stats-wid">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-grow-1">
+                        <p class="text-muted fw-medium">{% trans "Total Products" %}</p>
+                        <h4 class="mb-0">{{ total_count }}</h4>
+                    </div>
+                    <div class="avatar-sm rounded-circle bg-primary align-self-center mini-stat-icon">
+                        <span class="avatar-title rounded-circle bg-primary">
+                            <i class="bx bx-box font-size-24"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card mini-stats-wid">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-grow-1">
+                        <p class="text-muted fw-medium">{% trans "Active" %}</p>
+                        <h4 class="mb-0">{{ active_count }}</h4>
+                    </div>
+                    <div class="avatar-sm rounded-circle bg-success align-self-center mini-stat-icon">
+                        <span class="avatar-title rounded-circle bg-success">
+                            <i class="bx bx-check-circle font-size-24"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card mini-stats-wid">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-grow-1">
+                        <p class="text-muted fw-medium">{% trans "Low Stock" %}</p>
+                        <h4 class="mb-0">{{ low_stock_count }}</h4>
+                    </div>
+                    <div class="avatar-sm rounded-circle bg-warning align-self-center mini-stat-icon">
+                        <span class="avatar-title rounded-circle bg-warning">
+                            <i class="bx bx-error font-size-24"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card mini-stats-wid">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-grow-1">
+                        <p class="text-muted fw-medium">{% trans "Out of Stock" %}</p>
+                        <h4 class="mb-0">{{ out_of_stock_count }}</h4>
+                    </div>
+                    <div class="avatar-sm rounded-circle bg-danger align-self-center mini-stat-icon">
+                        <span class="avatar-title rounded-circle bg-danger">
+                            <i class="bx bx-x-circle font-size-24"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="row mb-3">
+    <div class="col-md-5">
+        <input type="text" id="searchInput" class="form-control form-control-sm"
+               placeholder="{% trans 'Search products...' %}" value="{{ request.GET.search }}">
+    </div>
+    <div class="col-md-4">
+        <select id="categoryFilter" class="form-select form-select-sm">
+            <option value="">{% trans "All Categories" %}</option>
+            {% for cat in categories %}
+            <option value="{{ cat.slug }}" {% if request.GET.category == cat.slug %}selected{% endif %}>
+                {{ cat.name }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-3">
+        <select id="statusFilter" class="form-select form-select-sm">
+            <option value="">{% trans "All Statuses" %}</option>
+            <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>{% trans "Active" %}</option>
+            <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>{% trans "Inactive" %}</option>
+            <option value="low_stock" {% if request.GET.status == 'low_stock' %}selected{% endif %}>⚠️ {% trans "Low Stock" %}</option>
+            <option value="out_of_stock" {% if request.GET.status == 'out_of_stock' %}selected{% endif %}>🚫 {% trans "Out of Stock" %}</option>
+        </select>
+    </div>
+</div>
+
+<!-- Table -->
+<div class="table-responsive">
+    <table class="table align-middle datatable dt-responsive nowrap"
+           style="border-collapse: collapse; border-spacing: 0 8px; width: 100%;"
+           id="productsTable">
+        <thead>
+            <tr>
+                <th>{% trans "Product" %}</th>
+                <th>{% trans "Category" %}</th>
+                <th>{% trans "Price" %}</th>
+                <th>{% trans "Stock" %}</th>
+                <th>{% trans "Status" %}</th>
+                <th style="width:100px;">{% trans "Actions" %}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for product in products %}
+            <tr>
+                <td>
+                    <div class="d-flex align-items-center gap-2">
+                        {% if product.image %}
+                            <img src="{{ product.image.url }}" alt="{{ product.name }}"
+                                 style="width:40px;height:40px;object-fit:cover;border-radius:6px;">
+                        {% else %}
+                            <div class="avatar-sm d-inline-block">
+                                <div class="avatar-title bg-light-subtle text-primary font-size-20 m-0 rounded-circle">
+                                    <i class="bx bx-box"></i>
+                                </div>
+                            </div>
+                        {% endif %}
+                        <div>
+                            <a href="{% url 'products:detail' product.pk %}" class="text-body fw-medium">
+                                {{ product.name }}
+                            </a>
+                            {% if product.description %}
+                            <div class="text-muted small">{{ product.description|truncatechars:50 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    {% if product.category %}
+                        <span class="badge bg-info-subtle text-info font-size-11">{{ product.category.name }}</span>
+                    {% else %}
+                        <span class="text-muted">—</span>
+                    {% endif %}
+                </td>
+                <td class="fw-medium">€{{ product.price }}</td>
+                <td>
+                    {% if product.stock == 0 %}
+                        <span class="badge bg-danger-subtle text-danger font-size-11">
+                            <i class="bx bx-x-circle"></i> {% trans "Out of stock" %}
+                        </span>
+                    {% elif product.is_low_stock %}
+                        <span class="badge bg-warning-subtle text-warning font-size-11">
+                            ⚠️ {{ product.stock }} {% trans "left" %}
+                        </span>
+                    {% else %}
+                        <span class="badge bg-success-subtle text-success font-size-11">
+                            {{ product.stock }}
+                        </span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if product.is_active %}
+                        <span class="badge bg-success-subtle text-success font-size-11">{% trans "Active" %}</span>
+                    {% else %}
+                        <span class="badge bg-secondary-subtle text-secondary font-size-11">{% trans "Inactive" %}</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="dropdown">
+                        <button class="btn btn-link font-size-16 shadow-none py-0 text-muted dropdown-toggle"
+                                type="button" data-bs-toggle="dropdown">
+                            <i class="bx bx-dots-horizontal-rounded"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <a class="dropdown-item" href="{% url 'products:detail' product.pk %}">
+                                    <i class="bx bx-show-alt me-2"></i>{% trans "View" %}
+                                </a>
+                            </li>
+                            {% if perms.products.change_product %}
+                            <li>
+                                <a class="dropdown-item" href="{% url 'products:edit' product.pk %}">
+                                    <i class="bx bx-edit-alt me-2"></i>{% trans "Edit" %}
+                                </a>
+                            </li>
+                            {% endif %}
+                            {% if perms.products.delete_product %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item text-danger" href="{% url 'products:delete' product.pk %}">
+                                    <i class="bx bx-trash me-2"></i>{% trans "Delete" %}
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" class="text-center py-5">
+                    <div class="text-muted">
+                        <i class="bx bx-box font-size-48 d-block mb-3"></i>
+                        <h5>{% trans "No products found" %}</h5>
+                        <p>{% trans "Add your first product to get started" %}</p>
+                        {% if perms.products.add_product %}
+                        <a href="{% url 'products:create' %}" class="btn btn-primary btn-sm">
+                            <i class="bx bx-plus me-1"></i>{% trans "Add Product" %}
+                        </a>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'libs/datatables.net/js/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'libs/datatables.net-bs4/js/dataTables.bootstrap4.min.js' %}"></script>
+<script src="{% static 'libs/datatables.net-responsive/js/dataTables.responsive.min.js' %}"></script>
+<script src="{% static 'libs/datatables.net-responsive-bs4/js/responsive.bootstrap4.min.js' %}"></script>
+<script>
+$(document).ready(function () {
+    $('#productsTable').DataTable({
+        pageLength: 25,
+        responsive: true,
+        columnDefs: [{ orderable: false, targets: 5 }],
+        language: {
+            search: "{% trans 'Search' %}:",
+            lengthMenu: "{% trans 'Show' %} _MENU_ {% trans 'entries' %}",
+            info: "{% trans 'Showing' %} _START_ {% trans 'to' %} _END_ {% trans 'of' %} _TOTAL_ {% trans 'products' %}",
+            zeroRecords: "{% trans 'No matching products found' %}",
+            infoEmpty: "{% trans 'No products to show' %}",
+        }
+    });
+
+    function applyFilters() {
+        const params = new URLSearchParams();
+        const search = $('#searchInput').val();
+        const category = $('#categoryFilter').val();
+        const status = $('#statusFilter').val();
+        if (search) params.set('search', search);
+        if (category) params.set('category', category);
+        if (status) params.set('status', status);
+        window.location.search = params.toString();
+    }
+
+    $('#categoryFilter, #statusFilter').on('change', applyFilters);
+    $('#searchInput').on('keydown', function (e) {
+        if (e.key === 'Enter') applyFilters();
+    });
+});
+</script>
+{% endblock %}

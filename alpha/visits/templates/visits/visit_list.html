@@ -122,7 +122,12 @@
                 </td>
                 <td>{{ visit.staff.name|default:visit.staff.username }}</td>
                 <td>
-                    <strong>€{{ visit.charge_amount }}</strong>
+                    <strong>€{{ visit.grand_total }}</strong>
+                    {% if visit.products_total %}
+                    <br><small class="text-muted">
+                        <i class="bx bx-store me-1"></i>{% trans "incl." %} €{{ visit.products_total }} {% trans "products" %}
+                    </small>
+                    {% endif %}
                     {% if visit.client_package_item %}
                     <br><span class="badge badge-soft-info font-size-11">
                         <i class="bx bx-package"></i> {% trans "Package" %}
@@ -130,8 +135,7 @@
                     {% endif %}
                 </td>
                 <td>
-                    {% with balance=visit.charge_amount|add:visit.paid_amount|add:"-"|add:visit.charge_amount %}
-                    {% if visit.paid_amount >= visit.charge_amount %}
+                    {% if visit.paid_amount >= visit.grand_total %}
                         <span class="badge badge-soft-success">
                             <i class="bx bx-check-circle"></i> {% trans "Paid" %}
                         </span>
@@ -139,13 +143,12 @@
                         <span class="badge badge-soft-warning">
                             <i class="bx bx-time"></i> {% trans "Partial" %}
                         </span>
-                        <br><small class="text-muted">€{{ visit.paid_amount }}</small>
+                        <br><small class="text-muted">€{{ visit.paid_amount }} / €{{ visit.grand_total }}</small>
                     {% else %}
                         <span class="badge badge-soft-danger">
                             <i class="bx bx-x-circle"></i> {% trans "Unpaid" %}
                         </span>
                     {% endif %}
-                    {% endwith %}
                 </td>
                 <td>
                     <div class="dropdown">

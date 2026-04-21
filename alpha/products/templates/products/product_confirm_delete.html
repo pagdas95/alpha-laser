@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Delete Product" %}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
+<li class="breadcrumb-item"><a href="{% url 'products:list' %}">{% trans "Products" %}</a></li>
+<li class="breadcrumb-item"><a href="{% url 'products:detail' product.pk %}">{{ product.name }}</a></li>
+<li class="breadcrumb-item active">{% trans "Delete" %}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card border-danger">
+            <div class="card-header bg-danger-subtle">
+                <h5 class="card-title text-danger mb-0">
+                    <i class="bx bx-error-circle me-2"></i>{% trans "Delete Product" %}
+                </h5>
+            </div>
+            <div class="card-body">
+                <p>
+                    {% blocktrans with name=product.name %}
+                        Are you sure you want to delete <strong>{{ name }}</strong>? This action cannot be undone.
+                    {% endblocktrans %}
+                </p>
+
+                {% if product.visit_products.exists %}
+                <div class="alert alert-warning">
+                    <i class="bx bx-info-circle me-1"></i>
+                    {% blocktrans with count=product.visit_products.count %}
+                        This product has been used in {{ count }} visit(s). It cannot be deleted while visit records reference it.
+                    {% endblocktrans %}
+                </div>
+                {% else %}
+                <div class="d-flex gap-2">
+                    <form method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bx bx-trash me-1"></i>{% trans "Yes, Delete" %}
+                        </button>
+                    </form>
+                    <a href="{% url 'products:detail' product.pk %}" class="btn btn-outline-secondary">
+                        <i class="bx bx-x me-1"></i>{% trans "Cancel" %}
+                    </a>
+                </div>
+                {% endif %}
+
+                {% if product.visit_products.exists %}
+                <div class="mt-3">
+                    <a href="{% url 'products:detail' product.pk %}" class="btn btn-outline-secondary">
+                        <i class="bx bx-arrow-back me-1"></i>{% trans "Back to Product" %}
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

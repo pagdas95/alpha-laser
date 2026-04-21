@@ -6,7 +6,8 @@ from django.shortcuts import render
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import ListView, CreateView, DetailView, UpdateView, DeleteView
 from django.urls import reverse_lazy
-from django.db.models import Q, Count, Sum
+from django.db.models import Q, Count, Sum, F, OuterRef, Subquery, DecimalField, ExpressionWrapper
+from django.db.models.functions import Coalesce
 from django.contrib import messages
 from django.utils.translation import gettext as _
 from django import forms
@@ -127,6 +128,7 @@ class ClientDetailView(LoginRequiredMixin, DetailView):
         context['completed_visits'] = self.object.appointments.filter(status='completed').count()
         
         from alpha.visits.models import Visit
+        from alpha.products.models import VisitProduct
         visits = Visit.objects.filter(
             appointment__client=self.object
         ).select_related(
@@ -139,12 +141,33 @@ class ClientDetailView(LoginRequiredMixin, DetailView):
         context['recent_visits'] = visits
         context['total_visits'] = Visit.objects.filter(appointment__client=self.object).count()
         
+        # Subquery: sum of products for each visit
+        products_subq = (
+            VisitProduct.objects
+            .filter(visit=OuterRef('pk'))
+            .values('visit')
+            .annotate(pt=Sum(F('price_at_time') * F('quantity')))
+            .values('pt')
+        )
+
+        # Annotate each visit with grand total (service + products), then aggregate
         revenue_stats = Visit.objects.filter(
             appointment__client=self.object
+        ).annotate(
+            prod_total=Coalesce(
+                Subquery(products_subq, output_field=DecimalField(max_digits=10, decimal_places=2)),
+                0,
+                output_field=DecimalField(max_digits=10, decimal_places=2),
+            ),
+            grand=ExpressionWrapper(
+                F('charge_amount') + F('prod_total'),
+                output_field=DecimalField(max_digits=10, decimal_places=2),
+            ),
         ).aggregate(
-            total_charged=Sum('charge_amount'),
-            total_paid=Sum('paid_amount')
+            total_charged=Sum('grand'),
+            total_paid=Sum('paid_amount'),
         )
+
         context['total_revenue'] = revenue_stats['total_paid'] or 0
         context['total_charged'] = revenue_stats['total_charged'] or 0
         context['consents'] = self.object.consents.all().order_by('-accepted_at')

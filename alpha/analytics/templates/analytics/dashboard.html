@@ -216,6 +216,48 @@
     </div>
 </div>
 
+<!-- Product Stats Cards -->
+<div class="row">
+    <div class="col-xl-4 col-md-6">
+        <div class="card mini-stats-wid stats-card">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-grow-1">
+                        <p class="text-muted fw-medium">{% trans "Products Revenue" %}</p>
+                        <h4 class="mb-0">€{{ stats.products_revenue|floatformat:2 }}</h4>
+                        <small class="text-muted">
+                            <i class="bx bx-box text-info"></i>
+                            {{ stats.products_qty|default:0 }} {% trans "units sold" %}
+                        </small>
+                    </div>
+                    <div class="avatar-sm rounded-circle align-self-center mini-stat-icon" style="background:#7b2d8b;">
+                        <span class="avatar-title rounded-circle" style="background:#7b2d8b;">
+                            <i class="bx bx-store font-size-24"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if stats.top_products %}
+    <div class="col-xl-8 col-md-12">
+        <div class="card">
+            <div class="card-body py-2">
+                <h6 class="card-title mb-2"><i class="bx bx-trophy text-warning me-1"></i>{% trans "Top Products" %}</h6>
+                <div class="d-flex flex-wrap gap-2">
+                    {% for p in stats.top_products %}
+                    <span class="badge" style="background:#7b2d8b; font-size:12px;">
+                        {{ p.product__name }} — €{{ p.revenue|floatformat:2 }} ({{ p.qty }} {% trans "units" %})
+                    </span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
 <!-- Charts Row 1 -->
 <div class="row">
     <div class="col-xl-8">
@@ -325,6 +367,41 @@
     </div>
 </div>
 
+<!-- Charts Row 4: Products -->
+<div class="row">
+    <div class="col-xl-7">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="bx bx-store me-2" style="color:#7b2d8b;"></i>
+                    {% trans "Top Products — Revenue & Units Sold" %}
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="productsChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-5">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="bx bx-user-check me-2" style="color:#7b2d8b;"></i>
+                    {% trans "Product Sales by Staff" %}
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="productStaffChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Detailed Stats -->
 <div class="row">
     <div class="col-12">
@@ -337,7 +414,7 @@
             </div>
             <div class="card-body">
                 <div class="row">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <h6 class="mb-3">{% trans "Appointments Breakdown" %}</h6>
                         <div class="table-responsive">
                             <table class="table table-sm">
@@ -365,7 +442,7 @@
                         </div>
                     </div>
                     
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <h6 class="mb-3">{% trans "Payment Breakdown" %}</h6>
                         <div class="table-responsive">
                             <table class="table table-sm">
@@ -385,6 +462,39 @@
                                     <td><strong>{% trans "Total Visits" %}</strong></td>
                                     <td class="text-end"><strong>{{ stats.total_visits }}</strong></td>
                                 </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <h6 class="mb-3">
+                            <i class="bx bx-store me-1" style="color:#7b2d8b;"></i>
+                            {% trans "Products Breakdown" %}
+                        </h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><i class="bx bx-box text-info"></i> {% trans "Units Sold" %}</td>
+                                    <td class="text-end"><strong>{{ stats.products_qty|default:0 }}</strong></td>
+                                </tr>
+                                <tr>
+                                    <td><i class="bx bx-euro" style="color:#7b2d8b;"></i> {% trans "Products Revenue" %}</td>
+                                    <td class="text-end"><strong>€{{ stats.products_revenue|floatformat:2 }}</strong></td>
+                                </tr>
+                                {% if stats.top_product_sellers %}
+                                <tr class="border-top">
+                                    <td colspan="2"><small class="text-muted fw-medium">{% trans "Top Sellers" %}</small></td>
+                                </tr>
+                                {% for seller in stats.top_product_sellers %}
+                                <tr>
+                                    <td class="small">
+                                        <i class="bx bx-user me-1"></i>
+                                        {{ seller.sold_by__name|default:seller.sold_by__username }}
+                                    </td>
+                                    <td class="text-end small">€{{ seller.revenue|floatformat:2 }}</td>
+                                </tr>
+                                {% endfor %}
+                                {% endif %}
                             </table>
                         </div>
                     </div>
@@ -603,6 +713,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeStaffChart();
     initializeRoomsChart();
     initializeMachinesChart();
+    initializeProductsCharts();
     
     // ✨ EXPORT MODAL HANDLERS
     // Handle export type changes
@@ -781,6 +892,60 @@ document.addEventListener('DOMContentLoaded', function() {
                         maintainAspectRatio: false,
                         plugins: { legend: { position: 'top' }, title: { display: false } },
                         scales: { y: { beginAtZero: true } }
+                    }
+                });
+            });
+    }
+
+    function initializeProductsCharts() {
+        const dateParam = currentMode === 'daily' ? `date=${selectedDate}` : `month=${selectedMonth}`;
+        fetch(`{% url 'analytics:chart-data' %}?type=products&${dateParam}`)
+            .then(response => response.json())
+            .then(data => {
+                // Top products — dual axis (revenue + units)
+                const ctx1 = document.getElementById('productsChart').getContext('2d');
+                new Chart(ctx1, {
+                    type: 'bar',
+                    data: data.top_products,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { position: 'top' } },
+                        scales: {
+                            y: {
+                                type: 'linear',
+                                position: 'left',
+                                beginAtZero: true,
+                                title: { display: true, text: 'Revenue (€)' },
+                                ticks: { callback: v => '€' + v.toFixed(0) }
+                            },
+                            y1: {
+                                type: 'linear',
+                                position: 'right',
+                                beginAtZero: true,
+                                grid: { drawOnChartArea: false },
+                                title: { display: true, text: 'Units Sold' },
+                            }
+                        }
+                    }
+                });
+
+                // Products by staff seller
+                const ctx2 = document.getElementById('productStaffChart').getContext('2d');
+                new Chart(ctx2, {
+                    type: 'bar',
+                    data: data.by_staff,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        indexAxis: 'y',
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                ticks: { callback: v => '€' + v.toFixed(0) }
+                            }
+                        }
                     }
                 });
             });

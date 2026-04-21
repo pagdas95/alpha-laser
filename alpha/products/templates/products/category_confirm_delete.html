@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Delete Category" %}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
+<li class="breadcrumb-item"><a href="{% url 'products:list' %}">{% trans "Products" %}</a></li>
+<li class="breadcrumb-item"><a href="{% url 'products:categories' %}">{% trans "Categories" %}</a></li>
+<li class="breadcrumb-item active">{% trans "Delete" %}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card border-danger">
+            <div class="card-header bg-danger-subtle">
+                <h5 class="card-title text-danger mb-0">
+                    <i class="bx bx-error-circle me-2"></i>{% trans "Delete Category" %}
+                </h5>
+            </div>
+            <div class="card-body">
+                <p>
+                    {% blocktrans with name=category.name %}
+                        Are you sure you want to delete category <strong>{{ name }}</strong>?
+                    {% endblocktrans %}
+                </p>
+
+                {% if category.products.exists %}
+                <div class="alert alert-warning">
+                    <i class="bx bx-info-circle me-1"></i>
+                    {% blocktrans with count=category.products.count %}
+                        This category has {{ count }} product(s). They will become uncategorised but will not be deleted.
+                    {% endblocktrans %}
+                </div>
+                {% endif %}
+
+                <div class="d-flex gap-2">
+                    <form method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bx bx-trash me-1"></i>{% trans "Yes, Delete" %}
+                        </button>
+                    </form>
+                    <a href="{% url 'products:categories' %}" class="btn btn-outline-secondary">
+                        <i class="bx bx-x me-1"></i>{% trans "Cancel" %}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

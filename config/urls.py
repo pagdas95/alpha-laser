@@ -31,6 +31,7 @@ urlpatterns = [
     path('analytics/', include('alpha.analytics.urls', namespace='analytics')),
     path('staff/', include('alpha.staff.urls', namespace='staff')),
     path('notifications/', include('alpha.notifications.urls')),
+    path("products/", include("alpha.products.urls", namespace="products")),
     # ...
     # Media files
     *static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT),

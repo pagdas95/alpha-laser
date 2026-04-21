@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Product Categories" %}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
+<li class="breadcrumb-item"><a href="{% url 'products:list' %}">{% trans "Products" %}</a></li>
+<li class="breadcrumb-item active">{% trans "Categories" %}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row align-items-center mb-3">
+    <div class="col">
+        <h5 class="card-title">{% trans "Product Categories" %}</h5>
+    </div>
+    <div class="col-auto d-flex gap-2">
+        <a href="{% url 'products:list' %}" class="btn btn-sm btn-outline-secondary">
+            <i class="bx bx-arrow-back me-1"></i>{% trans "Back to Products" %}
+        </a>
+        {% if perms.products.add_category %}
+        <a href="{% url 'products:category-create' %}" class="btn btn-sm btn-primary">
+            <i class="bx bx-plus me-1"></i>{% trans "Add Category" %}
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>{% trans "Name" %}</th>
+                    <th>{% trans "Description" %}</th>
+                    <th class="text-center">{% trans "Products" %}</th>
+                    <th style="width:100px;">{% trans "Actions" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for category in categories %}
+                <tr>
+                    <td class="fw-medium">{{ category.name }}</td>
+                    <td class="text-muted">{{ category.description|truncatechars:60|default:"—" }}</td>
+                    <td class="text-center">
+                        <span class="badge bg-info-subtle text-info">{{ category.products.count }}</span>
+                    </td>
+                    <td>
+                        <div class="d-flex gap-1">
+                            {% if perms.products.change_category %}
+                            <a href="{% url 'products:category-edit' category.pk %}"
+                               class="btn btn-sm btn-outline-secondary"
+                               data-bs-toggle="tooltip" title="{% trans 'Edit' %}">
+                                <i class="bx bx-edit"></i>
+                            </a>
+                            {% endif %}
+                            {% if perms.products.delete_category %}
+                            <a href="{% url 'products:category-delete' category.pk %}"
+                               class="btn btn-sm btn-outline-danger"
+                               data-bs-toggle="tooltip" title="{% trans 'Delete' %}">
+                                <i class="bx bx-trash"></i>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="text-center py-5 text-muted">
+                        <i class="bx bx-tag font-size-48 d-block mb-2"></i>
+                        <p>{% trans "No categories yet." %}</p>
+                        {% if perms.products.add_category %}
+                        <a href="{% url 'products:category-create' %}" class="btn btn-primary btn-sm">
+                            <i class="bx bx-plus me-1"></i>{% trans "Add Category" %}
+                        </a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
+});
+</script>
+{% endblock %}

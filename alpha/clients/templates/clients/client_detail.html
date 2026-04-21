@@ -368,63 +368,89 @@
                         {% endif %}
                     </div>
                     
-                    <!-- ✅ NEW: Visits Tab -->
+                    <!-- Visits Tab -->
                     <div class="tab-pane" id="visits-tab" role="tabpanel">
                         {% if recent_visits %}
                         <div class="table-responsive">
-                            <table class="table table-hover mb-0">
+                            <table class="table align-middle table-hover mb-0">
                                 <thead>
                                     <tr>
                                         <th>{% trans "Date" %}</th>
                                         <th>{% trans "Service" %}</th>
                                         <th>{% trans "Staff" %}</th>
-                                        <th>{% trans "Area" %}</th>
-                                        <th>{% trans "Charge" %}</th>
-                                        <th>{% trans "Paid" %}</th>
+                                        <th>{% trans "Amount" %}</th>
+                                        <th>{% trans "Payment" %}</th>
                                         <th>{% trans "Action" %}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for visit in recent_visits %}
                                     <tr>
-                                        <td>
+                                        <td data-order="{{ visit.appointment.start|date:'Y-m-d H:i' }}">
                                             <strong>{{ visit.appointment.start|date:"d/m/Y" }}</strong>
                                             <br>
                                             <small class="text-muted">{{ visit.appointment.start|date:"H:i" }}</small>
                                         </td>
                                         <td>
                                             {{ visit.appointment.service.name }}
-                                            {% if visit.machine %}
-                                            <br><small class="text-muted">{{ visit.machine.name }}</small>
+                                            {% if visit.area %}
+                                            <br><small class="text-muted">{{ visit.area }}</small>
                                             {% endif %}
                                         </td>
                                         <td>{{ visit.staff.name|default:visit.staff.username }}</td>
                                         <td>
-                                            {% if visit.area %}
-                                                {{ visit.area }}
-                                            {% else %}
-                                                <span class="text-muted">-</span>
+                                            <strong>€{{ visit.grand_total }}</strong>
+                                            {% if visit.products_total %}
+                                            <br><small class="text-muted">
+                                                <i class="bx bx-store me-1"></i>{% trans "incl." %} €{{ visit.products_total }} {% trans "products" %}
+                                            </small>
+                                            {% endif %}
+                                            {% if visit.client_package_item %}
+                                            <br><span class="badge badge-soft-info font-size-11">
+                                                <i class="bx bx-package"></i> {% trans "Package" %}
+                                            </span>
                                             {% endif %}
                                         </td>
                                         <td>
-                                            <strong>€{{ visit.charge_amount }}</strong>
-                                        </td>
-                                        <td>
-                                            {% if visit.paid_amount >= visit.charge_amount %}
-                                                <span class="badge badge-soft-success">€{{ visit.paid_amount }}</span>
+                                            {% if visit.paid_amount >= visit.grand_total %}
+                                                <span class="badge badge-soft-success">
+                                                    <i class="bx bx-check-circle"></i> {% trans "Paid" %}
+                                                </span>
                                             {% elif visit.paid_amount > 0 %}
-                                                <span class="badge badge-soft-warning">€{{ visit.paid_amount }}</span>
+                                                <span class="badge badge-soft-warning">
+                                                    <i class="bx bx-time"></i> {% trans "Partial" %}
+                                                </span>
+                                                <br><small class="text-muted">€{{ visit.paid_amount }} / €{{ visit.grand_total }}</small>
                                             {% else %}
-                                                <span class="badge badge-soft-danger">€0</span>
+                                                <span class="badge badge-soft-danger">
+                                                    <i class="bx bx-x-circle"></i> {% trans "Unpaid" %}
+                                                </span>
                                             {% endif %}
                                         </td>
                                         <td>
-                                            <a href="{% url 'visits:detail' visit.pk %}" 
-                                               class="btn btn-sm btn-light" 
-                                               data-bs-toggle="tooltip" 
-                                               title="{% trans 'View Details' %}">
-                                                <i class="bx bx-show"></i>
-                                            </a>
+                                            <div class="dropdown">
+                                                <button class="btn btn-link font-size-16 shadow-none py-0 text-muted dropdown-toggle"
+                                                        type="button" data-bs-toggle="dropdown">
+                                                    <i class="bx bx-dots-horizontal-rounded"></i>
+                                                </button>
+                                                <ul class="dropdown-menu dropdown-menu-end">
+                                                    <li>
+                                                        <a class="dropdown-item" href="{% url 'visits:detail' visit.pk %}">
+                                                            <i class="bx bx-show-alt me-2"></i>{% trans "View Details" %}
+                                                        </a>
+                                                    </li>
+                                                    <li>
+                                                        <a class="dropdown-item" href="{% url 'visits:edit' visit.pk %}">
+                                                            <i class="bx bx-edit-alt me-2"></i>{% trans "Edit" %}
+                                                        </a>
+                                                    </li>
+                                                    <li>
+                                                        <a class="dropdown-item" href="{% url 'appointments:detail' visit.appointment.pk %}">
+                                                            <i class="bx bx-calendar me-2"></i>{% trans "View Appointment" %}
+                                                        </a>
+                                                    </li>
+                                                </ul>
+                                            </div>
                                         </td>
                                     </tr>
                                     {% endfor %}

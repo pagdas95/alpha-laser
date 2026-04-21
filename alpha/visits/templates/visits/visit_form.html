@@ -3,6 +3,10 @@
 
 {% block title %}{% trans "Edit Visit" %}{% endblock %}
 
+{% block extra_css %}
+<link href="{% static 'libs/choices.js/public/assets/styles/choices.min.css' %}" rel="stylesheet" type="text/css" />
+{% endblock %}
+
 {% block breadcrumb %}
 <li class="breadcrumb-item"><a href="{% url 'home' %}">{% trans "Home" %}</a></li>
 <li class="breadcrumb-item"><a href="{% url 'visits:list' %}">{% trans "Visits" %}</a></li>
@@ -35,257 +39,572 @@
 
                 <form method="post" class="needs-validation" novalidate>
                     {% csrf_token %}
-                    
-                    <!-- Show form errors if any -->
+
                     {% if form.non_field_errors %}
-                    <div class="alert alert-danger" role="alert">
-                        {{ form.non_field_errors }}
-                    </div>
+                    <div class="alert alert-danger" role="alert">{{ form.non_field_errors }}</div>
                     {% endif %}
 
-                    <!-- Treatment Parameters Section -->
-                    <div class="row">
-                        <div class="col-12">
-                            <h5 class="font-size-14 mb-3 mt-2">
-                                <i class="bx bx-clipboard me-2 text-primary"></i>{% trans "Treatment Parameters" %}
-                            </h5>
-                        </div>
-                    </div>
+                    <!-- ── Treatment Parameters ─────────────────────── -->
+                    <h5 class="font-size-14 mb-3 mt-2">
+                        <i class="bx bx-clipboard me-2 text-primary"></i>{% trans "Treatment Parameters" %}
+                    </h5>
 
                     <div class="row">
-                        <!-- Area -->
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="{{ form.area.id_for_label }}" class="form-label">
-                                    {% trans "Treatment Area" %}
-                                </label>
+                                <label for="{{ form.area.id_for_label }}" class="form-label">{% trans "Treatment Area" %}</label>
                                 {{ form.area }}
-                                {% if form.area.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {{ form.area.errors }}
-                                </div>
-                                {% endif %}
+                                {% if form.area.errors %}<div class="invalid-feedback d-block">{{ form.area.errors }}</div>{% endif %}
                                 <small class="text-muted">{% trans "e.g., Face, Legs, Bikini area" %}</small>
                             </div>
                         </div>
-
-                        <!-- Spot Size -->
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="{{ form.spot_size_mm.id_for_label }}" class="form-label">
-                                    {% trans "Spot Size (mm)" %}
-                                </label>
+                                <label for="{{ form.spot_size_mm.id_for_label }}" class="form-label">{% trans "Spot Size (mm)" %}</label>
                                 <div class="input-group">
                                     {{ form.spot_size_mm }}
                                     <span class="input-group-text">mm</span>
                                 </div>
-                                {% if form.spot_size_mm.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {{ form.spot_size_mm.errors }}
-                                </div>
-                                {% endif %}
+                                {% if form.spot_size_mm.errors %}<div class="invalid-feedback d-block">{{ form.spot_size_mm.errors }}</div>{% endif %}
                             </div>
                         </div>
                     </div>
 
                     <div class="row">
-                        <!-- Fluence -->
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="{{ form.fluence_j_cm2.id_for_label }}" class="form-label">
-                                    {% trans "Fluence (Energy)" %}
-                                </label>
+                                <label for="{{ form.fluence_j_cm2.id_for_label }}" class="form-label">{% trans "Fluence (Energy)" %}</label>
                                 <div class="input-group">
                                     {{ form.fluence_j_cm2 }}
                                     <span class="input-group-text">J/cm²</span>
                                 </div>
-                                {% if form.fluence_j_cm2.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {{ form.fluence_j_cm2.errors }}
-                                </div>
-                                {% endif %}
+                                {% if form.fluence_j_cm2.errors %}<div class="invalid-feedback d-block">{{ form.fluence_j_cm2.errors }}</div>{% endif %}
                             </div>
                         </div>
-
-                        <!-- Pulse Count -->
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="{{ form.pulse_count.id_for_label }}" class="form-label">
-                                    {% trans "Pulses" %}
-                                </label>
+                                <label for="{{ form.pulse_count.id_for_label }}" class="form-label">{% trans "Pulses" %}</label>
                                 {{ form.pulse_count }}
-                                {% if form.pulse_count.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {{ form.pulse_count.errors }}
-                                </div>
-                                {% endif %}
+                                {% if form.pulse_count.errors %}<div class="invalid-feedback d-block">{{ form.pulse_count.errors }}</div>{% endif %}
                             </div>
                         </div>
                     </div>
 
-                    <!-- Payment Section -->
-                    <div class="row">
-                        <div class="col-12">
-                            <h5 class="font-size-14 mb-3 mt-3">
-                                <i class="bx bx-euro me-2 text-success"></i>{% trans "Payment Information" %}
-                            </h5>
+                    <!-- ── Products Purchased ──────────────────────── -->
+                    <h5 class="font-size-14 mb-3 mt-4">
+                        <i class="bx bx-box me-2 text-primary"></i>{% trans "Products Purchased" %}
+                    </h5>
+
+                    <div class="card border shadow-none mb-3">
+                        <div class="card-body p-3">
+
+                            <!-- Column headers -->
+                            <div class="row g-2 mb-1 d-none d-md-flex">
+                                <div class="col-md-3"><small class="text-muted">{% trans "Product" %}</small></div>
+                                <div class="col-md-1"><small class="text-muted">{% trans "Qty" %}</small></div>
+                                <div class="col-md-2"><small class="text-muted">{% trans "Unit Price" %} <span class="text-info">({% trans "editable" %})</span></small></div>
+                                <div class="col-md-2"><small class="text-muted">{% trans "Sold By" %}</small></div>
+                                <div class="col-md-2"><small class="text-muted">{% trans "Notes" %}</small></div>
+                                <div class="col-md-1 text-end"><small class="text-muted">{% trans "Total" %}</small></div>
+                                <div class="col-md-1"></div>
+                            </div>
+
+                            <!-- Existing saved products -->
+                            {% if visit_products %}
+                            <div id="existingProductRows">
+                                {% for vp in visit_products %}
+                                <div class="row g-2 align-items-center mb-2 pb-2 border-bottom existing-product-row"
+                                     data-line-total="{{ vp.line_total }}"
+                                     data-original-price="{{ vp.price_at_time }}">
+                                    <div class="col-md-3">
+                                        <div class="fw-medium">{{ vp.product.name }}</div>
+                                        {% if vp.product.category %}
+                                        <small class="text-muted">{{ vp.product.category.name }}</small>
+                                        {% endif %}
+                                        <div class="text-muted small">
+                                            {% trans "Original price" %}: €{{ vp.product.price }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-1">
+                                        <span class="badge bg-light text-dark">× {{ vp.quantity }}</span>
+                                    </div>
+                                    <!-- Editable price -->
+                                    <div class="col-md-2">
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text">€</span>
+                                            <input type="number"
+                                                   name="existing_price_{{ vp.pk }}"
+                                                   class="form-control form-control-sm existing-price-input"
+                                                   value="{{ vp.price_at_time }}"
+                                                   step="0.01" min="0"
+                                                   data-qty="{{ vp.quantity }}"
+                                                   data-vp-pk="{{ vp.pk }}">
+                                        </div>
+                                        {% if vp.price_at_time != vp.product.price %}
+                                        <small class="text-warning">
+                                            <i class="bx bx-tag-alt me-1"></i>{% trans "Discounted" %}
+                                        </small>
+                                        {% endif %}
+                                    </div>
+                                    <!-- Sold By -->
+                                    <div class="col-md-2">
+                                        <select name="existing_sold_by_{{ vp.pk }}"
+                                                class="form-select form-select-sm">
+                                            {% for staff in staff_list %}
+                                            <option value="{{ staff.pk }}"
+                                                {% if vp.sold_by_id == staff.pk %}selected
+                                                {% elif not vp.sold_by_id and staff.pk == object.staff_id %}selected
+                                                {% endif %}>
+                                                {{ staff.name|default:staff.username }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <span class="text-muted small fst-italic">{{ vp.notes|default:"—" }}</span>
+                                    </div>
+                                    <div class="col-md-1 text-end fw-medium text-success existing-line-total">
+                                        €{{ vp.line_total }}
+                                    </div>
+                                    <div class="col-md-1 text-center">
+                                        <div class="form-check d-flex justify-content-center align-items-center gap-1">
+                                            <input class="form-check-input delete-product-cb mt-0" type="checkbox"
+                                                   name="delete_visit_product" value="{{ vp.pk }}"
+                                                   id="del_{{ vp.pk }}">
+                                            <label for="del_{{ vp.pk }}" class="text-danger mb-0" title="{% trans 'Remove' %}">
+                                                <i class="bx bx-trash"></i>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+
+                            <!-- New product rows added by JS -->
+                            <div id="newProductRows"></div>
+
+                            <!-- Add product button -->
+                            <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="addProductRowBtn">
+                                <i class="bx bx-plus me-1"></i>{% trans "Add Product" %}
+                            </button>
+
+                            <!-- Products subtotal -->
+                            <div class="d-flex justify-content-end mt-3 pt-2 border-top">
+                                <span class="text-muted me-3 small">{% trans "Products Total" %}:</span>
+                                <strong class="text-info">€<span id="productsTotalValue">{{ products_total }}</span></strong>
+                            </div>
                         </div>
                     </div>
 
+                    <!-- ── Payment ──────────────────────────────────── -->
+                    <h5 class="font-size-14 mb-3 mt-4">
+                        <i class="bx bx-euro me-2 text-success"></i>{% trans "Payment Information" %}
+                    </h5>
+
                     <div class="row">
-                        <!-- Charge Amount -->
                         <div class="col-md-4">
                             <div class="mb-3">
                                 <label for="{{ form.charge_amount.id_for_label }}" class="form-label">
-                                    {% trans "Charge Amount" %} <span class="text-danger">*</span>
+                                    {% trans "Service Charge" %} <span class="text-danger">*</span>
                                 </label>
                                 <div class="input-group">
                                     <span class="input-group-text">€</span>
                                     {{ form.charge_amount }}
                                 </div>
-                                {% if form.charge_amount.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {{ form.charge_amount.errors }}
-                                </div>
-                                {% endif %}
+                                {% if form.charge_amount.errors %}<div class="invalid-feedback d-block">{{ form.charge_amount.errors }}</div>{% endif %}
                             </div>
                         </div>
-
-                        <!-- Paid Amount -->
                         <div class="col-md-4">
                             <div class="mb-3">
-                                <label for="{{ form.paid_amount.id_for_label }}" class="form-label">
-                                    {% trans "Paid Amount" %}
-                                </label>
+                                <label for="{{ form.paid_amount.id_for_label }}" class="form-label">{% trans "Paid Amount" %}</label>
                                 <div class="input-group">
                                     <span class="input-group-text">€</span>
                                     {{ form.paid_amount }}
                                 </div>
-                                {% if form.paid_amount.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {{ form.paid_amount.errors }}
-                                </div>
-                                {% endif %}
+                                {% if form.paid_amount.errors %}<div class="invalid-feedback d-block">{{ form.paid_amount.errors }}</div>{% endif %}
                             </div>
                         </div>
-
-                        <!-- Payment Method -->
                         <div class="col-md-4">
                             <div class="mb-3">
-                                <label for="{{ form.payment_method.id_for_label }}" class="form-label">
-                                    {% trans "Payment Method" %}
-                                </label>
+                                <label for="{{ form.payment_method.id_for_label }}" class="form-label">{% trans "Payment Method" %}</label>
                                 {{ form.payment_method }}
-                                {% if form.payment_method.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {{ form.payment_method.errors }}
+                                {% if form.payment_method.errors %}<div class="invalid-feedback d-block">{{ form.payment_method.errors }}</div>{% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Live total summary card -->
+                    <div class="card bg-light border-0 mb-4">
+                        <div class="card-body py-3">
+                            <div class="row text-center g-0">
+                                <div class="col">
+                                    <div class="text-muted small mb-1">{% trans "Service" %}</div>
+                                    <div class="fw-bold text-primary">€<span id="summaryCharge">{{ object.charge_amount }}</span></div>
                                 </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Balance Display -->
-                    {% if balance %}
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="alert {% if balance > 0 %}alert-warning{% else %}alert-success{% endif %} mb-3" role="alert">
-                                <strong>{% trans "Balance" %}:</strong> 
-                                {% if balance > 0 %}
-                                    €{{ balance|floatformat:2 }} {% trans "remaining" %}
-                                {% else %}
-                                    {% trans "Fully paid" %} ✓
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    {% endif %}
-
-                    <!-- Remarks Section -->
-                    <div class="row">
-                        <div class="col-12">
-                            <h5 class="font-size-14 mb-3 mt-2">
-                                <i class="bx bx-note me-2 text-info"></i>{% trans "Additional Notes" %}
-                            </h5>
-                        </div>
-                    </div>
-
-                    <!-- Remarks -->
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="mb-3">
-                                <label for="{{ form.remarks.id_for_label }}" class="form-label">
-                                    {% trans "Remarks" %}
-                                </label>
-                                {{ form.remarks }}
-                                {% if form.remarks.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {{ form.remarks.errors }}
+                                <div class="col-auto d-flex align-items-center px-2 text-muted">+</div>
+                                <div class="col">
+                                    <div class="text-muted small mb-1">{% trans "Products" %}</div>
+                                    <div class="fw-bold text-info">€<span id="summaryProducts">{{ products_total }}</span></div>
                                 </div>
-                                {% endif %}
-                                <small class="text-muted">
-                                    {% trans "Any observations, complications, or client feedback" %}
-                                </small>
+                                <div class="col-auto d-flex align-items-center px-2 text-muted">=</div>
+                                <div class="col">
+                                    <div class="text-muted small mb-1">{% trans "Grand Total" %}</div>
+                                    <div class="fw-bold fs-5">€<span id="summaryGrand">{{ grand_total }}</span></div>
+                                </div>
+                                <div class="col-auto d-flex align-items-center px-3 text-muted">—</div>
+                                <div class="col">
+                                    <div class="text-muted small mb-1">{% trans "Paid" %}</div>
+                                    <div class="fw-bold text-success">€<span id="summaryPaid">{{ object.paid_amount }}</span></div>
+                                </div>
+                                <div class="col-auto d-flex align-items-center px-2 text-muted">=</div>
+                                <div class="col">
+                                    <div class="text-muted small mb-1">{% trans "Balance" %}</div>
+                                    <div class="fw-bold fs-5" id="summaryBalanceWrapper">
+                                        €<span id="summaryBalance">{{ balance|floatformat:2 }}</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- ── Remarks ──────────────────────────────────── -->
+                    <h5 class="font-size-14 mb-3">
+                        <i class="bx bx-note me-2 text-info"></i>{% trans "Additional Notes" %}
+                    </h5>
+                    <div class="mb-4">
+                        <label for="{{ form.remarks.id_for_label }}" class="form-label">{% trans "Remarks" %}</label>
+                        {{ form.remarks }}
+                        {% if form.remarks.errors %}<div class="invalid-feedback d-block">{{ form.remarks.errors }}</div>{% endif %}
+                        <small class="text-muted">{% trans "Any observations, complications, or client feedback" %}</small>
                     </div>
 
                     <!-- Action Buttons -->
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="d-flex gap-2 justify-content-end">
-                                <a href="{% url 'visits:detail' object.pk %}" class="btn btn-light">
-                                    <i class="bx bx-x me-1"></i>{% trans "Cancel" %}
-                                </a>
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="bx bx-save me-1"></i>{% trans "Update Visit" %}
-                                </button>
-                            </div>
-                        </div>
+                    <div class="d-flex gap-2 justify-content-end">
+                        <a href="{% url 'visits:detail' object.pk %}" class="btn btn-light">
+                            <i class="bx bx-x me-1"></i>{% trans "Cancel" %}
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bx bx-save me-1"></i>{% trans "Update Visit" %}
+                        </button>
                     </div>
+
                 </form>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Product data for JS (safe JSON from Django) -->
+<script id="productData" type="application/json">
+[{% for p in available_products %}{"id":{{ p.pk }},"name":"{{ p.name|escapejs }}","price":{{ p.price }},"stock":{{ p.stock }},"category":"{% if p.category %}{{ p.category.name|escapejs }}{% endif %}"}{% if not forloop.last %},{% endif %}{% endfor %}]
+</script>
+
+<!-- Staff data for JS -->
+<script id="staffData" type="application/json">
+[{% for s in staff_list %}{"id":{{ s.pk }},"name":"{{ s.name|default:s.username|escapejs }}"}{% if not forloop.last %},{% endif %}{% endfor %}]
+</script>
+
+<!-- Visit staff id (default sold_by) -->
+<script id="visitStaffId" type="application/json">{{ object.staff_id }}</script>
 {% endblock content %}
 
 {% block extra_js %}
+<!-- Choices.js -->
+<script src="{% static 'libs/choices.js/public/assets/scripts/choices.min.js' %}"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Add Bootstrap classes to form fields
-        const formControls = document.querySelectorAll('select, input[type="text"], input[type="number"], textarea');
-        formControls.forEach(control => {
-            control.classList.add('form-control');
-        });
+document.addEventListener('DOMContentLoaded', function () {
 
-        // Form validation
-        const form = document.querySelector('.needs-validation');
-        form.addEventListener('submit', function(event) {
-            if (!form.checkValidity()) {
-                event.preventDefault();
-                event.stopPropagation();
+    // ── Product catalogue from Django ──────────────────────────────────
+    const PRODUCTS = JSON.parse(document.getElementById('productData').textContent);
+    const STAFF    = JSON.parse(document.getElementById('staffData').textContent);
+    const VISIT_STAFF_ID = JSON.parse(document.getElementById('visitStaffId').textContent);
+
+    // ── Bootstrap classes on Django-rendered fields ────────────────────
+    document.querySelectorAll('input[type="text"], input[type="number"], textarea')
+        .forEach(el => el.classList.add('form-control'));
+    document.querySelectorAll('select')
+        .forEach(el => el.classList.add('form-select'));
+
+    // ── Refs ───────────────────────────────────────────────────────────
+    const chargeInput        = document.getElementById('{{ form.charge_amount.id_for_label }}');
+    const paidInput          = document.getElementById('{{ form.paid_amount.id_for_label }}');
+    const productsTotalEl    = document.getElementById('productsTotalValue');
+    const summaryCharge      = document.getElementById('summaryCharge');
+    const summaryProducts    = document.getElementById('summaryProducts');
+    const summaryGrand       = document.getElementById('summaryGrand');
+    const summaryPaid        = document.getElementById('summaryPaid');
+    const summaryBalance     = document.getElementById('summaryBalance');
+    const summaryBalanceWrap = document.getElementById('summaryBalanceWrapper');
+
+    // ── Total calculation ──────────────────────────────────────────────
+    function getExistingTotal() {
+        let t = 0;
+        document.querySelectorAll('.existing-product-row').forEach(row => {
+            const cb = row.querySelector('.delete-product-cb');
+            if (cb && cb.checked) return;
+            const priceInput = row.querySelector('.existing-price-input');
+            const qty = parseInt(priceInput?.dataset.qty || 1);
+            const price = parseFloat(priceInput?.value || 0);
+            t += price * qty;
+        });
+        return t;
+    }
+
+    function getNewRowsTotal() {
+        let t = 0;
+        document.querySelectorAll('.new-product-row').forEach(row => {
+            const sel = row.querySelector('.product-select');
+            const qtyEl = row.querySelector('.qty-input');
+            const priceEl = row.querySelector('.price-input');
+            if (!sel || !sel.value) return;
+            const prod = PRODUCTS.find(p => String(p.id) === String(sel.value));
+            if (!prod) return;
+            const qty = parseInt(qtyEl?.value) || 0;
+            const price = parseFloat(priceEl?.value) || Number(prod.price);
+            t += price * qty;
+        });
+        return t;
+    }
+
+    function refreshSummary() {
+        const charge   = parseFloat(chargeInput?.value) || 0;
+        const paid     = parseFloat(paidInput?.value)   || 0;
+        const products = getExistingTotal() + getNewRowsTotal();
+        const grand    = charge + products;
+        const balance  = grand - paid;
+
+        productsTotalEl.textContent  = products.toFixed(2);
+        summaryCharge.textContent    = charge.toFixed(2);
+        summaryProducts.textContent  = products.toFixed(2);
+        summaryGrand.textContent     = grand.toFixed(2);
+        summaryPaid.textContent      = paid.toFixed(2);
+        summaryBalance.textContent   = Math.abs(balance).toFixed(2);
+        summaryBalanceWrap.className = 'fw-bold fs-5 ' + (balance > 0 ? 'text-danger' : 'text-success');
+    }
+
+    // ── Wire charge / paid inputs ──────────────────────────────────────
+    chargeInput?.addEventListener('input', refreshSummary);
+    paidInput?.addEventListener('input', refreshSummary);
+
+    // ── Wire existing price inputs (discount support) ──────────────────
+    document.querySelectorAll('.existing-price-input').forEach(input => {
+        input.addEventListener('input', function () {
+            const row = this.closest('.existing-product-row');
+            const qty = parseInt(this.dataset.qty || 1);
+            const price = parseFloat(this.value) || 0;
+
+            // Update line total label in this row
+            const lineTotal = row.querySelector('.existing-line-total');
+            if (lineTotal) lineTotal.textContent = `€${(price * qty).toFixed(2)}`;
+
+            // Show/hide "Discounted" label
+            const originalPrice = parseFloat(row.dataset.originalPrice || 0);
+            let discountLabel = row.querySelector('.discount-label');
+            if (price < originalPrice) {
+                if (!discountLabel) {
+                    discountLabel = document.createElement('small');
+                    discountLabel.className = 'discount-label text-warning d-block mt-1';
+                    discountLabel.innerHTML = '<i class="bx bx-tag-alt me-1"></i>{% trans "Discounted" %}';
+                    this.closest('.col-md-2').appendChild(discountLabel);
+                }
+            } else {
+                discountLabel?.remove();
             }
-            form.classList.add('was-validated');
+
+            refreshSummary();
+        });
+    });
+
+    // ── Wire delete checkboxes on existing rows ────────────────────────
+    document.querySelectorAll('.delete-product-cb').forEach(cb => {
+        cb.addEventListener('change', function () {
+            const row = this.closest('.existing-product-row');
+            if (this.checked) {
+                row.classList.add('opacity-50', 'text-decoration-line-through');
+            } else {
+                row.classList.remove('opacity-50', 'text-decoration-line-through');
+            }
+            refreshSummary();
+        });
+    });
+
+    // ── Build product <select> ─────────────────────────────────────────
+    function makeProductSelect() {
+        const sel = document.createElement('select');
+        sel.name = 'new_product_id';
+        sel.className = 'form-select form-select-sm product-select';
+
+        const blank = new Option('{% trans "— Select product —" %}', '');
+        sel.add(blank);
+
+        PRODUCTS.forEach(p => {
+            const opt = new Option(
+                `${p.name} — €${p.price.toFixed(2)} (${p.stock} {% trans "in stock" %})`,
+                p.id
+            );
+            opt.dataset.price = p.price;
+            opt.dataset.stock = p.stock;
+            if (p.stock === 0) opt.disabled = true;
+            sel.add(opt);
+        });
+        return sel;
+    }
+
+    // ── Add new product row ────────────────────────────────────────────
+    function addRow() {
+        const container = document.getElementById('newProductRows');
+
+        const row = document.createElement('div');
+        row.className = 'row g-2 align-items-center mb-2 pb-2 border-bottom new-product-row';
+
+        // Product select — col-md-4
+        const c1 = document.createElement('div'); c1.className = 'col-md-4';
+        const sel = makeProductSelect();
+        c1.appendChild(sel);
+        row.appendChild(c1);
+
+        // Qty — col-md-2
+        const c2 = document.createElement('div'); c2.className = 'col-md-2';
+        const qty = document.createElement('input');
+        qty.type = 'number'; qty.name = 'new_quantity';
+        qty.className = 'form-control form-control-sm qty-input';
+        qty.value = 1; qty.min = 1;
+        c2.appendChild(qty);
+        row.appendChild(c2);
+
+        // Price override — col-md-2
+        const c3 = document.createElement('div'); c3.className = 'col-md-2';
+        const priceWrap = document.createElement('div');
+        priceWrap.className = 'input-group input-group-sm';
+        const pricePrefix = document.createElement('span');
+        pricePrefix.className = 'input-group-text'; pricePrefix.textContent = '€';
+        const priceInput = document.createElement('input');
+        priceInput.type = 'number'; priceInput.name = 'new_price';
+        priceInput.className = 'form-control form-control-sm price-input';
+        priceInput.placeholder = '0.00'; priceInput.step = '0.01'; priceInput.min = '0';
+        priceWrap.appendChild(pricePrefix);
+        priceWrap.appendChild(priceInput);
+        c3.appendChild(priceWrap);
+        row.appendChild(c3);
+
+        // Sold By — col-md-2
+        const cSoldBy = document.createElement('div'); cSoldBy.className = 'col-md-2';
+        const soldBySel = document.createElement('select');
+        soldBySel.name = 'new_sold_by';
+        soldBySel.className = 'form-select form-select-sm';
+        STAFF.forEach(s => {
+            const opt = new Option(s.name, s.id);
+            if (s.id === VISIT_STAFF_ID) opt.selected = true;
+            soldBySel.add(opt);
+        });
+        cSoldBy.appendChild(soldBySel);
+        row.appendChild(cSoldBy);
+
+        // Notes — col-md-2
+        const c4 = document.createElement('div'); c4.className = 'col-md-2';
+        const notes = document.createElement('input');
+        notes.type = 'text'; notes.name = 'new_notes';
+        notes.className = 'form-control form-control-sm';
+        notes.placeholder = '{% trans "Notes (optional)" %}';
+        c4.appendChild(notes);
+        row.appendChild(c4);
+
+        // Line total label — col-md-1
+        const c5 = document.createElement('div'); c5.className = 'col-md-1 text-end';
+        const lineTotal = document.createElement('small');
+        lineTotal.className = 'fw-medium text-success';
+        lineTotal.textContent = '€0.00';
+        c5.appendChild(lineTotal);
+        row.appendChild(c5);
+
+        // Remove button — col-md-1
+        const c6 = document.createElement('div'); c6.className = 'col-md-1 text-center';
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn btn-link btn-sm text-danger p-0';
+        btn.innerHTML = '<i class="bx bx-x-circle font-size-18"></i>';
+        c6.appendChild(btn);
+        row.appendChild(c6);
+
+        // Stock warning
+        const warn = document.createElement('div');
+        warn.className = 'col-12 text-danger small d-none';
+        row.appendChild(warn);
+
+        container.appendChild(row);
+
+        // Initialize Choices.js on the product select for searchable dropdown
+        const choicesInstance = new Choices(sel, {
+            searchEnabled: true,
+            searchPlaceholderValue: '{% trans "Search products..." %}',
+            itemSelectText: '',
+            shouldSort: false,
+            allowHTML: false,
         });
 
-        // Calculate and update balance dynamically
-        const chargeInput = document.getElementById('{{ form.charge_amount.id_for_label }}');
-        const paidInput = document.getElementById('{{ form.paid_amount.id_for_label }}');
-        
-        function updateBalance() {
-            const charge = parseFloat(chargeInput.value) || 0;
-            const paid = parseFloat(paidInput.value) || 0;
-            const balance = charge - paid;
-            
-            // You could add a live balance display here
-            console.log('Balance:', balance);
+        // Destroy Choices instance when row is removed to avoid memory leaks
+        btn.addEventListener('click', () => {
+            choicesInstance.destroy();
+            row.remove();
+            refreshSummary();
+        });
+        function rowUpdate() {
+            const productId = sel.value;
+            const q = parseInt(qty.value) || 1;
+            const prod = PRODUCTS.find(p => String(p.id) === String(productId));
+
+            if (prod) {
+                const catalogPrice = Number(prod.price);
+                const stock = Number(prod.stock);
+
+                // Auto-fill price when product first selected (don't overwrite if user typed)
+                if (!priceInput.dataset.userEdited) {
+                    priceInput.value = catalogPrice.toFixed(2);
+                }
+
+                const effectivePrice = parseFloat(priceInput.value) || catalogPrice;
+                lineTotal.textContent = `€${(effectivePrice * q).toFixed(2)}`;
+                qty.max = stock;
+
+                if (q > stock) {
+                    warn.textContent = `{% trans "Only" %} ${stock} {% trans "in stock" %}`;
+                    warn.classList.remove('d-none');
+                } else {
+                    warn.classList.add('d-none');
+                }
+            } else {
+                lineTotal.textContent = '€0.00';
+                warn.classList.add('d-none');
+            }
+            refreshSummary();
         }
-        
-        if (chargeInput && paidInput) {
-            chargeInput.addEventListener('input', updateBalance);
-            paidInput.addEventListener('input', updateBalance);
-        }
+
+        // Mark price as user-edited so auto-fill stops overwriting it
+        priceInput.addEventListener('input', () => {
+            priceInput.dataset.userEdited = '1';
+            rowUpdate();
+        });
+
+        sel.addEventListener('change', () => {
+            // Reset user-edited flag when a new product is picked
+            delete priceInput.dataset.userEdited;
+            rowUpdate();
+        });
+        qty.addEventListener('input', rowUpdate);
+    }
+
+    document.getElementById('addProductRowBtn').addEventListener('click', addRow);
+
+    // ── Form validation ────────────────────────────────────────────────
+    const form = document.querySelector('.needs-validation');
+    form.addEventListener('submit', function (e) {
+        if (!form.checkValidity()) { e.preventDefault(); e.stopPropagation(); }
+        form.classList.add('was-validated');
     });
+
+    // ── Initial render ─────────────────────────────────────────────────
+    refreshSummary();
+});
 </script>
 {% endblock %}
