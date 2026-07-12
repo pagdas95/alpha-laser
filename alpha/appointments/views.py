@@ -24,7 +24,7 @@ class AppointmentListView(LoginRequiredMixin, ListView):
     model = Appointment
     template_name = 'appointments/appointment_list.html'
     context_object_name = 'appointments'
-    paginate_by = 50
+    
     
     def get_queryset(self):
         """

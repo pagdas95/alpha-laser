@@ -49,7 +49,7 @@ class VisitListView(LoginRequiredMixin, ListView):
     model = Visit
     template_name = 'visits/visit_list.html'
     context_object_name = 'visits'
-    paginate_by = 50
+    
 
     def get_queryset(self):
         queryset = _annotate_grand_total(

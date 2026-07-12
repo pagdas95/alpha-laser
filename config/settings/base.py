@@ -393,20 +393,9 @@ SPECTACULAR_SETTINGS = {
 #TWILIO_ACCOUNT_SID = env('TWILIO_ACCOUNT_SID')
 #TWILIO_AUTH_TOKEN = env('TWILIO_AUTH_TOKEN')
 #TWILIO_PHONE_NUMBER = env('TWILIO_PHONE_NUMBER')
-
-#CELERY_BEAT_SCHEDULE = {
-#    'schedule-appointment-reminders': {
-#        'task': 'notifications.tasks.schedule_appointment_reminders',
-#        'schedule': crontab(minute=0),  # Every hour
-#    },
-#}
-#
-## Notification flags
-#NOTIFICATIONS_ENABLED = True
-#SEND_SMS_ON_BOOKING = True
-#SEND_EMAIL_ON_BOOKING = True
-
 from celery.schedules import crontab
+
+
 
 CELERY_BEAT_SCHEDULE = {
     'schedule-appointment-reminders': {
