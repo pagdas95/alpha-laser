@@ -6,6 +6,13 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# Send the reminder this long before the appointment.
+REMINDER_LEAD_TIME = timedelta(hours=24)
+# Skip reminders for appointments booked less than this long before they start
+# (matches the old behaviour, which only caught appointments booked ~24h ahead;
+# same-day bookings already get the booking confirmation message).
+REMINDER_MIN_BOOKING_LEAD = timedelta(hours=23)
+
 
 # ✨✨✨ NEW: Variable replacement function ✨✨✨
 def replace_variables(message, client):
@@ -65,43 +72,61 @@ def send_appointment_booked_notification_task(self, appointment_id, send_sms=Tru
 @shared_task(bind=True, max_retries=3)
 def send_appointment_reminder_task(self, appointment_id, send_sms=True, send_email=True):
     """
-    Async task to send appointment reminder notification
+    Send the 24h reminder for one appointment.
+
+    Idempotent: the ScheduledNotification row is "claimed" atomically
+    (sent=False -> True) before sending, so duplicate deliveries of this task
+    (beat re-dispatch, broker redelivery, old ETA tasks) never send twice.
     """
+    from .services import notification_service
+    from .models import ScheduledNotification
+    Appointment = apps.get_model('appointments', 'Appointment')
+
     try:
-        from .services import notification_service
-        from .models import ScheduledNotification
-        Appointment = apps.get_model('appointments', 'Appointment')
-        
         appointment = Appointment.objects.get(id=appointment_id)
-        
-        # Check if appointment is still valid (not cancelled)
-        if (appointment.status == 'cancelled'):
-            logger.info(f"Skipping reminder for cancelled appointment {appointment_id}")
-            return {'skipped': 'Appointment cancelled'}
-        
-        # Send the reminder
+    except Appointment.DoesNotExist:
+        logger.error(f"Appointment {appointment_id} not found")
+        return {'error': 'Appointment not found'}
+
+    if appointment.status != 'booked':
+        logger.info(f"Skipping reminder for appointment {appointment_id} (status={appointment.status})")
+        return {'skipped': f'Appointment status {appointment.status}'}
+
+    if appointment.start <= timezone.now():
+        logger.info(f"Skipping reminder for appointment {appointment_id}: already started")
+        return {'skipped': 'Appointment already started'}
+
+    # Make sure a tracking row exists, then claim it atomically.
+    notification, _ = ScheduledNotification.objects.get_or_create(
+        appointment=appointment,
+        notification_type='24h_reminder',
+        defaults={
+            'scheduled_for': appointment.start - REMINDER_LEAD_TIME,
+            'send_sms': send_sms,
+            'send_email': send_email,
+        },
+    )
+    claimed = ScheduledNotification.objects.filter(
+        pk=notification.pk, sent=False
+    ).update(sent=True, sent_at=timezone.now())
+    if not claimed:
+        logger.info(f"Reminder for appointment {appointment_id} already sent, skipping")
+        return {'skipped': 'Already sent'}
+
+    try:
         result = notification_service.send_appointment_reminder(
             appointment=appointment,
             send_sms=send_sms,
             send_email=send_email
         )
-        
-        # Mark scheduled notification as sent
-        ScheduledNotification.objects.filter(
-            appointment=appointment,
-            notification_type='24h_reminder',
-            sent=False
-        ).update(sent=True, sent_at=timezone.now())
-        
-        logger.info(f"Appointment reminder sent for appointment {appointment_id}")
-        return result
-        
-    except Appointment.DoesNotExist:
-        logger.error(f"Appointment {appointment_id} not found")
-        return {'error': 'Appointment not found'}
     except Exception as exc:
-        logger.error(f"Error sending appointment reminder: {exc}")
+        # Release the claim so a retry (or the next beat run) can send it.
+        ScheduledNotification.objects.filter(pk=notification.pk).update(sent=False, sent_at=None)
+        logger.error(f"Error sending appointment reminder {appointment_id}: {exc}")
         raise self.retry(exc=exc, countdown=60 * (2 ** self.request.retries))
+
+    logger.info(f"Appointment reminder sent for appointment {appointment_id}")
+    return result
 
 
 @shared_task
@@ -195,67 +220,40 @@ def send_bulk_email_task(client_ids, subject, message, html_message=None, sent_b
 @shared_task
 def schedule_appointment_reminders():
     """
-    Periodic task to schedule 24-hour reminders for upcoming appointments
-    Run this task every hour via Celery Beat
+    Periodic task (Celery Beat, every 10 minutes): dispatch 24h reminders that are due.
+
+    A reminder is due when the appointment starts within the next 24 hours and no
+    reminder has been sent yet. Reminders are dispatched immediately (no long ETA),
+    so nothing piles up in worker memory, and if a run is missed (worker down,
+    Redis hiccup) the next run catches up automatically.
     """
-    try:
-        from .models import ScheduledNotification
-        Appointment = apps.get_model('appointments', 'Appointment')
-        
-        # Get appointments starting in 24 hours (with a 1-hour window)
-        now = timezone.now()
-        reminder_time = now + timedelta(hours=24)
-        window_start = reminder_time - timedelta(minutes=30)
-        window_end = reminder_time + timedelta(minutes=30)
-        
-        # Find appointments that need reminders
-        appointments = Appointment.objects.filter(
-            start__gte=window_start,
-            start__lte=window_end,
-            status='booked'
-        ).exclude(
-            scheduled_notifications__notification_type='24h_reminder',
-            scheduled_notifications__sent=True
+    from django.db.models import Exists, F, OuterRef
+    from .models import ScheduledNotification
+    Appointment = apps.get_model('appointments', 'Appointment')
+
+    now = timezone.now()
+    already_sent = ScheduledNotification.objects.filter(
+        appointment=OuterRef('pk'),
+        notification_type='24h_reminder',
+        sent=True,
+    )
+    appointment_ids = list(
+        Appointment.objects.filter(
+            status='booked',
+            start__gt=now,
+            start__lte=now + REMINDER_LEAD_TIME,
+            created_at__lte=F('start') - REMINDER_MIN_BOOKING_LEAD,
         )
-        
-        scheduled_count = 0
-        
-        for appointment in appointments:
-            # Check if reminder already scheduled
-            if ScheduledNotification.objects.filter(
-                appointment=appointment,
-                notification_type='24h_reminder'
-            ).exists():
-                continue
-            
-            # Calculate when to send (24 hours before appointment)
-            send_time = appointment.start - timedelta(hours=24)
-            
-            # Schedule the task
-            task = send_appointment_reminder_task.apply_async(
-                args=[appointment.id],
-                kwargs={'send_sms': True, 'send_email': True},
-                eta=send_time
-            )
-            
-            # Create scheduled notification record
-            ScheduledNotification.objects.create(
-                appointment=appointment,
-                notification_type='24h_reminder',
-                scheduled_for=send_time,
-                send_sms=True,
-                send_email=True,
-                celery_task_id=task.id
-            )
-            
-            scheduled_count += 1
-        
-        logger.info(f"Scheduled {scheduled_count} appointment reminders")
-        return {'scheduled': scheduled_count}
-        
-    except Exception as exc:
-        logger.error(f"Error scheduling appointment reminders: {exc}")
-        return {'error': str(exc)}
+        .exclude(Exists(already_sent))
+        .values_list('id', flat=True)
+    )
+
+    for appointment_id in appointment_ids:
+        # Safe to dispatch repeatedly: the task claims the reminder atomically.
+        send_appointment_reminder_task.delay(appointment_id, send_sms=True, send_email=True)
+
+    logger.info(f"Dispatched {len(appointment_ids)} appointment reminders")
+    return {'dispatched': len(appointment_ids)}
 
 
 @shared_task

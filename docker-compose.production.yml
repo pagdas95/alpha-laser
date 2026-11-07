@@ -24,12 +24,14 @@ services:
       - ./.envs/.production/.django
       - ./.envs/.production/.postgres
     command: /start
+    restart: unless-stopped
 
   postgres:
     build:
       context: .
       dockerfile: ./compose/production/postgres/Dockerfile
     image: alpha_production_postgres
+    restart: unless-stopped
     volumes:
       - production_postgres_data:/var/lib/postgresql/data
       - production_postgres_data_backups:/backups
@@ -41,6 +43,7 @@ services:
       context: .
       dockerfile: ./compose/production/traefik/Dockerfile
     image: alpha_production_traefik
+    restart: unless-stopped
     depends_on:
       - django
     volumes:
@@ -52,6 +55,7 @@ services:
 
   redis:
     image: docker.io/redis:6
+    restart: unless-stopped
     
     volumes:
       - production_redis_data:/data
@@ -77,6 +81,7 @@ services:
       context: .
       dockerfile: ./compose/production/nginx/Dockerfile
     image: alpha_production_nginx
+    restart: unless-stopped
     depends_on:
       - django
     volumes:

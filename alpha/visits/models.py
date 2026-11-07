@@ -90,6 +90,10 @@ class Visit(models.Model):
     @property
     def products_total(self):
         """Sum of all products purchased during this visit"""
+        # Fast path: value already computed by annotate_totals() — no extra query
+        annotated = self.__dict__.get('products_total_db')
+        if annotated is not None:
+            return annotated
         from django.db.models import Sum, F as DbF
         result = self.visit_products.aggregate(
             total=Sum(DbF('price_at_time') * DbF('quantity'))
@@ -108,3 +112,47 @@ class Visit(models.Model):
     
     def __str__(self):
         return f"Visit for {self.appointment.client.full_name} - {self.appointment.start:%d/%m/%Y}"
+
+
+def annotate_totals(queryset):
+    """
+    Annotate a Visit queryset with products_total_db and
+    grand_total_db (= charge_amount + sum of VisitProduct line totals),
+    computed in ONE query. Visit.products_total / grand_total / is_complete
+    then use these values instead of querying once per visit.
+    """
+    from django.db.models import DecimalField, ExpressionWrapper, F, OuterRef, Subquery, Sum
+    from django.db.models.functions import Coalesce
+    from alpha.products.models import VisitProduct
+
+    money = DecimalField(max_digits=10, decimal_places=2)
+    products_subq = (
+        VisitProduct.objects
+        .filter(visit=OuterRef('pk'))
+        .values('visit')
+        .annotate(pt=Sum(F('price_at_time') * F('quantity')))
+        .values('pt')
+    )
+    return queryset.annotate(
+        products_total_db=Coalesce(Subquery(products_subq, output_field=money), 0, output_field=money),
+        grand_total_db=ExpressionWrapper(F('charge_amount') + F('products_total_db'), output_field=money),
+    )
+
+
+def recent_incomplete_visits(limit=10, recent=50):
+    """
+    The `limit` newest not-fully-paid visits among the `recent` newest visits
+    (same rule the notification bell always used), in a single query.
+    """
+    from django.db.models import F
+
+    recent_ids = Visit.objects.order_by('-created_at').values('pk')[:recent]
+    return list(
+        annotate_totals(
+            Visit.objects.select_related(
+                'appointment', 'appointment__client', 'appointment__service', 'staff'
+            )
+        )
+        .filter(pk__in=recent_ids, paid_amount__lt=F('grand_total_db'))
+        .order_by('-created_at')[:limit]
+    )

@@ -12,36 +12,10 @@ from django.utils.translation import gettext as _
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.views.decorators.http import require_http_methods
-from .models import Visit
+from .models import Visit, annotate_totals, recent_incomplete_visits
 
-
-def _annotate_grand_total(queryset):
-    """
-    Annotate a Visit queryset with grand_total_db =
-    charge_amount + sum of all VisitProduct line totals.
-    Used for DB-level filtering and aggregation.
-    """
-    from alpha.products.models import VisitProduct
-
-    products_subq = (
-        VisitProduct.objects
-        .filter(visit=OuterRef('pk'))
-        .values('visit')
-        .annotate(pt=Sum(F('price_at_time') * F('quantity')))
-        .values('pt')
-    )
-
-    return queryset.annotate(
-        products_total_db=Coalesce(
-            Subquery(products_subq, output_field=DecimalField(max_digits=10, decimal_places=2)),
-            0,
-            output_field=DecimalField(max_digits=10, decimal_places=2),
-        ),
-        grand_total_db=ExpressionWrapper(
-            F('charge_amount') + F('products_total_db'),
-            output_field=DecimalField(max_digits=10, decimal_places=2),
-        ),
-    )
+# Kept as an alias for existing callers
+_annotate_grand_total = annotate_totals
 
 
 class VisitListView(LoginRequiredMixin, ListView):
@@ -56,6 +30,7 @@ class VisitListView(LoginRequiredMixin, ListView):
             Visit.objects.select_related(
                 'appointment', 'appointment__client',
                 'appointment__service', 'staff', 'machine',
+                'client_package_item',
             )
         )
 
@@ -301,19 +276,8 @@ def get_incomplete_visits_count(request):
         })
     
     try:
-        # Get recent visits and check which are incomplete
-        recent_visits = Visit.objects.select_related(
-            'appointment',
-            'appointment__client',
-            'appointment__service',
-            'staff'
-        ).order_by('-created_at')[:50]
-        
-        # Filter incomplete visits using the is_complete property
-        incomplete_list = [v for v in recent_visits if not v.is_complete]
-        
-        # Limit to 10 for the dropdown
-        incomplete_list = incomplete_list[:10]
+        # 10 newest unpaid visits among the last 50 — one query
+        incomplete_list = recent_incomplete_visits()
         
         # Build JSON response with visit details
         visits_data = []

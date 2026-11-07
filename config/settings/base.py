@@ -342,6 +342,22 @@ CELERY_WORKER_SEND_TASK_EVENTS = True
 CELERY_TASK_SEND_SENT_EVENT = True
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#worker-hijack-root-logger
 CELERY_WORKER_HIJACK_ROOT_LOGGER = False
+# Resilience: keep reconnecting to Redis forever instead of silently stalling
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+CELERY_BROKER_CONNECTION_MAX_RETRIES = None
+CELERY_BROKER_TRANSPORT_OPTIONS = {
+    "socket_keepalive": True,
+    "socket_timeout": 30,
+    "socket_connect_timeout": 30,
+    "health_check_interval": 25,
+    "retry_on_timeout": True,
+}
+CELERY_REDIS_SOCKET_KEEPALIVE = True
+CELERY_REDIS_BACKEND_HEALTH_CHECK_INTERVAL = 25
+CELERY_WORKER_CANCEL_LONG_RUNNING_TASKS_ON_CONNECTION_LOSS = True
+# Don't hoard tasks in worker memory; recycle child processes to avoid leaks
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+CELERY_WORKER_MAX_TASKS_PER_CHILD = 200
 # django-allauth
 # ------------------------------------------------------------------------------
 ACCOUNT_ALLOW_REGISTRATION = env.bool("DJANGO_ACCOUNT_ALLOW_REGISTRATION", True)
@@ -400,7 +416,8 @@ from celery.schedules import crontab
 CELERY_BEAT_SCHEDULE = {
     'schedule-appointment-reminders': {
         'task': 'alpha.notifications.tasks.schedule_appointment_reminders',
-        'schedule': crontab(minute=0),
+        # Every 10 minutes; reminders are sent directly, missed runs self-heal
+        'schedule': crontab(minute='*/10'),
     },
 }
 
